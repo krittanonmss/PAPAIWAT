@@ -77,4 +77,24 @@ class Admin extends Authenticatable
     {
         return $this->hasMany(AdminActivityLog::class, 'admin_id');
     }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role?->name === 'super_admin';
+    }
+
+    public function hasPermission(string $permissionKey): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (! $this->role) {
+            return false;
+        }
+
+        return $this->role->permissions()
+            ->where('key', $permissionKey)
+            ->exists();
+    }
 }

@@ -9,9 +9,7 @@ class RolePermission extends Model
 {
     protected $table = 'role_permissions';
 
-    public $timestamps = false;
-
-    const CREATED_AT = 'created_at';
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'role_id',

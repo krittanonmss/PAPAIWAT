@@ -41,4 +41,11 @@ class Role extends Model
             'permission_id'
         );
     }
+
+    public function hasPermission(string $permissionKey): bool
+    {
+        return $this->permissions()
+            ->where('key', $permissionKey)
+            ->exists();
+    }
 }

@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.guest' => AdminGuestRedirect::class,
             'admin.active' => EnsureAdminIsActive::class,
             'admin.activity' => RecordAdminActivity::class,
+            'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
