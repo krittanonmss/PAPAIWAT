@@ -31,6 +31,10 @@
                 class="block rounded-lg px-3 py-2 hover:bg-slate-100">
                     Role Management
                 </a>
+                <a href="{{ route('admin.permissions.index') }}"
+                class="block rounded-lg px-3 py-2 hover:bg-slate-100">
+                    Permission Management
+                </a>
             </nav>
         </aside>
 

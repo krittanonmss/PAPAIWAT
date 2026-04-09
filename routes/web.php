@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RolePermissionController;
+use App\Http\Controllers\Admin\PermissionController;
 
 Route::get('/', function () {
     return view('admin.auth.login');
@@ -22,6 +23,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
+
+        Route::patch('/users/{admin}/status', [UserManagementController::class, 'updateStatus'])
+                ->name('users.status.update');
 
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/', [UserManagementController::class, 'index'])
@@ -51,7 +55,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{admin}', [UserManagementController::class, 'destroy'])
                 ->middleware('admin.permission:users.delete')
                 ->name('destroy');
+
         });
+
 
         Route::prefix('roles')->name('roles.')->group(function () {
             Route::get('/', [RoleController::class, 'index'])
@@ -85,6 +91,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{role}/permissions', [RolePermissionController::class, 'update'])
                 ->middleware('admin.permission:roles.permissions')
                 ->name('permissions.update');
+        });
+
+        Route::prefix('permissions')->name('permissions.')->group(function () {
+            Route::get('/', [PermissionController::class, 'index'])
+                ->middleware('admin.permission:permissions.view')
+                ->name('index');
+
+            Route::get('/create', [PermissionController::class, 'create'])
+                ->middleware('admin.permission:permissions.create')
+                ->name('create');
+
+            Route::post('/', [PermissionController::class, 'store'])
+                ->middleware('admin.permission:permissions.create')
+                ->name('store');
+
+            Route::get('/{permission}/edit', [PermissionController::class, 'edit'])
+                ->middleware('admin.permission:permissions.update')
+                ->name('edit');
+
+            Route::put('/{permission}', [PermissionController::class, 'update'])
+                ->middleware('admin.permission:permissions.update')
+                ->name('update');
+
+            Route::delete('/{permission}', [PermissionController::class, 'destroy'])
+                ->middleware('admin.permission:permissions.delete')
+                ->name('destroy');
         });
     });
 });

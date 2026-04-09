@@ -105,7 +105,7 @@ class UserManagementController extends Controller
         $admin->status = $validated['status'];
         $admin->phone = $validated['phone'] ?? null;
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $admin->password_hash = Hash::make($validated['password']);
         }
 
@@ -114,6 +114,21 @@ class UserManagementController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'User updated successfully.');
+    }
+
+    public function updateStatus(Request $request, Admin $admin): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:active,inactive'],
+        ]);
+
+        $admin->update([
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'User status updated successfully.');
     }
 
     public function destroy(Admin $admin): RedirectResponse

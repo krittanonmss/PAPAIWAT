@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Models\Admin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -75,22 +76,24 @@ class RoleController extends Controller
 
     public function destroy(Role $role): RedirectResponse
     {
-        if ($role->is_system) {
+        $hasAdmins = Admin::withTrashed()
+            ->where('role_id', $role->id)
+            ->exists();
+
+        if ($hasAdmins) {
             return redirect()
                 ->route('admin.roles.index')
-                ->with('error', 'System role cannot be deleted.');
+                ->with('error', 'ไม่สามารถลบบทบาทนี้ได้ เนื่องจากยังมีผู้ดูแลระบบผูกอยู่ในระบบ');
         }
 
-        if ($role->admins()->exists()) {
-            return redirect()
-                ->route('admin.roles.index')
-                ->with('error', 'This role is assigned to one or more admins and cannot be deleted.');
+        if ($role->rolePermissions()->exists()) {
+            $role->rolePermissions()->delete();
         }
 
         $role->delete();
 
         return redirect()
             ->route('admin.roles.index')
-            ->with('success', 'Role deleted successfully.');
+            ->with('success', 'ลบบทบาทเรียบร้อยแล้ว');
     }
 }
