@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AdminNotification extends Model
+class LoginLog extends Model
 {
-    protected $table = 'admin_notifications';
+    protected $table = 'login_logs';
 
     public $timestamps = false;
 
@@ -15,17 +15,15 @@ class AdminNotification extends Model
 
     protected $fillable = [
         'admin_id',
-        'title',
-        'message',
-        'type',
-        'is_read',
-        'read_at',
+        'email',
+        'ip_address',
+        'status',
+        'reason',
+        'user_agent',
         'created_at',
     ];
 
     protected $casts = [
-        'is_read' => 'boolean',
-        'read_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 

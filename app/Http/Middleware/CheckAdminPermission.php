@@ -10,6 +10,7 @@ class CheckAdminPermission
 {
     public function handle(Request $request, Closure $next, string $permission): Response
     {
+        /** @var \App\Models\Admin\Admin|null $admin */
         $admin = auth('admin')->user();
 
         if (!$admin) {

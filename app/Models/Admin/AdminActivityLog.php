@@ -1,38 +1,34 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AuditLog extends Model
+class AdminActivityLog extends Model
 {
-    protected $table = 'audit_logs';
+    protected $table = 'admin_activity_logs';
 
     public $timestamps = false;
 
     const CREATED_AT = 'created_at';
 
     protected $fillable = [
+        'admin_id',
         'action',
-        'table_name',
-        'record_id',
-        'old_data',
-        'new_data',
-        'performed_by',
+        'target',
+        'method',
         'ip_address',
         'user_agent',
         'created_at',
     ];
 
     protected $casts = [
-        'old_data' => 'array',
-        'new_data' => 'array',
         'created_at' => 'datetime',
     ];
 
-    public function performer(): BelongsTo
+    public function admin(): BelongsTo
     {
-        return $this->belongsTo(Admin::class, 'performed_by');
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 }

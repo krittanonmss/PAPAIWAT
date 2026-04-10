@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
-use App\Models\LoginLog;
+use App\Models\Admin\Admin;
+use App\Models\Admin\LoginLog;
 use Illuminate\View\View;
 
 class DashboardController extends Controller

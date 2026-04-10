@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class LoginLog extends Model
+class AdminSession extends Model
 {
-    protected $table = 'login_logs';
+    protected $table = 'admin_sessions';
 
     public $timestamps = false;
 
@@ -15,15 +15,17 @@ class LoginLog extends Model
 
     protected $fillable = [
         'admin_id',
-        'email',
+        'session_token_hash',
         'ip_address',
-        'status',
-        'reason',
         'user_agent',
+        'last_seen_at',
+        'expires_at',
         'created_at',
     ];
 
     protected $casts = [
+        'last_seen_at' => 'datetime',
+        'expires_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 

@@ -2,9 +2,9 @@
 
 namespace App\Services\Admin\Auth;
 
-use App\Models\Admin;
-use App\Models\AdminSession;
-use App\Models\LoginLog;
+use App\Models\Admin\Admin;
+use App\Models\Admin\AdminSession;
+use App\Models\Admin\LoginLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;

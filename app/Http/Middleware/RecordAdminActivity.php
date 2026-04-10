@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\AdminActivityLog;
-use App\Models\AdminSession;
+use App\Models\Admin\AdminActivityLog;
+use App\Models\Admin\AdminSession;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

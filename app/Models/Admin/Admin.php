@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
@@ -96,5 +96,25 @@ class Admin extends Authenticatable
         return $this->role->permissions()
             ->where('key', $permissionKey)
             ->exists();
+    }
+
+    public function uploadedMedia(): HasMany
+    {
+        return $this->hasMany(Media::class, 'uploaded_by_admin_id');
+    }
+
+    public function createdMediaFolders(): HasMany
+    {
+        return $this->hasMany(MediaFolder::class, 'created_by_admin_id');
+    }
+
+    public function createdTemples(): HasMany
+    {
+        return $this->hasMany(Temple::class, 'created_by_admin_id');
+    }
+
+    public function updatedTemples(): HasMany
+    {
+        return $this->hasMany(Temple::class, 'updated_by_admin_id');
     }
 }

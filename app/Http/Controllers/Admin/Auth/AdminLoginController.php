@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Auth\AdminLoginRequest;
 use App\Services\Admin\Auth\AdminAuthService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AdminLoginController extends Controller
 {
@@ -29,15 +29,15 @@ class AdminLoginController extends Controller
             request: $request,
         );
 
-        return redirect()->intended(route('admin.dashboard'))
-            ->with('success', 'เข้าสู่ระบบสำเร็จ');
+        return redirect()->route('admin.dashboard');
     }
 
     public function destroy(Request $request): RedirectResponse
     {
         $this->adminAuthService->logout($request);
 
-        return redirect()->route('admin.login')
-            ->with('success', 'ออกจากระบบแล้ว');
+        return redirect()
+            ->route('admin.login')
+            ->with('success', 'ออกจากระบบเรียบร้อยแล้ว');
     }
 }
