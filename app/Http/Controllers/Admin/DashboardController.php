@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdminActivityLog;
+use App\Models\Admin;
 use App\Models\LoginLog;
 use Illuminate\View\View;
 
@@ -11,19 +11,17 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $loginLogs = LoginLog::query()
-            ->latest('created_at')
-            ->limit(5)
-            ->get();
+        $adminCount = Admin::query()->count();
 
-        $activityLogs = AdminActivityLog::query()
+        $loginLogs = LoginLog::query()
+            ->with('admin')
             ->latest('created_at')
             ->limit(5)
             ->get();
 
         return view('admin.dashboard.dashboard', [
+            'adminCount' => $adminCount,
             'loginLogs' => $loginLogs,
-            'activityLogs' => $activityLogs,
         ]);
     }
 }

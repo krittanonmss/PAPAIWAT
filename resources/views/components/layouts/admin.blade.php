@@ -8,6 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
+    @php
+        $isAccessManagementActive = request()->routeIs('admin.users.*')
+            || request()->routeIs('admin.roles.*')
+            || request()->routeIs('admin.permissions.*');
+    @endphp
+
     <div class="flex min-h-screen">
 
         {{-- Sidebar --}}
@@ -18,23 +24,52 @@
             </div>
 
             <nav class="p-4 space-y-2 text-sm">
-                <a href="{{ route('admin.dashboard') }}"
-                class="block rounded-lg px-3 py-2 hover:bg-slate-100">
+                <a
+                    href="{{ route('admin.dashboard') }}"
+                    class="{{ request()->routeIs('admin.dashboard')
+                        ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                        : 'block rounded-lg px-3 py-2 hover:bg-slate-100' }}"
+                >
                     Dashboard
                 </a>
 
-                <a href="{{ route('admin.users.index') }}"
-                class="block rounded-lg px-3 py-2 hover:bg-slate-100">
-                    User Management
-                </a>
-                <a href="{{ route('admin.roles.index') }}"
-                class="block rounded-lg px-3 py-2 hover:bg-slate-100">
-                    Role Management
-                </a>
-                <a href="{{ route('admin.permissions.index') }}"
-                class="block rounded-lg px-3 py-2 hover:bg-slate-100">
-                    Permission Management
-                </a>
+                <details class="rounded-lg border border-slate-200 bg-slate-50" {{ $isAccessManagementActive ? 'open' : '' }}>
+                    <summary class="cursor-pointer list-none px-3 py-2 font-medium text-slate-800">
+                        <div class="flex items-center justify-between">
+                            <span>Access Management</span>
+                            <span class="text-xs text-slate-500">3</span>
+                        </div>
+                    </summary>
+
+                    <div class="mt-1 space-y-1 px-2 pb-2">
+                        <a
+                            href="{{ route('admin.users.index') }}"
+                            class="{{ request()->routeIs('admin.users.*')
+                                ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                : 'block rounded-lg px-3 py-2 hover:bg-white' }}"
+                        >
+                            User Management
+                        </a>
+
+                        <a
+                            href="{{ route('admin.roles.index') }}"
+                            class="{{ request()->routeIs('admin.roles.*')
+                                ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                : 'block rounded-lg px-3 py-2 hover:bg-white' }}"
+                        >
+                            Role Management
+                        </a>
+
+                        <a
+                            href="{{ route('admin.permissions.index') }}"
+                            class="{{ request()->routeIs('admin.permissions.*')
+                                ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                : 'block rounded-lg px-3 py-2 hover:bg-white' }}"
+                        >
+                            Permission Management
+                        </a>
+                    </div>
+                </details>
             </nav>
         </aside>
 
