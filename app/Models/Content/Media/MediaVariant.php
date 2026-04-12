@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Content\Media;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +15,7 @@ class MediaVariant extends Model
         'disk',
         'directory',
         'filename',
+        'path',
         'extension',
         'mime_type',
         'file_size',
@@ -30,6 +31,8 @@ class MediaVariant extends Model
         'width' => 'integer',
         'height' => 'integer',
         'generated_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function media(): BelongsTo

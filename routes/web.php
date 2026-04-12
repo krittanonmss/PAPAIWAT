@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\Content\CategoryController;
+use App\Http\Controllers\Admin\Content\Media\MediaFolderController;
+use App\Http\Controllers\Admin\Content\Media\MediaController;
 
 Route::get('/', function () {
     return view('admin.auth.login');
@@ -138,6 +140,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             Route::delete('/{category}', [CategoryController::class, 'destroy'])
                 ->name('destroy');
+        });
+
+        Route::prefix('media-folders')->name('media-folders.')->group(function () {
+            Route::get('/', [MediaFolderController::class, 'index'])->name('index');
+            Route::get('/create', [MediaFolderController::class, 'create'])->name('create');
+            Route::post('/', [MediaFolderController::class, 'store'])->name('store');
+            Route::get('/{mediaFolder}/edit', [MediaFolderController::class, 'edit'])->name('edit');
+            Route::put('/{mediaFolder}', [MediaFolderController::class, 'update'])->name('update');
+            Route::delete('/{mediaFolder}', [MediaFolderController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('media')->name('media.')->group(function () {
+            Route::get('/', [MediaController::class, 'index'])->name('index');
+            Route::get('/create', [MediaController::class, 'create'])->name('create');
+            Route::post('/', [MediaController::class, 'store'])->name('store');
+            Route::delete('/{media}', [MediaController::class, 'destroy'])->name('destroy');
         });
     });
 });

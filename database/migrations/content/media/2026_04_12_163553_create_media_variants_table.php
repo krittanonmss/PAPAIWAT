@@ -11,12 +11,15 @@ return new class extends Migration
         Schema::create('media_variants', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('media_id')->constrained('media')->cascadeOnDelete();
+            $table->foreignId('media_id')
+                ->constrained('media')
+                ->cascadeOnDelete();
 
             $table->string('variant_name', 50); // thumbnail, small, medium, large, webp
             $table->string('disk', 50)->default('public');
             $table->string('directory')->nullable();
             $table->string('filename');
+            $table->string('path');
             $table->string('extension', 20)->nullable();
             $table->string('mime_type', 100);
 
@@ -29,9 +32,14 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['media_id', 'variant_name']);
-            $table->index('variant_name');
-            $table->index('processing_status');
+            $table->index('media_id', 'media_variants_media_id_idx');
+            $table->index('variant_name', 'media_variants_variant_name_idx');
+            $table->index('processing_status', 'media_variants_processing_status_idx');
+
+            $table->unique(
+                ['media_id', 'variant_name'],
+                'media_variants_media_variant_unique'
+            );
         });
     }
 

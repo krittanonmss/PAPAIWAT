@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Content\Media;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MediaTag extends Model
 {
@@ -14,12 +13,15 @@ class MediaTag extends Model
         'name',
         'slug',
         'description',
+        'status',
+        'sort_order',
     ];
 
-    public function tagItems(): HasMany
-    {
-        return $this->hasMany(MediaTagItem::class, 'media_tag_id');
-    }
+    protected $casts = [
+        'sort_order' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     public function media(): BelongsToMany
     {

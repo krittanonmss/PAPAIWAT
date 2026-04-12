@@ -13,7 +13,12 @@
             || request()->routeIs('admin.roles.*')
             || request()->routeIs('admin.permissions.*');
 
-        $isContentManagementActive = request()->routeIs('admin.categories.*');
+        $isCategoryManagementActive = request()->routeIs('admin.categories.*');
+
+        $isMediaManagementActive = request()->routeIs('admin.media-folders.*')
+            || request()->routeIs('admin.media.*');
+
+        $isContentManagementActive = $isCategoryManagementActive || $isMediaManagementActive;
     @endphp
 
     <div class="flex min-h-screen">
@@ -34,6 +39,55 @@
                 >
                     Dashboard
                 </a>
+                
+                <details class="rounded-lg border border-slate-200 bg-slate-50" {{ $isContentManagementActive ? 'open' : '' }}>
+                    <summary class="cursor-pointer list-none px-3 py-2 font-medium text-slate-800">
+                        <div class="flex items-center justify-between">
+                            <span>Content Management</span>
+                            <span class="text-xs text-slate-500">2</span>
+                        </div>
+                    </summary>
+
+                    <div class="mt-1 space-y-1 px-2 pb-2">
+                        <a
+                            href="{{ route('admin.categories.index') }}"
+                            class="{{ request()->routeIs('admin.categories.*')
+                                ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                : 'block rounded-lg px-3 py-2 hover:bg-white' }}"
+                        >
+                            Category Management
+                        </a>
+
+                        <details class="rounded-lg border border-slate-200 bg-white" {{ $isMediaManagementActive ? 'open' : '' }}>
+                            <summary class="cursor-pointer list-none px-3 py-2 font-medium text-slate-800">
+                                <div class="flex items-center justify-between">
+                                    <span>Media Management</span>
+                                    <span class="text-xs text-slate-500">2</span>
+                                </div>
+                            </summary>
+
+                            <div class="mt-1 space-y-1 px-2 pb-2">
+                                <a
+                                    href="{{ route('admin.media-folders.index') }}"
+                                    class="{{ request()->routeIs('admin.media-folders.*')
+                                        ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                        : 'block rounded-lg px-3 py-2 hover:bg-slate-50' }}"
+                                >
+                                    Media Folder Management
+                                </a>
+
+                                <a
+                                    href="{{ route('admin.media.index') }}"
+                                    class="{{ request()->routeIs('admin.media.*')
+                                        ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
+                                        : 'block rounded-lg px-3 py-2 hover:bg-slate-50' }}"
+                                >
+                                    Media Library
+                                </a>
+                            </div>
+                        </details>
+                    </div>
+                </details>
 
                 <details class="rounded-lg border border-slate-200 bg-slate-50" {{ $isAccessManagementActive ? 'open' : '' }}>
                     <summary class="cursor-pointer list-none px-3 py-2 font-medium text-slate-800">
@@ -73,25 +127,6 @@
                     </div>
                 </details>
 
-                <details class="rounded-lg border border-slate-200 bg-slate-50" {{ $isContentManagementActive ? 'open' : '' }}>
-                    <summary class="cursor-pointer list-none px-3 py-2 font-medium text-slate-800">
-                        <div class="flex items-center justify-between">
-                            <span>Content Management</span>
-                            <span class="text-xs text-slate-500">1</span>
-                        </div>
-                    </summary>
-
-                    <div class="mt-1 space-y-1 px-2 pb-2">
-                        <a
-                            href="{{ route('admin.categories.index') }}"
-                            class="{{ request()->routeIs('admin.categories.*')
-                                ? 'block rounded-lg bg-slate-900 px-3 py-2 text-white'
-                                : 'block rounded-lg px-3 py-2 hover:bg-white' }}"
-                        >
-                            Category Management
-                        </a>
-                    </div>
-                </details>
             </nav>
         </aside>
 
