@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\Content\CategoryController;
 
 Route::get('/', function () {
     return view('admin.auth.login');
@@ -116,6 +117,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             Route::delete('/{permission}', [PermissionController::class, 'destroy'])
                 ->middleware('admin.permission:permissions.delete')
+                ->name('destroy');
+        });
+
+        Route::prefix('categories')->name('categories.')->group(function () {
+            Route::get('/', [CategoryController::class, 'index'])
+                ->name('index');
+
+            Route::get('/create', [CategoryController::class, 'create'])
+                ->name('create');
+
+            Route::post('/', [CategoryController::class, 'store'])
+                ->name('store');
+
+            Route::get('/{category}/edit', [CategoryController::class, 'edit'])
+                ->name('edit');
+
+            Route::put('/{category}', [CategoryController::class, 'update'])
+                ->name('update');
+
+            Route::delete('/{category}', [CategoryController::class, 'destroy'])
                 ->name('destroy');
         });
     });

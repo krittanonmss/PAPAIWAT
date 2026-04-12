@@ -115,7 +115,7 @@
                                             href="{{ route('admin.permissions.edit', $permission) }}"
                                             class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                                         >
-                                            แก้ไข
+                                            Edit
                                         </a>
 
                                         <form
@@ -130,7 +130,7 @@
                                                 type="submit"
                                                 class="inline-flex items-center rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
                                             >
-                                                ลบ
+                                                Delete
                                             </button>
                                         </form>
                                     </div>

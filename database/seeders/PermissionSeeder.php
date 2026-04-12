@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Permission;
+use App\Models\Admin\Permission;
 use Illuminate\Database\Seeder;
 
 class PermissionSeeder extends Seeder
@@ -39,6 +39,55 @@ class PermissionSeeder extends Seeder
                 'key' => 'roles.permissions',
                 'group_key' => 'roles',
                 'description' => 'Assign permissions to roles',
+            ],
+            [
+                'name' => 'View Users',
+                'key' => 'users.view',
+                'group_key' => 'users',
+                'description' => 'View user list and detail',
+            ],
+            [
+                'name' => 'Create Users',
+                'key' => 'users.create',
+                'group_key' => 'users',
+                'description' => 'Create new users',
+            ],
+            [
+                'name' => 'Update Users',
+                'key' => 'users.update',
+                'group_key' => 'users',
+                'description' => 'Update existing users',
+            ],
+            [
+                'name' => 'Delete Users',
+                'key' => 'users.delete',
+                'group_key' => 'users',
+                'description' => 'Delete users',
+            ],
+
+            [
+                'name' => 'View Permissions',
+                'key' => 'permissions.view',
+                'group_key' => 'permissions',
+                'description' => 'View permission list and detail',
+            ],
+            [
+                'name' => 'Create Permissions',
+                'key' => 'permissions.create',
+                'group_key' => 'permissions',
+                'description' => 'Create new permissions',
+            ],
+            [
+                'name' => 'Update Permissions',
+                'key' => 'permissions.update',
+                'group_key' => 'permissions',
+                'description' => 'Update existing permissions',
+            ],
+            [
+                'name' => 'Delete Permissions',
+                'key' => 'permissions.delete',
+                'group_key' => 'permissions',
+                'description' => 'Delete permissions',
             ],
         ];
 
