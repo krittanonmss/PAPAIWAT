@@ -15,41 +15,80 @@ class MediaFolderController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = MediaFolder::query()
-            ->with(['parent'])
-            ->latest('id');
+        $baseQuery = MediaFolder::query();
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
 
-            $query->where(function ($q) use ($search) {
+            $baseQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%')
                     ->orWhere('slug', 'like', '%' . $search . '%');
             });
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->string('status')->toString());
+            $baseQuery->where('status', $request->string('status')->toString());
         }
 
         if ($request->filled('parent_id')) {
             if ($request->string('parent_id')->toString() === 'root') {
-                $query->whereNull('parent_id');
+                $baseQuery->whereNull('parent_id');
             } else {
-                $query->where('parent_id', (int) $request->input('parent_id'));
+                $baseQuery->where('parent_id', (int) $request->input('parent_id'));
             }
         }
 
-        $folders = $query->paginate(15)->withQueryString();
+        $folderIds = $baseQuery->pluck('id');
+
+        $folders = MediaFolder::query()
+            ->with([
+                'parent:id,name',
+                'children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.parent:id,name',
+                'children.children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.children.parent:id,name',
+                'children.children.children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.children.children.parent:id,name',
+            ])
+            ->when(
+                $folderIds->isNotEmpty(),
+                fn ($query) => $query->whereIn('id', $folderIds),
+                fn ($query) => $query->whereRaw('1 = 0')
+            )
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
         $parents = MediaFolder::query()
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $stats = [
+            'total' => MediaFolder::query()->count(),
+            'active' => MediaFolder::query()->where('status', 'active')->count(),
+            'inactive' => MediaFolder::query()->where('status', 'inactive')->count(),
+            'root' => MediaFolder::query()->whereNull('parent_id')->count(),
+        ];
+
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'status' => $request->string('status')->toString(),
+            'parent_id' => $request->string('parent_id')->toString(),
+        ];
+
         return view('admin.content.media.folders.index', [
             'title' => 'Media Folder Management',
             'folders' => $folders,
             'parents' => $parents,
+            'stats' => $stats,
+            'filters' => $filters,
         ]);
     }
 

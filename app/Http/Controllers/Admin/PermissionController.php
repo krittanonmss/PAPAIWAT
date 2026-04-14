@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\Admin\Permission\StorePermissionRequest;
 use App\Http\Requests\Admin\Permission\UpdatePermissionRequest;
 use App\Models\Admin\Permission;
@@ -51,11 +53,34 @@ class PermissionController extends Controller
             })
             ->orderBy('group_key')
             ->orderBy('key')
-            ->paginate(10)
-            ->withQueryString();
+            ->get();
+
+        $groupedPermissions = $permissions
+            ->groupBy('group_key')
+            ->map(function (Collection $items, string $groupKey) {
+                return [
+                    'group_key' => $groupKey,
+                    'items' => $items->values(),
+                ];
+            })
+            ->values();
+
+        $perPage = 5;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+
+        $paginatedGroups = new LengthAwarePaginator(
+            $groupedPermissions->slice(($currentPage - 1) * $perPage, $perPage)->values(),
+            $groupedPermissions->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]
+        );
 
         return view('admin.permission.index', [
-            'permissions' => $permissions,
+            'groupedPermissions' => $paginatedGroups,
             'groupOptions' => self::GROUP_OPTIONS,
             'search' => $search,
             'selectedGroupKey' => $groupKey,

@@ -48,9 +48,9 @@
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                     >
                         <option value="">ทั้งหมด</option>
-                        @foreach ($groupOptions as $groupKey => $groupLabel)
-                            <option value="{{ $groupKey }}" @selected($selectedGroupKey === $groupKey)>
-                                {{ $groupLabel }} ({{ $groupKey }})
+                        @foreach ($groupOptions as $optionKey => $groupLabel)
+                            <option value="{{ $optionKey }}" @selected($selectedGroupKey === $optionKey)>
+                                {{ $groupLabel }} ({{ $optionKey }})
                             </option>
                         @endforeach
                     </select>
@@ -74,82 +74,110 @@
             </form>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">ชื่อสิทธิ์</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">กลุ่ม</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Action</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Key</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">คำอธิบาย</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-600">จัดการ</th>
-                        </tr>
-                    </thead>
+        @if ($groupedPermissions->isEmpty())
+            <div class="rounded-xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-500 shadow-sm">
+                ไม่พบข้อมูล permission
+            </div>
+        @else
+            <div class="space-y-4">
+                @foreach ($groupedPermissions as $group)
+                    <details
+                        class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                        @if($selectedGroupKey === $group['group_key']) open @endif
+                    >
+                        <summary class="flex cursor-pointer items-center justify-between gap-4 px-4 py-4 marker:hidden">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                                    {{ $group['group_key'] }}
+                                </span>
 
-                    <tbody class="divide-y divide-gray-200 bg-white">
-                        @forelse ($permissions as $permission)
-                            @php
-                                $parts = explode('.', $permission->key, 2);
-                                $actionKey = $parts[1] ?? '-';
-                            @endphp
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">
+                                        {{ $groupOptions[$group['group_key']] ?? ucfirst($group['group_key']) }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ $group['items']->count() }} permission
+                                    </p>
+                                </div>
+                            </div>
 
-                            <tr>
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $permission->name }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-700">
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                        {{ $permission->group_key }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-700">
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-                                        {{ $actionKey }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ $permission->key }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ $permission->description ?: '-' }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="flex justify-end gap-2">
-                                        <a
-                                            href="{{ route('admin.permissions.edit', $permission) }}"
-                                            class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                        >
-                                            Edit
-                                        </a>
+                            <span class="text-xs text-gray-400">กดเพื่อซ่อน / แสดง</span>
+                        </summary>
 
-                                        <form
-                                            method="POST"
-                                            action="{{ route('admin.permissions.destroy', $permission) }}"
-                                            onsubmit="return confirm('ยืนยันการลบ permission นี้หรือไม่?');"
-                                        >
-                                            @csrf
-                                            @method('DELETE')
+                        <div class="border-t border-gray-200">
+                            <div class="divide-y divide-gray-200">
+                                @foreach ($group['items'] as $permission)
+                                    @php
+                                        $parts = explode('.', $permission->key, 2);
+                                        $actionKey = $parts[1] ?? '-';
+                                    @endphp
 
-                                            <button
-                                                type="submit"
-                                                class="inline-flex items-center rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                                            >
-                                                Delete
-                                            </button>
-                                        </form>
+                                    <div class="p-4">
+                                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                            <div class="min-w-0 flex-1 space-y-3">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <h3 class="text-sm font-semibold text-gray-900">
+                                                        {{ $permission->name }}
+                                                    </h3>
+
+                                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+                                                        {{ $actionKey }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="grid gap-3 md:grid-cols-2">
+                                                    <div>
+                                                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Key</p>
+                                                        <p class="mt-1 break-all text-sm text-gray-800">
+                                                            {{ $permission->key }}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">คำอธิบาย</p>
+                                                        <p class="mt-1 text-sm text-gray-700">
+                                                            {{ $permission->description ?: '-' }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex shrink-0 items-center gap-2">
+                                                <a
+                                                    href="{{ route('admin.permissions.edit', $permission) }}"
+                                                    class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    Edit
+                                                </a>
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('admin.permissions.destroy', $permission) }}"
+                                                    onsubmit="return confirm('ยืนยันการลบ permission นี้หรือไม่?');"
+                                                >
+                                                    @csrf
+                                                    @method('DELETE')
+
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex items-center rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">
-                                    ไม่พบข้อมูล permission
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                @endforeach
+                            </div>
+                        </div>
+                    </details>
+                @endforeach
             </div>
+        @endif
 
-            <div class="border-t border-gray-200 px-4 py-3">
-                {{ $permissions->links() }}
-            </div>
+        <div class="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            {{ $groupedPermissions->links() }}
         </div>
     </div>
 </x-layouts.admin>

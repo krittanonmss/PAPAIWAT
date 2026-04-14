@@ -156,6 +156,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/create', [MediaController::class, 'create'])->name('create');
             Route::post('/', [MediaController::class, 'store'])->name('store');
             Route::delete('/{media}', [MediaController::class, 'destroy'])->name('destroy');
+            Route::get('/media/{media}/edit', [MediaController::class, 'edit'])->name('admin.media.edit');
+            Route::put('/media/{media}', [MediaController::class, 'update'])->name('admin.media.update');
         });
     });
 });

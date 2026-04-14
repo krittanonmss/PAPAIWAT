@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 class MediaController extends Controller
 {
@@ -50,16 +51,48 @@ class MediaController extends Controller
         $mediaItems = $query->paginate(15)->withQueryString();
 
         $folders = MediaFolder::query()
+            ->with([
+                'parent:id,name',
+                'children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.parent:id,name',
+                'children.children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.children.parent:id,name',
+                'children.children.children' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('name');
+                },
+                'children.children.children.parent:id,name',
+            ])
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $folderOptions = MediaFolder::query()
             ->orderBy('name')
             ->get(['id', 'name']);
 
         $mediaTypes = ['image', 'video', 'audio', 'document', 'other'];
 
+        $mediaByFolderId = $mediaItems->getCollection()
+            ->filter(fn ($media) => $media->media_folder_id !== null)
+            ->groupBy('media_folder_id');
+
+        $ungroupedMedia = $mediaItems->getCollection()
+            ->filter(fn ($media) => $media->media_folder_id === null)
+            ->values();
+
         return view('admin.content.media.items.index', [
             'title' => 'Media Management',
             'mediaItems' => $mediaItems,
             'folders' => $folders,
+            'folderOptions' => $folderOptions,
             'mediaTypes' => $mediaTypes,
+            'mediaByFolderId' => $mediaByFolderId,
+            'ungroupedMedia' => $ungroupedMedia,
         ]);
     }
 
@@ -186,5 +219,29 @@ class MediaController extends Controller
         }
 
         return 'other';
+    }
+
+    public function edit(Media $media): View
+    {
+        $folders = MediaFolder::orderBy('name')->get(['id','name']);
+
+        return view('admin.content.media.items.edit', [
+            'title' => 'Edit Media',
+            'media' => $media,
+            'folders' => $folders,
+        ]);
+    }
+
+    public function update(Request $request, Media $media): RedirectResponse
+    {
+        $media->update([
+            'title' => $request->input('title'),
+            'alt_text' => $request->input('alt_text'),
+            'caption' => $request->input('caption'),
+            'description' => $request->input('description'),
+            'media_folder_id' => $request->input('media_folder_id'),
+        ]);
+
+        return back()->with('success', 'อัปเดตข้อมูลสำเร็จ');
     }
 }
