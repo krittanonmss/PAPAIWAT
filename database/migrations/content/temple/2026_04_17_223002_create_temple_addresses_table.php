@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('temple_addresses', function (Blueprint $table) {
@@ -13,29 +16,28 @@ return new class extends Migration
 
             $table->foreignId('temple_id')
                 ->constrained('temples')
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+                ->unique();
 
-            $table->string('address_line_1')->nullable();
-            $table->string('address_line_2')->nullable();
-            $table->string('subdistrict')->nullable();
-            $table->string('district')->nullable();
-            $table->string('province')->nullable();
+            $table->text('address_line')->nullable();
+            $table->string('province', 100)->nullable();
+            $table->string('district', 100)->nullable();
+            $table->string('subdistrict', 100)->nullable();
             $table->string('postal_code', 20)->nullable();
-            $table->string('country')->default('Thailand');
 
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
+
+            $table->string('google_place_id')->nullable();
             $table->string('google_maps_url')->nullable();
 
             $table->timestamps();
-
-            $table->unique('temple_id');
-            $table->index('province');
-            $table->index('district');
-            $table->index(['latitude', 'longitude']);
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('temple_addresses');

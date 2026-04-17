@@ -1,33 +1,37 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Content\Temple;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TempleAddress extends Model
 {
+    protected $table = 'temple_addresses';
+
     protected $fillable = [
         'temple_id',
-        'address_line_1',
-        'address_line_2',
-        'subdistrict',
-        'district',
+        'address_line',
         'province',
+        'district',
+        'subdistrict',
         'postal_code',
-        'country',
         'latitude',
         'longitude',
+        'google_place_id',
         'google_maps_url',
     ];
 
     protected $casts = [
+        'temple_id' => 'integer',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function temple(): BelongsTo
     {
-        return $this->belongsTo(Temple::class);
+        return $this->belongsTo(Temple::class, 'temple_id');
     }
 }

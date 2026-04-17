@@ -6,33 +6,37 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('temple_highlights', function (Blueprint $table) {
+        Schema::create('temple_facilities', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('temple_id')
                 ->constrained('temples')
                 ->cascadeOnDelete();
 
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->foreignId('media_id')
-                ->nullable()
-                ->constrained('media')
-                ->nullOnDelete();
+            $table->foreignId('facility_id')
+                ->constrained('facilities')
+                ->cascadeOnDelete();
 
+            $table->string('value')->nullable();
+            $table->string('note')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
 
             $table->timestamps();
 
-            $table->index('sort_order');
-            $table->index('media_id');
+            $table->unique(['temple_id', 'facility_id']);
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('temple_highlights');
+        Schema::dropIfExists('temple_facilities');
     }
 };

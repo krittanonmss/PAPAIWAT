@@ -6,27 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('temple_category_items', function (Blueprint $table) {
+        Schema::create('temple_highlights', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('temple_id')
                 ->constrained('temples')
                 ->cascadeOnDelete();
 
-            $table->foreignId('temple_category_id')
-                ->constrained('temple_categories')
-                ->cascadeOnDelete();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
 
             $table->timestamps();
-
-            $table->unique(['temple_id', 'temple_category_id']);
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('temple_category_items');
+        Schema::dropIfExists('temple_highlights');
     }
 };

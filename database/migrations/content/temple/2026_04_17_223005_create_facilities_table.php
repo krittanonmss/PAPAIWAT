@@ -6,27 +6,34 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('temple_categories', function (Blueprint $table) {
+        Schema::create('facilities', function (Blueprint $table) {
             $table->id();
 
             $table->string('name');
-            $table->string('key')->unique();
+            $table->string('slug')->unique();
+            $table->string('icon')->nullable();
+            $table->string('type_key', 50)->nullable();
+
             $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
+
             $table->unsignedInteger('sort_order')->default(0);
+            $table->string('status', 20)->default('active');
 
             $table->timestamps();
-
-            $table->index('name');
-            $table->index('is_active');
-            $table->index('sort_order');
+            $table->softDeletes();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('temple_categories');
+        Schema::dropIfExists('facilities');
     }
 };

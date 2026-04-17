@@ -6,29 +6,36 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('temple_visit_rules', function (Blueprint $table) {
+        Schema::create('temple_fees', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('temple_id')
                 ->constrained('temples')
                 ->cascadeOnDelete();
 
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('rule_type')->nullable();
+            $table->string('fee_type', 50);
+            $table->string('label', 150);
+            $table->decimal('amount', 10, 2)->nullable();
+            $table->string('currency', 10)->default('THB');
+
+            $table->string('note')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->unsignedInteger('sort_order')->default(0);
 
             $table->timestamps();
-
-            $table->index('rule_type');
-            $table->index('sort_order');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('temple_visit_rules');
+        Schema::dropIfExists('temple_fees');
     }
 };

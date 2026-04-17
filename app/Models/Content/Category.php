@@ -63,29 +63,16 @@ class Category extends Model
         return $this->belongsTo(Admin::class, 'updated_by_admin_id');
     }
 
-    // public function temples(): MorphToMany
-    // {
-    //     return $this->morphedByMany(
-    //         \App\Models\Temple\Temple::class,
-    //         'categorizable',
-    //         'categorizables'
-    //     )->withPivot([
-    //         'is_primary',
-    //         'sort_order',
-    //         'created_at',
-    //     ]);
-    // }
-
-    // public function articles(): MorphToMany
-    // {
-    //     return $this->morphedByMany(
-    //         \App\Models\Article\Article::class,
-    //         'categorizable',
-    //         'categorizables'
-    //     )->withPivot([
-    //         'is_primary',
-    //         'sort_order',
-    //         'created_at',
-    //     ]);
-    // }
+    public function contents(): MorphToMany
+    {
+        return $this->morphedByMany(
+            Content::class,
+            'categorizable',
+            'categorizables'
+        )->withPivot([
+            'is_primary',
+            'sort_order',
+            'created_at',
+        ]);
+    }
 }

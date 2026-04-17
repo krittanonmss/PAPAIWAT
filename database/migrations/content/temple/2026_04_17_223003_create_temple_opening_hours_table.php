@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('temple_opening_hours', function (Blueprint $table) {
@@ -16,18 +19,20 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->unsignedTinyInteger('day_of_week');
-            $table->boolean('is_closed')->default(false);
             $table->time('open_time')->nullable();
             $table->time('close_time')->nullable();
+            $table->boolean('is_closed')->default(false);
             $table->string('note')->nullable();
 
             $table->timestamps();
 
             $table->unique(['temple_id', 'day_of_week']);
-            $table->index('day_of_week');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('temple_opening_hours');
