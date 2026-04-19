@@ -14,35 +14,54 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div class="space-y-6 lg:col-span-1">
-                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-base font-semibold text-slate-900">Account Status</h2>
-                    <p class="mt-1 text-sm text-slate-600">Change user availability in the system.</p>
-
-                    <form method="POST" action="{{ route('admin.users.status.update', $admin) }}" class="mt-5">
-                        @csrf
-                        @method('PATCH')
-
-                        <div>
-                            <label for="status" class="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                            <select
-                                name="status"
-                                id="status"
-                                onchange="this.form.submit()"
-                                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-                            >
-                                <option value="active" @selected(old('status', $admin->status) === 'active')>Active</option>
-                                <option value="inactive" @selected(old('status', $admin->status) === 'inactive')>Inactive</option>
-                            </select>
-                            @error('status')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </form>
-                </div>
+        {{-- Account Status --}}
+        <div class="rounded-2xl border border-slate-200 bg-white p-6">
+            <div class="mb-5">
+                <h2 class="text-lg font-semibold text-slate-900">Account Status</h2>
+                <p class="text-sm text-slate-500">
+                    Change user availability in the system.
+                </p>
             </div>
 
+            <form action="{{ route('admin.users.status.update', $admin) }}" method="POST">
+                @csrf
+                @method('PATCH')
+
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Status
+                    </label>
+
+                    <select
+                        name="status"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                    >
+                        <option value="active"
+                            @selected(old('status', $admin->status) === 'active')>
+                            Active
+                        </option>
+
+                        <option value="inactive"
+                            @selected(old('status', $admin->status) === 'inactive')>
+                            Inactive
+                        </option>
+                    </select>
+
+                    @error('status')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button
+                        type="submit"
+                        class="inline-flex items-center rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                    >
+                        Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
             <div class="space-y-6 lg:col-span-2">
                 <form method="POST" action="{{ route('admin.users.update', $admin) }}" class="space-y-6">
                     @csrf

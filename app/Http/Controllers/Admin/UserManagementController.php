@@ -95,14 +95,12 @@ class UserManagementController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role_id' => ['required', 'exists:roles,id'],
-            'status' => ['required', 'in:active,inactive'],
             'phone' => ['nullable', 'string', 'max:50'],
         ]);
 
         $admin->username = $validated['username'];
         $admin->email = $validated['email'];
         $admin->role_id = $validated['role_id'];
-        $admin->status = $validated['status'];
         $admin->phone = $validated['phone'] ?? null;
 
         if (! empty($validated['password'])) {
