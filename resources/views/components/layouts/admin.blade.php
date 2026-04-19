@@ -19,14 +19,17 @@
         $isMediaManagementActive = request()->routeIs('admin.media-folders.*')
             || request()->routeIs('admin.media.*');
 
-        $isContentManagementActive = $isCategoryManagementActive || $isMediaManagementActive;
+        $isTempleManagementActive = request()->routeIs('admin.temples.*');
+
+        $isContentManagementActive = $isCategoryManagementActive
+            || $isMediaManagementActive
+            || $isTempleManagementActive;
 
         $admin = auth('admin')->user();
     @endphp
 
     <div x-data="{ sidebarOpen: true }" class="min-h-screen">
         <div class="flex min-h-screen">
-            {{-- Sidebar Overlay (mobile) --}}
             <div
                 x-show="sidebarOpen"
                 x-transition.opacity
@@ -34,7 +37,6 @@
                 @click="sidebarOpen = false"
             ></div>
 
-            {{-- Sidebar --}}
             <aside
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:border-r-0'"
                 class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white transition-all duration-300 md:static md:translate-x-0"
@@ -44,13 +46,11 @@
                     x-transition
                     class="flex h-full flex-col"
                 >
-                    {{-- Brand --}}
                     <div class="px-5 py-5">
                         <h1 class="text-2xl font-bold tracking-tight text-slate-900">PAPAIWAT</h1>
                         <p class="text-sm text-slate-500">Admin Panel</p>
                     </div>
 
-                    {{-- User Info --}}
                     <div class="px-4 pb-4">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
                             <p class="text-sm font-semibold text-slate-900">
@@ -62,7 +62,6 @@
                         </div>
                     </div>
 
-                    {{-- Menu --}}
                     <nav class="flex-1 space-y-2 overflow-y-auto px-4 pb-4 text-sm">
                         <a
                             href="{{ route('admin.dashboard') }}"
@@ -77,11 +76,20 @@
                             <summary class="cursor-pointer list-none px-4 py-3 font-medium text-slate-800">
                                 <div class="flex items-center justify-between">
                                     <span>Content Management</span>
-                                    <span class="text-xs text-slate-500">2</span>
+                                    <span class="text-xs text-slate-500">3</span>
                                 </div>
                             </summary>
 
                             <div class="space-y-1 px-2 pb-2">
+                                <a
+                                    href="{{ route('admin.temples.index') }}"
+                                    class="{{ request()->routeIs('admin.temples.*')
+                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
+                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
+                                >
+                                    Temple Management
+                                </a>
+
                                 <a
                                     href="{{ route('admin.categories.index') }}"
                                     class="{{ request()->routeIs('admin.categories.*')
@@ -161,7 +169,6 @@
                         </details>
                     </nav>
 
-                    {{-- Footer Logout --}}
                     <div class="mt-auto px-4 pb-4 pt-3">
                         <div class="border-t border-slate-200 pt-4">
                             <form method="POST" action="{{ route('admin.logout') }}">
@@ -178,12 +185,7 @@
                 </div>
             </aside>
 
-            {{-- Main --}}
-            <div
-                :class="sidebarOpen ? 'md:ml-0' : 'md:ml-0'"
-                class="flex min-h-screen min-w-0 flex-1 flex-col"
-            >
-                {{-- Header --}}
+            <div class="flex min-h-screen min-w-0 flex-1 flex-col">
                 <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
                     <div class="flex items-center justify-between px-5 py-4 md:px-6">
                         <div class="flex items-center gap-3">
@@ -211,7 +213,6 @@
                     </div>
                 </header>
 
-                {{-- Content --}}
                 <main class="flex-1 p-5 md:p-6">
                     {{ $slot }}
                 </main>

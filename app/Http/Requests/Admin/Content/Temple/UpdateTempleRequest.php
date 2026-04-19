@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Requests\Admin\Content\Temple;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateTempleRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_featured' => $this->boolean('is_featured'),
+            'is_popular' => $this->boolean('is_popular'),
+        ]);
+    }
+
+    public function rules(): array
+    {
+        $temple = $this->route('temple');
+        $contentId = $temple?->content_id;
+
+        return [
+            // content
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('contents', 'slug')
+                    ->ignore($contentId)
+                    ->where(fn ($query) => $query->where('content_type', 'temple')),
+            ],
+            'excerpt' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+            'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
+            'is_featured' => ['nullable', 'boolean'],
+            'is_popular' => ['nullable', 'boolean'],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string'],
+            'published_at' => ['nullable', 'date'],
+
+            // temple
+            'temple_type' => ['nullable', 'string', 'max:50'],
+            'sect' => ['nullable', 'string', 'max:100'],
+            'architecture_style' => ['nullable', 'string', 'max:150'],
+            'founded_year' => ['nullable', 'string', 'max:20'],
+            'history' => ['nullable', 'string'],
+            'dress_code' => ['nullable', 'string'],
+            'recommended_visit_duration_minutes' => ['nullable', 'integer', 'min:0'],
+
+            // address
+            'address.address_line' => ['nullable', 'string'],
+            'address.province' => ['nullable', 'string', 'max:100'],
+            'address.district' => ['nullable', 'string', 'max:100'],
+            'address.subdistrict' => ['nullable', 'string', 'max:100'],
+            'address.postal_code' => ['nullable', 'string', 'max:20'],
+            'address.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'address.longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'address.google_place_id' => ['nullable', 'string', 'max:255'],
+            'address.google_maps_url' => ['nullable', 'string', 'max:255'],
+
+            // categories
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'primary_category_id' => ['nullable', 'integer', 'exists:categories,id'],
+
+            // media
+            'cover_media_id' => ['nullable', 'integer', 'exists:media,id'],
+            'gallery_media_ids' => ['nullable', 'array'],
+            'gallery_media_ids.*' => ['integer', 'exists:media,id'],
+
+            // opening hours
+            'opening_hours' => ['nullable', 'array'],
+            'opening_hours.*.day_of_week' => ['required_with:opening_hours', 'integer', 'min:0', 'max:6'],
+            'opening_hours.*.open_time' => ['nullable', 'date_format:H:i'],
+            'opening_hours.*.close_time' => ['nullable', 'date_format:H:i'],
+            'opening_hours.*.is_closed' => ['nullable', 'boolean'],
+            'opening_hours.*.note' => ['nullable', 'string', 'max:255'],
+
+            // fees
+            'fees' => ['nullable', 'array'],
+            'fees.*.fee_type' => ['required_with:fees', 'string', 'max:50'],
+            'fees.*.label' => ['required_with:fees', 'string', 'max:150'],
+            'fees.*.amount' => ['nullable', 'numeric', 'min:0'],
+            'fees.*.currency' => ['nullable', 'string', 'max:10'],
+            'fees.*.note' => ['nullable', 'string', 'max:255'],
+            'fees.*.is_active' => ['nullable', 'boolean'],
+            'fees.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // facilities
+            'facility_items' => ['nullable', 'array'],
+            'facility_items.*.facility_id' => ['required_with:facility_items', 'integer', 'exists:facilities,id'],
+            'facility_items.*.value' => ['nullable', 'string', 'max:255'],
+            'facility_items.*.note' => ['nullable', 'string', 'max:255'],
+            'facility_items.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // highlights
+            'highlights' => ['nullable', 'array'],
+            'highlights.*.title' => ['required_with:highlights', 'string', 'max:255'],
+            'highlights.*.description' => ['nullable', 'string'],
+            'highlights.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // visit rules
+            'visit_rules' => ['nullable', 'array'],
+            'visit_rules.*.rule_text' => ['required_with:visit_rules', 'string'],
+            'visit_rules.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // travel infos
+            'travel_infos' => ['nullable', 'array'],
+            'travel_infos.*.travel_type' => ['required_with:travel_infos', 'string', 'max:50'],
+            'travel_infos.*.start_place' => ['nullable', 'string', 'max:255'],
+            'travel_infos.*.distance_km' => ['nullable', 'numeric', 'min:0'],
+            'travel_infos.*.duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'travel_infos.*.cost_estimate' => ['nullable', 'numeric', 'min:0'],
+            'travel_infos.*.note' => ['nullable', 'string'],
+            'travel_infos.*.is_active' => ['nullable', 'boolean'],
+            'travel_infos.*.sort_order' => ['nullable', 'integer', 'min:0'],
+
+            // nearby places
+            'nearby_places' => ['nullable', 'array'],
+            'nearby_places.*.nearby_temple_id' => [
+                'required_with:nearby_places',
+                'integer',
+                'exists:temples,id',
+                Rule::notIn([$temple?->id]),
+            ],
+            'nearby_places.*.relation_type' => ['nullable', 'string', 'max:50'],
+            'nearby_places.*.distance_km' => ['nullable', 'numeric', 'min:0'],
+            'nearby_places.*.duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'nearby_places.*.score' => ['nullable', 'numeric', 'min:0'],
+            'nearby_places.*.sort_order' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+}

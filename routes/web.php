@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\Content\CategoryController;
 use App\Http\Controllers\Admin\Content\Media\MediaFolderController;
 use App\Http\Controllers\Admin\Content\Media\MediaController;
+use App\Http\Controllers\Admin\Content\Temple\TempleController;
 
 Route::get('/', function () {
     return view('admin.auth.login');
@@ -28,7 +29,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('dashboard');
 
         Route::patch('/users/{admin}/status', [UserManagementController::class, 'updateStatus'])
-                ->name('users.status.update');
+            ->name('users.status.update');
 
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/', [UserManagementController::class, 'index'])
@@ -58,9 +59,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{admin}', [UserManagementController::class, 'destroy'])
                 ->middleware('admin.permission:users.delete')
                 ->name('destroy');
-
         });
-
 
         Route::prefix('roles')->name('roles.')->group(function () {
             Route::get('/', [RoleController::class, 'index'])
@@ -155,9 +154,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [MediaController::class, 'index'])->name('index');
             Route::get('/create', [MediaController::class, 'create'])->name('create');
             Route::post('/', [MediaController::class, 'store'])->name('store');
+            Route::get('/{media}/edit', [MediaController::class, 'edit'])->name('edit');
+            Route::put('/{media}', [MediaController::class, 'update'])->name('update');
             Route::delete('/{media}', [MediaController::class, 'destroy'])->name('destroy');
-            Route::get('/media/{media}/edit', [MediaController::class, 'edit'])->name('admin.media.edit');
-            Route::put('/media/{media}', [MediaController::class, 'update'])->name('admin.media.update');
+        });
+
+        Route::prefix('temples')->name('temples.')->group(function () {
+            Route::get('/', [TempleController::class, 'index'])
+                ->name('index');
+
+            Route::get('/create', [TempleController::class, 'create'])
+                ->name('create');
+
+            Route::post('/', [TempleController::class, 'store'])
+                ->name('store');
+
+            Route::get('/{temple}', [TempleController::class, 'show'])
+                ->name('show');
+
+            Route::get('/{temple}/edit', [TempleController::class, 'edit'])
+                ->name('edit');
+
+            Route::put('/{temple}', [TempleController::class, 'update'])
+                ->name('update');
+
+            Route::delete('/{temple}', [TempleController::class, 'destroy'])
+                ->name('destroy');
         });
     });
 });
