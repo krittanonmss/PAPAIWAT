@@ -13,6 +13,7 @@ class UpdatePermissionRequest extends FormRequest
         'permissions',
         'temples',
         'media',
+        'categories',
         'settings',
         'dashboard',
     ];

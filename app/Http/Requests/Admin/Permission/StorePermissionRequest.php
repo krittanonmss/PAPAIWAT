@@ -13,6 +13,7 @@ class StorePermissionRequest extends FormRequest
         'permissions',
         'temples',
         'media',
+        'categories',
         'settings',
         'dashboard',
     ];

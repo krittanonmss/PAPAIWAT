@@ -26,9 +26,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/logout', [AdminLoginController::class, 'destroy'])->name('logout');
 
         Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->middleware('admin.permission:dashboard.view')
             ->name('dashboard');
 
         Route::patch('/users/{admin}/status', [UserManagementController::class, 'updateStatus'])
+            ->middleware('admin.permission:users.update')
             ->name('users.status.update');
 
         Route::prefix('users')->name('users.')->group(function () {
@@ -123,62 +125,109 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::prefix('categories')->name('categories.')->group(function () {
             Route::get('/', [CategoryController::class, 'index'])
+                ->middleware('admin.permission:categories.view')
                 ->name('index');
 
             Route::get('/create', [CategoryController::class, 'create'])
+                ->middleware('admin.permission:categories.create')
                 ->name('create');
 
             Route::post('/', [CategoryController::class, 'store'])
+                ->middleware('admin.permission:categories.create')
                 ->name('store');
 
             Route::get('/{category}/edit', [CategoryController::class, 'edit'])
+                ->middleware('admin.permission:categories.update')
                 ->name('edit');
 
             Route::put('/{category}', [CategoryController::class, 'update'])
+                ->middleware('admin.permission:categories.update')
                 ->name('update');
 
             Route::delete('/{category}', [CategoryController::class, 'destroy'])
+                ->middleware('admin.permission:categories.delete')
                 ->name('destroy');
         });
 
         Route::prefix('media-folders')->name('media-folders.')->group(function () {
-            Route::get('/', [MediaFolderController::class, 'index'])->name('index');
-            Route::get('/create', [MediaFolderController::class, 'create'])->name('create');
-            Route::post('/', [MediaFolderController::class, 'store'])->name('store');
-            Route::get('/{mediaFolder}/edit', [MediaFolderController::class, 'edit'])->name('edit');
-            Route::put('/{mediaFolder}', [MediaFolderController::class, 'update'])->name('update');
-            Route::delete('/{mediaFolder}', [MediaFolderController::class, 'destroy'])->name('destroy');
+            Route::get('/', [MediaFolderController::class, 'index'])
+                ->middleware('admin.permission:media.view')
+                ->name('index');
+
+            Route::get('/create', [MediaFolderController::class, 'create'])
+                ->middleware('admin.permission:media.create')
+                ->name('create');
+
+            Route::post('/', [MediaFolderController::class, 'store'])
+                ->middleware('admin.permission:media.create')
+                ->name('store');
+
+            Route::get('/{mediaFolder}/edit', [MediaFolderController::class, 'edit'])
+                ->middleware('admin.permission:media.update')
+                ->name('edit');
+
+            Route::put('/{mediaFolder}', [MediaFolderController::class, 'update'])
+                ->middleware('admin.permission:media.update')
+                ->name('update');
+
+            Route::delete('/{mediaFolder}', [MediaFolderController::class, 'destroy'])
+                ->middleware('admin.permission:media.delete')
+                ->name('destroy');
         });
 
         Route::prefix('media')->name('media.')->group(function () {
-            Route::get('/', [MediaController::class, 'index'])->name('index');
-            Route::get('/create', [MediaController::class, 'create'])->name('create');
-            Route::post('/', [MediaController::class, 'store'])->name('store');
-            Route::get('/{media}/edit', [MediaController::class, 'edit'])->name('edit');
-            Route::put('/{media}', [MediaController::class, 'update'])->name('update');
-            Route::delete('/{media}', [MediaController::class, 'destroy'])->name('destroy');
+            Route::get('/', [MediaController::class, 'index'])
+                ->middleware('admin.permission:media.view')
+                ->name('index');
+
+            Route::get('/create', [MediaController::class, 'create'])
+                ->middleware('admin.permission:media.create')
+                ->name('create');
+
+            Route::post('/', [MediaController::class, 'store'])
+                ->middleware('admin.permission:media.create')
+                ->name('store');
+
+            Route::get('/{media}/edit', [MediaController::class, 'edit'])
+                ->middleware('admin.permission:media.update')
+                ->name('edit');
+
+            Route::put('/{media}', [MediaController::class, 'update'])
+                ->middleware('admin.permission:media.update')
+                ->name('update');
+
+            Route::delete('/{media}', [MediaController::class, 'destroy'])
+                ->middleware('admin.permission:media.delete')
+                ->name('destroy');
         });
 
         Route::prefix('temples')->name('temples.')->group(function () {
             Route::get('/', [TempleController::class, 'index'])
+                ->middleware('admin.permission:temples.view')
                 ->name('index');
 
             Route::get('/create', [TempleController::class, 'create'])
+                ->middleware('admin.permission:temples.create')
                 ->name('create');
 
             Route::post('/', [TempleController::class, 'store'])
+                ->middleware('admin.permission:temples.create')
                 ->name('store');
 
             Route::get('/{temple}', [TempleController::class, 'show'])
+                ->middleware('admin.permission:temples.view')
                 ->name('show');
 
             Route::get('/{temple}/edit', [TempleController::class, 'edit'])
+                ->middleware('admin.permission:temples.update')
                 ->name('edit');
 
             Route::put('/{temple}', [TempleController::class, 'update'])
+                ->middleware('admin.permission:temples.update')
                 ->name('update');
 
             Route::delete('/{temple}', [TempleController::class, 'destroy'])
+                ->middleware('admin.permission:temples.delete')
                 ->name('destroy');
         });
     });
