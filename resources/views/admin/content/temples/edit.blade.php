@@ -54,20 +54,14 @@
             @include('admin.content.temples._form')
 
             <div class="flex items-center justify-between">
-                <form
-                    method="POST"
-                    action="{{ route('admin.temples.destroy', $temple) }}"
-                    onsubmit="return confirm('ยืนยันการลบข้อมูลวัดนี้? ไม่สามารถกู้คืนได้')"
+                {{-- ปุ่ม Delete — ใช้ JS submit form แยกต่างหาก ไม่ซ้อน <form> ใน <form> --}}
+                <button
+                    type="button"
+                    onclick="if(confirm('ยืนยันการลบข้อมูลวัดนี้? ไม่สามารถกู้คืนได้')) document.getElementById('delete-temple-form').submit()"
+                    class="inline-flex items-center justify-center rounded-xl border border-rose-300 px-5 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
                 >
-                    @csrf
-                    @method('DELETE')
-                    <button
-                        type="submit"
-                        class="inline-flex items-center justify-center rounded-xl border border-rose-300 px-5 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
-                    >
-                        Delete Temple
-                    </button>
-                </form>
+                    Delete Temple
+                </button>
 
                 <div class="flex items-center gap-3">
                     <a
@@ -87,4 +81,15 @@
             </div>
         </form>
     </div>
+
+    {{-- Delete form อยู่นอก update form เพื่อหลีกเลี่ยง nested <form> --}}
+    <form
+        id="delete-temple-form"
+        method="POST"
+        action="{{ route('admin.temples.destroy', $temple) }}"
+        class="hidden"
+    >
+        @csrf
+        @method('DELETE')
+    </form>
 </x-layouts.admin>

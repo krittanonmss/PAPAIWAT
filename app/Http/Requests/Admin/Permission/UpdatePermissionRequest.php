@@ -12,6 +12,7 @@ class UpdatePermissionRequest extends FormRequest
         'roles',
         'permissions',
         'temples',
+        'articles',
         'media',
         'categories',
         'settings',

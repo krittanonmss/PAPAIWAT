@@ -21,9 +21,12 @@ class RolePermissionSeeder extends Seeder
 
         if ($adminRole) {
             $adminPermissionIds = Permission::whereIn('key', [
+                'dashboard.view',
                 'users.view',
-                'users.create',
-                'users.update',
+                'content.view',
+                'articles.view',
+                'categories.view',
+                'media.view',
             ])->pluck('id')->all();
 
             $adminRole->permissions()->sync($adminPermissionIds);

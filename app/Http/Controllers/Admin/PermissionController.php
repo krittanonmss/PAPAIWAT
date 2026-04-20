@@ -19,6 +19,7 @@ class PermissionController extends Controller
         'roles' => 'บทบาท',
         'permissions' => 'สิทธิ์',
         'temples' => 'วัด',
+        'articles' => 'บทความ',
         'categories' => 'หมวดหมู่',
         'media' => 'สื่อ',
         'settings' => 'ตั้งค่าระบบ',

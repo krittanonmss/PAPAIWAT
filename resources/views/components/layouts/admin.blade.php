@@ -10,22 +10,26 @@
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
     @php
+        $admin = auth('admin')->user();
+
         $isAccessManagementActive = request()->routeIs('admin.users.*')
             || request()->routeIs('admin.roles.*')
             || request()->routeIs('admin.permissions.*');
+
+        $isTempleManagementActive = request()->routeIs('admin.temples.*');
+
+        $isArticleManagementActive = request()->routeIs('admin.articles.*')
+            || request()->routeIs('admin.content.article-tags.*');
 
         $isCategoryManagementActive = request()->routeIs('admin.categories.*');
 
         $isMediaManagementActive = request()->routeIs('admin.media-folders.*')
             || request()->routeIs('admin.media.*');
 
-        $isTempleManagementActive = request()->routeIs('admin.temples.*');
-
-        $isContentManagementActive = $isCategoryManagementActive
-            || $isMediaManagementActive
-            || $isTempleManagementActive;
-
-        $admin = auth('admin')->user();
+        $isContentManagementActive = $isTempleManagementActive
+            || $isArticleManagementActive
+            || $isCategoryManagementActive
+            || $isMediaManagementActive;
     @endphp
 
     <div x-data="{ sidebarOpen: true }" class="min-h-screen">
@@ -62,7 +66,7 @@
                         </div>
                     </div>
 
-                    <nav class="flex-1 space-y-2 overflow-y-auto px-4 pb-4 text-sm">
+                    <nav class="flex-1 space-y-3 overflow-y-auto px-4 pb-4 text-sm">
                         <a
                             href="{{ route('admin.dashboard') }}"
                             class="{{ request()->routeIs('admin.dashboard')
@@ -76,28 +80,79 @@
                             <summary class="cursor-pointer list-none px-4 py-3 font-medium text-slate-800">
                                 <div class="flex items-center justify-between">
                                     <span>Content Management</span>
-                                    <span class="text-xs text-slate-500">3</span>
+                                    <span class="text-xs text-slate-500">4</span>
                                 </div>
                             </summary>
 
-                            <div class="space-y-1 px-2 pb-2">
-                                <a
-                                    href="{{ route('admin.temples.index') }}"
-                                    class="{{ request()->routeIs('admin.temples.*')
-                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
-                                >
-                                    Temple Management
-                                </a>
+                            <div class="space-y-2 px-2 pb-2">
+                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isTempleManagementActive ? 'open' : '' }}>
+                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                        <div class="flex items-center justify-between">
+                                            <span>Temple Management</span>
+                                            <span class="text-xs text-slate-500">1</span>
+                                        </div>
+                                    </summary>
 
-                                <a
-                                    href="{{ route('admin.categories.index') }}"
-                                    class="{{ request()->routeIs('admin.categories.*')
-                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
-                                >
-                                    Category Management
-                                </a>
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a
+                                            href="{{ route('admin.temples.index') }}"
+                                            class="{{ request()->routeIs('admin.temples.*')
+                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
+                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                        >
+                                            Temples
+                                        </a>
+                                    </div>
+                                </details>
+
+                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isArticleManagementActive ? 'open' : '' }}>
+                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                        <div class="flex items-center justify-between">
+                                            <span>Article Management</span>
+                                            <span class="text-xs text-slate-500">2</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a
+                                            href="{{ route('admin.articles.index') }}"
+                                            class="{{ request()->routeIs('admin.articles.*')
+                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
+                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                        >
+                                            Articles
+                                        </a>
+
+                                        <a
+                                            href="{{ route('admin.content.article-tags.index') }}"
+                                            class="{{ request()->routeIs('admin.content.article-tags.*')
+                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
+                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                        >
+                                            Article Tags
+                                        </a>
+                                    </div>
+                                </details>
+
+                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isCategoryManagementActive ? 'open' : '' }}>
+                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                        <div class="flex items-center justify-between">
+                                            <span>Category Management</span>
+                                            <span class="text-xs text-slate-500">1</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="space-y-1 px-2 pb-2">
+                                        <a
+                                            href="{{ route('admin.categories.index') }}"
+                                            class="{{ request()->routeIs('admin.categories.*')
+                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
+                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                        >
+                                            Categories
+                                        </a>
+                                    </div>
+                                </details>
 
                                 <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isMediaManagementActive ? 'open' : '' }}>
                                     <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
@@ -114,7 +169,7 @@
                                                 ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
                                                 : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
                                         >
-                                            Media Folder Management
+                                            Media Folders
                                         </a>
 
                                         <a
