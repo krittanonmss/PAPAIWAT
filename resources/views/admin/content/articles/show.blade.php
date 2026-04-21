@@ -18,14 +18,14 @@
 
             <div class="flex items-center gap-3">
                 <a
-                    href="{{ route('admin.articles.edit', $article) }}"
+                    href="{{ route('admin.content.articles.edit', $article) }}"
                     class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                     Edit
                 </a>
 
                 <a
-                    href="{{ route('admin.articles.index') }}"
+                    href="{{ route('admin.content.articles.index') }}"
                     class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                     Back

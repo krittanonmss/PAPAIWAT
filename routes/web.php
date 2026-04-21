@@ -233,7 +233,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 ->name('destroy');
         });
 
-        Route::prefix('articles')->name('articles.')->group(function () {
+        Route::prefix('articles')->name('content.articles.')->group(function () {
             Route::get('/', [ArticleController::class, 'index'])
                 ->middleware('admin.permission:articles.view')
                 ->name('index');

@@ -15,7 +15,7 @@
             </div>
 
             <a
-                href="{{ route('admin.articles.create') }}"
+                href="{{ route('admin.content.articles.create') }}"
                 class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
             >
                 Create Article
@@ -23,7 +23,7 @@
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white p-5">
-            <form method="GET" action="{{ route('admin.articles.index') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <form method="GET" action="{{ route('admin.content.articles.index') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div class="md:col-span-2 xl:col-span-2">
                     <label for="search" class="mb-1.5 block text-sm font-medium text-slate-700">
                         Search
@@ -189,7 +189,7 @@
                     </button>
 
                     <a
-                        href="{{ route('admin.articles.index') }}"
+                        href="{{ route('admin.content.articles.index') }}"
                         class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
                         Reset
@@ -316,14 +316,14 @@
                                 <td class="px-5 py-4">
                                     <div class="flex items-center justify-end gap-2">
                                         <a
-                                            href="{{ route('admin.articles.show', $article) }}"
+                                            href="{{ route('admin.content.articles.show', $article) }}"
                                             class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                         >
                                             View
                                         </a>
 
                                         <a
-                                            href="{{ route('admin.articles.edit', $article) }}"
+                                            href="{{ route('admin.content.articles.edit', $article) }}"
                                             class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                         >
                                             Edit
@@ -331,7 +331,7 @@
 
                                         <form
                                             method="POST"
-                                            action="{{ route('admin.articles.destroy', $article) }}"
+                                            action="{{ route('admin.content.articles.destroy', $article) }}"
                                             onsubmit="return confirm('Are you sure you want to delete this article?');"
                                         >
                                             @csrf

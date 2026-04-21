@@ -9,21 +9,21 @@
             </div>
 
             <a
-                href="{{ route('admin.articles.index') }}"
+                href="{{ route('admin.content.articles.index') }}"
                 class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
                 Back
             </a>
         </div>
 
-        <form method="POST" action="{{ route('admin.articles.store') }}" class="space-y-6">
+        <form method="POST" action="{{ route('admin.content.articles.store') }}" class="space-y-6">
             @csrf
 
             @include('admin.content.articles._form')
 
             <div class="flex items-center justify-end gap-3">
                 <a
-                    href="{{ route('admin.articles.index') }}"
+                    href="{{ route('admin.content.articles.index') }}"
                     class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                     Cancel

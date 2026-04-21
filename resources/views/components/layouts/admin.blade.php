@@ -115,8 +115,8 @@
 
                                     <div class="space-y-1 px-2 pb-2">
                                         <a
-                                            href="{{ route('admin.articles.index') }}"
-                                            class="{{ request()->routeIs('admin.articles.*')
+                                            href="{{ route('admin.content.articles.index') }}"
+                                            class="{{ request()->routeIs('admin.content.articles.*')
                                                 ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
                                                 : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
                                         >
