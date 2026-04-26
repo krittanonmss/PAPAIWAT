@@ -22,6 +22,8 @@ class PermissionController extends Controller
         'articles' => 'บทความ',
         'categories' => 'หมวดหมู่',
         'media' => 'สื่อ',
+        'menus' => 'เมนู',
+        'pages' => 'หน้าเพจ',
         'settings' => 'ตั้งค่าระบบ',
         'dashboard' => 'แดชบอร์ด',
     ];

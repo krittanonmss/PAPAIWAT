@@ -15,6 +15,8 @@ class StorePermissionRequest extends FormRequest
         'articles',
         'media',
         'categories',
+        'menus',
+        'pages',
         'settings',
         'dashboard',
     ];

@@ -249,6 +249,58 @@ class PermissionSeeder extends Seeder
                 'group_key' => 'settings',
                 'description' => 'Update system settings',
             ],
+
+            // menus
+            [
+                'name' => 'View Menus',
+                'key' => 'menus.view',
+                'group_key' => 'menus',
+                'description' => 'View menu list and detail',
+            ],
+            [
+                'name' => 'Create Menus',
+                'key' => 'menus.create',
+                'group_key' => 'menus',
+                'description' => 'Create new menus',
+            ],
+            [
+                'name' => 'Update Menus',
+                'key' => 'menus.update',
+                'group_key' => 'menus',
+                'description' => 'Update existing menus',
+            ],
+            [
+                'name' => 'Delete Menus',
+                'key' => 'menus.delete',
+                'group_key' => 'menus',
+                'description' => 'Delete menus',
+            ],
+            
+            // pages
+            [
+                'name' => 'View Pages',
+                'key' => 'pages.view',
+                'group_key' => 'pages',
+                'description' => 'View page list and detail',
+            ],
+            [
+                'name' => 'Create Pages',
+                'key' => 'pages.create',
+                'group_key' => 'pages',
+                'description' => 'Create new pages',
+            ],
+            [
+                'name' => 'Update Pages',
+                'key' => 'pages.update',
+                'group_key' => 'pages',
+                'description' => 'Update existing pages',
+            ],
+            [
+                'name' => 'Delete Pages',
+                'key' => 'pages.delete',
+                'group_key' => 'pages',
+                'description' => 'Delete pages',
+            ],  
         ];
 
         foreach ($permissions as $permission) {

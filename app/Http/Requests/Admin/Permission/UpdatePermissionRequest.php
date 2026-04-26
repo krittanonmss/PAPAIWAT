@@ -15,6 +15,8 @@ class UpdatePermissionRequest extends FormRequest
         'articles',
         'media',
         'categories',
+        'menus',
+        'pages',
         'settings',
         'dashboard',
     ];
