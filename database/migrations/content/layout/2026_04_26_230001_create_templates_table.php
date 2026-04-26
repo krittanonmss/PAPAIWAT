@@ -12,11 +12,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('key')->unique();
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
             $table->string('view_path');
-            $table->string('status')->default('active');
-            $table->boolean('is_default')->default(false);
-            $table->unsignedInteger('sort_order')->default(0);
+            $table->string('status')->default('active')->index();
+            $table->boolean('is_default')->default(false)->index();
+            $table->unsignedInteger('sort_order')->default(0)->index();
             $table->timestamps();
             $table->softDeletes();
 
