@@ -14,7 +14,11 @@ use App\Http\Controllers\Admin\Content\Temple\TempleController;
 use App\Http\Controllers\Admin\Content\Article\ArticleController;
 use App\Http\Controllers\Admin\Content\Article\ArticleTagController;
 
-Route::get('/', function () {
+use App\Http\Controllers\Frontend\HomeController;
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/admin/login', function () {
     return view('admin.auth.login');
 });
 
