@@ -70,7 +70,7 @@
                         <div>
                             <dt class="text-slate-500">Homepage</dt>
                             <dd class="mt-1">
-                                @if($page->is_homepage)
+                                @if ($page->is_homepage)
                                     <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
                                         Homepage
                                     </span>
@@ -83,11 +83,11 @@
                         <div>
                             <dt class="text-slate-500">Status</dt>
                             <dd class="mt-1">
-                                @if($page->status === 'published')
+                                @if ($page->status === 'published')
                                     <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                                         Published
                                     </span>
-                                @elseif($page->status === 'draft')
+                                @elseif ($page->status === 'draft')
                                     <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
                                         Draft
                                     </span>
@@ -144,12 +144,10 @@
                 </div>
 
                 <div class="rounded-2xl border border-red-200 bg-red-50 p-6">
-                    <div>
-                        <h2 class="text-base font-semibold text-red-900">Danger Zone</h2>
-                        <p class="mt-1 text-sm text-red-700">
-                            ลบหน้าเว็บไซต์นี้ออกจากระบบ
-                        </p>
-                    </div>
+                    <h2 class="text-base font-semibold text-red-900">Danger Zone</h2>
+                    <p class="mt-1 text-sm text-red-700">
+                        ลบหน้าเว็บไซต์นี้ออกจากระบบ
+                    </p>
 
                     <form
                         method="POST"
@@ -192,7 +190,7 @@
                         <div>
                             <h2 class="text-base font-semibold text-slate-900">Page Sections</h2>
                             <p class="mt-1 text-sm text-slate-500">
-                                โครงสร้าง sections ที่ใช้ประกอบหน้านี้
+                                Admin จะแสดงทุก section รวมถึง section ที่ซ่อนไว้
                             </p>
                         </div>
 
@@ -218,10 +216,10 @@
                             </thead>
 
                             <tbody class="divide-y divide-slate-100">
-                                @forelse($page->sections as $section)
-                                    <tr class="hover:bg-slate-50">
+                                @forelse ($page->sections as $section)
+                                    <tr class="{{ $section->is_visible && $section->status === 'active' ? 'hover:bg-slate-50' : 'bg-slate-50/60 text-slate-500' }}">
                                         <td class="px-5 py-4">
-                                            <div class="font-medium text-slate-900">
+                                            <div class="font-medium {{ $section->is_visible && $section->status === 'active' ? 'text-slate-900' : 'text-slate-500' }}">
                                                 {{ $section->name }}
                                             </div>
                                             <div class="mt-1 text-xs text-slate-500">
@@ -240,7 +238,7 @@
                                         </td>
 
                                         <td class="px-5 py-4">
-                                            @if($section->is_visible)
+                                            @if ($section->is_visible)
                                                 <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                                                     Visible
                                                 </span>
@@ -252,7 +250,7 @@
                                         </td>
 
                                         <td class="px-5 py-4">
-                                            @if($section->status === 'active')
+                                            @if ($section->status === 'active')
                                                 <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                                                     Active
                                                 </span>
@@ -264,23 +262,36 @@
                                         </td>
 
                                         <td class="px-5 py-4 text-right">
-                                            <a
-                                                href="{{ route('admin.content.pages.sections.edit', [$page, $section]) }}"
-                                                class="text-sm font-medium text-slate-700 hover:text-slate-950"
-                                            >
-                                                Edit
-                                            </a>
+                                            <div class="flex justify-end gap-2">
+                                                <a
+                                                    href="{{ route('admin.content.pages.sections.edit', [$page, $section]) }}"
+                                                    class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    Edit
+                                                </a>
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('admin.content.pages.sections.destroy', [$page, $section]) }}"
+                                                    onsubmit="return confirm('ยืนยันการลบ section นี้?')"
+                                                >
+                                                    @csrf
+                                                    @method('DELETE')
+
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="px-5 py-10 text-center">
-                                            <div class="text-sm font-medium text-slate-700">
-                                                ยังไม่มี section
-                                            </div>
-                                            <p class="mt-1 text-sm text-slate-500">
-                                                เพิ่ม section แรกเพื่อเริ่มประกอบหน้าเว็บไซต์
-                                            </p>
+                                        <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500">
+                                            ยังไม่มี section ในหน้านี้
                                         </td>
                                     </tr>
                                 @endforelse

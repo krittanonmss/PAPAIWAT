@@ -2,15 +2,12 @@
 
 namespace App\Models\Content\Layout;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PageSection extends Model
 {
-    use SoftDeletes;
-
     protected $fillable = [
         'page_id',
         'name',
@@ -35,12 +32,7 @@ class PageSection extends Model
         return $this->belongsTo(Page::class);
     }
 
-    public function dataSource(): HasOne
-    {
-        return $this->hasOne(PageSectionDataSource::class);
-    }
-
-    public function scopeVisible($query)
+    public function scopeVisible(Builder $query): Builder
     {
         return $query
             ->where('status', 'active')

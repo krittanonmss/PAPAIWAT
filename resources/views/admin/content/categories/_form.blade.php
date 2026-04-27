@@ -3,246 +3,237 @@
 @endphp
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    {{-- Left --}}
     <div class="space-y-6">
+        <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+            <h2 class="text-base font-semibold text-white">ข้อมูลหลัก</h2>
+            <p class="mt-1 text-sm text-slate-400">กำหนดชื่อ ประเภท และโครงสร้างของหมวดหมู่</p>
 
-        {{-- Parent --}}
-        <div>
-            <label for="parent_id" class="mb-2 block text-sm font-medium text-slate-700">
-                หมวดหมู่แม่
-            </label>
+            <div class="mt-5 space-y-5">
+                {{-- Parent --}}
+                <div>
+                    <label for="parent_id" class="mb-2 block text-sm font-medium text-slate-300">
+                        หมวดหมู่แม่
+                    </label>
 
-            <select
-                id="parent_id"
-                name="parent_id"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >
-                <option value="">-- ไม่มี (Root Category) --</option>
-                @foreach ($parents as $parent)
-                    <option
-                        value="{{ $parent->id }}"
-                        @selected(old('parent_id', $category?->parent_id) == $parent->id)
+                    <select
+                        id="parent_id"
+                        name="parent_id"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
-                        {{ $parent->name }} ({{ $parent->type_key }})
-                    </option>
-                @endforeach
-            </select>
+                        <option value="">-- ไม่มี (Root Category) --</option>
+                        @foreach ($parents as $parent)
+                            <option
+                                value="{{ $parent->id }}"
+                                @selected(old('parent_id', $category?->parent_id) == $parent->id)
+                            >
+                                {{ $parent->name }} ({{ $parent->type_key }})
+                            </option>
+                        @endforeach
+                    </select>
 
-            <p class="mt-1 text-xs text-slate-500">
-                ใช้จัดโครงสร้างหมวดหมู่แบบลำดับชั้น เช่น จังหวัด → วัด
-            </p>
+                    <p class="mt-1 text-xs text-slate-500">
+                        ใช้จัดโครงสร้างหมวดหมู่แบบลำดับชั้น เช่น จังหวัด → วัด
+                    </p>
 
-            @error('parent_id')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+                    @error('parent_id')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
 
-        {{-- Name --}}
-        <div>
-            <label for="name" class="mb-2 block text-sm font-medium text-slate-700">
-                ชื่อหมวดหมู่
-            </label>
+                {{-- Name --}}
+                <div>
+                    <label for="name" class="mb-2 block text-sm font-medium text-slate-300">
+                        ชื่อหมวดหมู่ <span class="text-red-400">*</span>
+                    </label>
 
-            <input
-                type="text"
-                id="name"
-                name="name"
-                value="{{ old('name', $category?->name) }}"
-                placeholder="เช่น วัดในกรุงเทพ, ธรรมะฝึกจิต"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-                required
-            >
-
-            <p class="mt-1 text-xs text-slate-500">
-                ชื่อที่จะแสดงให้ผู้ใช้งานเห็น
-            </p>
-
-            @error('name')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- Slug Preview --}}
-        <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">
-                URL (Slug)
-            </label>
-
-            <input
-                type="text"
-                id="slug_preview"
-                class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 focus:outline-none"
-                readonly
-            >
-
-            <p class="mt-1 text-xs text-slate-500">
-                ระบบจะสร้าง URL อัตโนมัติจากชื่อหมวดหมู่ เช่น <code>wat-bangkok</code>
-            </p>
-        </div>
-
-        {{-- Type --}}
-        <div>
-            <label for="type_key" class="mb-2 block text-sm font-medium text-slate-700">
-                ประเภทหมวดหมู่
-            </label>
-
-            <select
-                id="type_key"
-                name="type_key"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-                required
-            >
-                <option value="">-- เลือกประเภท --</option>
-                @foreach ($types as $type)
-                    <option
-                        value="{{ $type }}"
-                        @selected(old('type_key', $category?->type_key) === $type)
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ old('name', $category?->name) }}"
+                        placeholder="เช่น วัดในกรุงเทพ, ธรรมะฝึกจิต"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        required
                     >
-                        {{ ucfirst($type) }}
-                    </option>
-                @endforeach
-            </select>
 
-            <p class="mt-1 text-xs text-slate-500">
-                ใช้กำหนดว่าหมวดหมู่นี้ใช้กับเนื้อหาประเภทอะไร เช่น วัด หรือ บทความ
-            </p>
+                    <p class="mt-1 text-xs text-slate-500">
+                        ชื่อที่จะแสดงให้ผู้ใช้งานเห็น
+                    </p>
 
-            @error('type_key')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+                    @error('name')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Slug --}}
+                <div>
+                    <label for="slug_preview" class="mb-2 block text-sm font-medium text-slate-300">
+                        URL (Slug)
+                    </label>
+
+                    <input
+                        type="text"
+                        id="slug_preview"
+                        class="w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2.5 text-sm text-slate-400 outline-none"
+                        readonly
+                    >
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        ระบบจะแสดงตัวอย่าง URL จากชื่อหมวดหมู่
+                    </p>
+                </div>
+
+                {{-- Type --}}
+                <div>
+                    <label for="type_key" class="mb-2 block text-sm font-medium text-slate-300">
+                        ประเภทหมวดหมู่ <span class="text-red-400">*</span>
+                    </label>
+
+                    <select
+                        id="type_key"
+                        name="type_key"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        required
+                    >
+                        <option value="">-- เลือกประเภท --</option>
+                        @foreach ($types as $type)
+                            <option
+                                value="{{ $type }}"
+                                @selected(old('type_key', $category?->type_key) === $type)
+                            >
+                                {{ ucfirst($type) }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @error('type_key')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
         </div>
 
-        {{-- Sort --}}
-        <div>
-            <label for="sort_order" class="mb-2 block text-sm font-medium text-slate-700">
-                ลำดับการแสดงผล
-            </label>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+            <h2 class="text-base font-semibold text-white">การแสดงผล</h2>
+            <p class="mt-1 text-sm text-slate-400">ควบคุมลำดับ สถานะ และการแนะนำหมวดหมู่</p>
 
-            <input
-                type="number"
-                id="sort_order"
-                name="sort_order"
-                min="0"
-                value="{{ old('sort_order', $category?->sort_order ?? 0) }}"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >
+            <div class="mt-5 space-y-5">
+                {{-- Sort --}}
+                <div>
+                    <label for="sort_order" class="mb-2 block text-sm font-medium text-slate-300">
+                        ลำดับการแสดงผล
+                    </label>
 
-            <p class="mt-1 text-xs text-slate-500">
-                ค่าน้อยจะแสดงก่อน (ใช้จัดเรียงหมวดหมู่)
-            </p>
+                    <input
+                        type="number"
+                        id="sort_order"
+                        name="sort_order"
+                        value="{{ old('sort_order', $category?->sort_order ?? 0) }}"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                </div>
 
-            @error('sort_order')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+                {{-- Status --}}
+                <div>
+                    <label for="status" class="mb-2 block text-sm font-medium text-slate-300">
+                        สถานะ
+                    </label>
 
-        {{-- Status --}}
-        <div>
-            <label for="status" class="mb-2 block text-sm font-medium text-slate-700">
-                สถานะ
-            </label>
+                    <select
+                        id="status"
+                        name="status"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="active" @selected(old('status', $category?->status ?? 'active') === 'active')>
+                            เปิดใช้งาน
+                        </option>
+                        <option value="inactive" @selected(old('status', $category?->status) === 'inactive')>
+                            ปิดใช้งาน
+                        </option>
+                    </select>
+                </div>
 
-            <select
-                id="status"
-                name="status"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >
-                <option value="active" @selected(old('status', $category?->status ?? 'active') === 'active')>
-                    เปิดใช้งาน
-                </option>
-                <option value="inactive" @selected(old('status', $category?->status) === 'inactive')>
-                    ปิดใช้งาน
-                </option>
-            </select>
+                {{-- Featured --}}
+                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-slate-900/70 p-4 hover:bg-slate-900">
+                    <input type="hidden" name="is_featured" value="0">
 
-            <p class="mt-1 text-xs text-slate-500">
-                หมวดหมู่ที่ปิดใช้งานจะไม่ถูกนำไปแสดงในระบบ
-            </p>
+                    <input
+                        type="checkbox"
+                        name="is_featured"
+                        value="1"
+                        @checked(old('is_featured', $category?->is_featured))
+                        class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-900 text-blue-500 focus:ring-blue-500/30"
+                    >
 
-            @error('status')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- Featured --}}
-        <div class="flex items-start gap-2">
-            <input type="hidden" name="is_featured" value="0">
-
-            <input
-                type="checkbox"
-                id="is_featured"
-                name="is_featured"
-                value="1"
-                @checked(old('is_featured', $category?->is_featured))
-                class="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-            >
-
-            <div>
-                <label for="is_featured" class="text-sm font-medium text-slate-700">
-                    หมวดหมู่แนะนำ
+                    <span>
+                        <span class="block text-sm font-medium text-slate-200">
+                            หมวดหมู่แนะนำ
+                        </span>
+                        <span class="mt-1 block text-xs text-slate-500">
+                            ใช้สำหรับ highlight หรือแสดงในพื้นที่แนะนำของเว็บไซต์
+                        </span>
+                    </span>
                 </label>
-                <p class="text-xs text-slate-500">
-                    ใช้สำหรับ highlight หรือแสดงในตำแหน่งพิเศษ
-                </p>
             </div>
         </div>
     </div>
 
     {{-- Right --}}
     <div class="space-y-6">
+        <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+            <h2 class="text-base font-semibold text-white">รายละเอียด</h2>
+            <p class="mt-1 text-sm text-slate-400">คำอธิบายสำหรับผู้ดูแลและหน้าเว็บไซต์</p>
 
-        <div>
-            <label for="description" class="mb-2 block text-sm font-medium text-slate-700">
-                คำอธิบาย
-            </label>
+            <div class="mt-5">
+                <label for="description" class="mb-2 block text-sm font-medium text-slate-300">
+                    คำอธิบาย
+                </label>
 
-            <textarea
-                id="description"
-                name="description"
-                rows="5"
-                placeholder="อธิบายเกี่ยวกับหมวดหมู่นี้ (ไม่บังคับ)"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >{{ old('description', $category?->description) }}</textarea>
-
-            @error('description')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="7"
+                    placeholder="อธิบายรายละเอียดของหมวดหมู่นี้"
+                    class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                >{{ old('description', $category?->description) }}</textarea>
+            </div>
         </div>
 
-        <div>
-            <label for="meta_title" class="mb-2 block text-sm font-medium text-slate-700">
-                Meta Title
-            </label>
+        <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+            <h2 class="text-base font-semibold text-white">SEO</h2>
+            <p class="mt-1 text-sm text-slate-400">ข้อมูลสำหรับการแสดงผลบน Search Engine</p>
 
-            <input
-                type="text"
-                id="meta_title"
-                name="meta_title"
-                placeholder="สำหรับ SEO (ไม่บังคับ)"
-                value="{{ old('meta_title', $category?->meta_title) }}"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >
+            <div class="mt-5 space-y-5">
+                <div>
+                    <label for="meta_title" class="mb-2 block text-sm font-medium text-slate-300">
+                        Meta Title
+                    </label>
 
-            @error('meta_title')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
+                    <input
+                        type="text"
+                        id="meta_title"
+                        name="meta_title"
+                        value="{{ old('meta_title', $category?->meta_title) }}"
+                        placeholder="หัวข้อสำหรับ SEO"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                </div>
 
-        <div>
-            <label for="meta_description" class="mb-2 block text-sm font-medium text-slate-700">
-                Meta Description
-            </label>
+                <div>
+                    <label for="meta_description" class="mb-2 block text-sm font-medium text-slate-300">
+                        Meta Description
+                    </label>
 
-            <textarea
-                id="meta_description"
-                name="meta_description"
-                rows="5"
-                placeholder="คำอธิบายสำหรับ SEO (ไม่บังคับ)"
-                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            >{{ old('meta_description', $category?->meta_description) }}</textarea>
-
-            @error('meta_description')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+                    <textarea
+                        id="meta_description"
+                        name="meta_description"
+                        rows="6"
+                        placeholder="คำอธิบายสั้นสำหรับ SEO"
+                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >{{ old('meta_description', $category?->meta_description) }}</textarea>
+                </div>
+            </div>
         </div>
     </div>
 </div>

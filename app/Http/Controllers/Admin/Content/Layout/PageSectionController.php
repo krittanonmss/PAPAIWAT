@@ -30,8 +30,12 @@ class PageSectionController extends Controller
         ]);
 
         $validated['page_id'] = $page->id;
+
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
         $validated['content'] = $this->decodeJson($validated['content'] ?? null);
+
+        unset($validated['settings'], $validated['content']);
+
         $validated['is_visible'] = $request->boolean('is_visible', true);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
@@ -66,6 +70,9 @@ class PageSectionController extends Controller
 
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
         $validated['content'] = $this->decodeJson($validated['content'] ?? null);
+
+        unset($validated['settings'], $validated['content']);
+
         $validated['is_visible'] = $request->boolean('is_visible', true);
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
@@ -89,7 +96,7 @@ class PageSectionController extends Controller
 
     private function decodeJson(?string $value): ?array
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 

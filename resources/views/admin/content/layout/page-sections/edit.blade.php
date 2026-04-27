@@ -16,15 +16,17 @@
             </a>
         </div>
 
-        <form
-            method="POST"
-            action="{{ route('admin.content.pages.sections.update', [$page, $section]) }}"
-            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-            @csrf
-            @method('PUT')
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <form
+                id="update-section-form"
+                method="POST"
+                action="{{ route('admin.content.pages.sections.update', [$page, $section]) }}"
+            >
+                @csrf
+                @method('PUT')
 
-            @include('admin.content.layout.page-sections._form', ['section' => $section])
+                @include('admin.content.layout.page-sections._form', ['section' => $section])
+            </form>
 
             <div class="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <form
@@ -53,12 +55,13 @@
 
                     <button
                         type="submit"
+                        form="update-section-form"
                         class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
                     >
                         Update Section
                     </button>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 </x-layouts.admin>

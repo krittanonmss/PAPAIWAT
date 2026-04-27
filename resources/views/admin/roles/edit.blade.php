@@ -1,45 +1,60 @@
-<x-layouts.admin title="Edit Role">
-    <div class="mx-auto max-w-3xl space-y-6">
+<x-layouts.admin title="แก้ไขบทบาท">
+    <div class="mx-auto max-w-3xl space-y-6 text-white">
+
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Edit Role</h1>
-            <p class="text-sm text-slate-600">Update role information.</p>
+            <h1 class="text-2xl font-bold text-white">แก้ไขบทบาท</h1>
+            <p class="text-sm text-slate-400">อัปเดตข้อมูลบทบาทผู้ใช้งาน</p>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
             <form method="POST" action="{{ route('admin.roles.update', $role) }}" class="space-y-5">
                 @csrf
                 @method('PUT')
 
                 <div>
-                    <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Role Name</label>
-                    <input type="text" name="name" id="name" value="{{ old('name', $role->name) }}"
-                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">
+                    <label for="name" class="mb-1 block text-sm font-medium text-slate-400">ชื่อบทบาท</label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        value="{{ old('name', $role->name) }}"
+                        class="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    >
                     @error('name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div>
-                    <label for="description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>
-                    <textarea name="description" id="description" rows="4"
-                              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none">{{ old('description', $role->description) }}</textarea>
+                    <label for="description" class="mb-1 block text-sm font-medium text-slate-400">รายละเอียด</label>
+                    <textarea
+                        name="description"
+                        id="description"
+                        rows="4"
+                        class="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    >{{ old('description', $role->description) }}</textarea>
                     @error('description')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <button type="submit"
-                            class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                        Update
+                    <button
+                        type="submit"
+                        class="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                    >
+                        บันทึก
                     </button>
 
-                    <a href="{{ route('admin.roles.index') }}"
-                       class="inline-flex items-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        Cancel
+                    <a
+                        href="{{ route('admin.roles.index') }}"
+                        class="inline-flex items-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
+                    >
+                        ยกเลิก
                     </a>
                 </div>
             </form>
         </div>
+
     </div>
 </x-layouts.admin>

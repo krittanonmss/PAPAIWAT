@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
+<body class="min-h-screen bg-slate-950 text-white">
     @php
         $admin = auth('admin')->user();
 
@@ -18,7 +18,7 @@
 
         $isTempleManagementActive = request()->routeIs('admin.temples.*');
 
-        $isArticleManagementActive = request()->routeIs('admin.articles.*')
+        $isArticleManagementActive = request()->routeIs('admin.content.articles.*')
             || request()->routeIs('admin.content.article-tags.*');
 
         $isCategoryManagementActive = request()->routeIs('admin.categories.*');
@@ -26,10 +26,15 @@
         $isMediaManagementActive = request()->routeIs('admin.media-folders.*')
             || request()->routeIs('admin.media.*');
 
+        $isLayoutManagementActive = request()->routeIs('admin.content.menus.*')
+            || request()->routeIs('admin.content.pages.*')
+            || request()->routeIs('admin.content.templates.*');
+
         $isContentManagementActive = $isTempleManagementActive
             || $isArticleManagementActive
             || $isCategoryManagementActive
-            || $isMediaManagementActive;
+            || $isMediaManagementActive
+            || $isLayoutManagementActive;
     @endphp
 
     <div x-data="{ sidebarOpen: true }" class="min-h-screen">
@@ -37,262 +42,302 @@
             <div
                 x-show="sidebarOpen"
                 x-transition.opacity
-                class="fixed inset-0 z-30 bg-slate-900/30 md:hidden"
+                class="fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm md:hidden"
                 @click="sidebarOpen = false"
             ></div>
 
             <aside
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:border-r-0'"
-                class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white transition-all duration-300 md:static md:translate-x-0"
+                class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-hidden border-r border-white/10 bg-[#0b1220] shadow-2xl shadow-slate-950/40 transition-all duration-300 md:static md:translate-x-0"
             >
                 <div
                     x-show="sidebarOpen"
                     x-transition
                     class="flex h-full flex-col"
                 >
-                    <div class="px-5 py-5">
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">PAPAIWAT</h1>
-                        <p class="text-sm text-slate-500">Admin Panel</p>
+                    <div class="border-b border-white/10 px-5 py-6">
+                        <h1 class="text-2xl font-bold tracking-tight text-white">PAPAIWAT</h1>
+                        <p class="mt-1 text-sm text-slate-400">ระบบจัดการเว็บไซต์</p>
                     </div>
 
-                    <div class="px-4 pb-4">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                            <p class="text-sm font-semibold text-slate-900">
+                    <div class="border-b border-white/10 px-4 py-5">
+                        <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+                            <p class="text-sm font-semibold text-white">
                                 {{ $admin?->username ?? '-' }}
                             </p>
-                            <p class="mt-1 text-sm text-slate-500">
-                                ({{ $admin?->role?->name ?? 'No Role' }})
+                            <p class="mt-1 text-sm text-slate-400">
+                                {{ $admin?->role?->name ?? 'ไม่มีบทบาท' }}
                             </p>
                         </div>
                     </div>
 
-                    <nav class="flex-1 space-y-3 overflow-y-auto px-4 pb-4 text-sm">
+                    <nav class="flex-1 space-y-3 overflow-y-auto px-4 py-5 text-sm">
                         <a
                             href="{{ route('admin.dashboard') }}"
                             class="{{ request()->routeIs('admin.dashboard')
-                                ? 'block rounded-xl bg-slate-900 px-4 py-3 font-medium text-white'
-                                : 'block rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100' }}"
+                                ? 'block rounded-2xl border border-blue-400/30 bg-blue-900/80 px-4 py-3 font-medium text-blue-300 shadow-md shadow-blue-950/30'
+                                : 'block rounded-2xl px-4 py-3 font-medium text-slate-400 hover:bg-white/5 hover:text-white' }}"
                         >
-                            Dashboard
+                            แดชบอร์ด
                         </a>
 
-                        <details class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50" {{ $isContentManagementActive ? 'open' : '' }}>
-                            <summary class="cursor-pointer list-none px-4 py-3 font-medium text-slate-800">
+                        <details
+                            x-data="{ open: {{ $isContentManagementActive ? 'true' : 'false' }} }"
+                            x-bind:open="open"
+                            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
+                        >
+                            <summary
+                                @click.prevent="open = !open"
+                                class="cursor-pointer list-none rounded-xl px-3 py-2.5 font-medium text-slate-300 hover:bg-white/5 hover:text-white"
+                            >
                                 <div class="flex items-center justify-between">
-                                    <span>Content Management</span>
-                                    <span class="text-xs text-slate-500">4</span>
+                                    <span>จัดการเนื้อหา</span>
+                                    <span class="text-xs text-slate-500">5</span>
                                 </div>
                             </summary>
 
-                            <div class="space-y-2 px-2 pb-2">
-                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isTempleManagementActive ? 'open' : '' }}>
-                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                            <div class="mt-2 space-y-2 transition-all duration-200">
+                                <details
+                                    x-data="{ open: {{ $isTempleManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
                                         <div class="flex items-center justify-between">
-                                            <span>Temple Management</span>
+                                            <span>จัดการวัด</span>
                                             <span class="text-xs text-slate-500">1</span>
                                         </div>
                                     </summary>
 
-                                    <div class="space-y-1 px-2 pb-2">
+                                    <div class="mt-1 space-y-1">
                                         <a
                                             href="{{ route('admin.temples.index') }}"
                                             class="{{ request()->routeIs('admin.temples.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Temples
+                                            รายการวัด
                                         </a>
                                     </div>
                                 </details>
 
-                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isArticleManagementActive ? 'open' : '' }}>
-                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                <details
+                                    x-data="{ open: {{ $isArticleManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
                                         <div class="flex items-center justify-between">
-                                            <span>Article Management</span>
+                                            <span>จัดการบทความ</span>
                                             <span class="text-xs text-slate-500">2</span>
                                         </div>
                                     </summary>
 
-                                    <div class="space-y-1 px-2 pb-2">
+                                    <div class="mt-1 space-y-1">
                                         <a
                                             href="{{ route('admin.content.articles.index') }}"
                                             class="{{ request()->routeIs('admin.content.articles.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Articles
+                                            บทความ
                                         </a>
 
                                         <a
                                             href="{{ route('admin.content.article-tags.index') }}"
                                             class="{{ request()->routeIs('admin.content.article-tags.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Article Tags
+                                            แท็กบทความ
                                         </a>
                                     </div>
                                 </details>
 
-                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isCategoryManagementActive ? 'open' : '' }}>
-                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                <details
+                                    x-data="{ open: {{ $isCategoryManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
                                         <div class="flex items-center justify-between">
-                                            <span>Category Management</span>
+                                            <span>จัดการหมวดหมู่</span>
                                             <span class="text-xs text-slate-500">1</span>
                                         </div>
                                     </summary>
 
-                                    <div class="space-y-1 px-2 pb-2">
+                                    <div class="mt-1 space-y-1">
                                         <a
                                             href="{{ route('admin.categories.index') }}"
                                             class="{{ request()->routeIs('admin.categories.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Categories
+                                            หมวดหมู่
                                         </a>
                                     </div>
                                 </details>
 
-                                <details class="overflow-hidden rounded-lg border border-slate-200 bg-white" {{ $isMediaManagementActive ? 'open' : '' }}>
-                                    <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
+                                <details
+                                    x-data="{ open: {{ $isMediaManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
                                         <div class="flex items-center justify-between">
-                                            <span>Media Management</span>
+                                            <span>จัดการคลังสื่อ</span>
                                             <span class="text-xs text-slate-500">2</span>
                                         </div>
                                     </summary>
 
-                                    <div class="space-y-1 px-2 pb-2">
+                                    <div class="mt-1 space-y-1">
                                         <a
                                             href="{{ route('admin.media-folders.index') }}"
                                             class="{{ request()->routeIs('admin.media-folders.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Media Folders
+                                            โฟลเดอร์สื่อ
                                         </a>
 
                                         <a
                                             href="{{ route('admin.media.index') }}"
                                             class="{{ request()->routeIs('admin.media.*')
-                                                ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                                : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-slate-50' }}"
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
-                                            Media Library
+                                            คลังสื่อ
+                                        </a>
+                                    </div>
+                                </details>
+
+                                <details
+                                    x-data="{ open: {{ $isLayoutManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
+                                        <div class="flex items-center justify-between">
+                                            <span>จัดการโครงหน้าเว็บ</span>
+                                            <span class="text-xs text-slate-500">3</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="mt-1 space-y-1">
+                                        <a
+                                            href="{{ route('admin.content.menus.index') }}"
+                                            class="{{ request()->routeIs('admin.content.menus.*')
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                                        >
+                                            เมนู
+                                        </a>
+
+                                        <a
+                                            href="{{ route('admin.content.pages.index') }}"
+                                            class="{{ request()->routeIs('admin.content.pages.*')
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                                        >
+                                            หน้าเว็บไซต์
+                                        </a>
+
+                                        <a
+                                            href="{{ route('admin.content.templates.index') }}"
+                                            class="{{ request()->routeIs('admin.content.templates.*')
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                                        >
+                                            เทมเพลต
                                         </a>
                                     </div>
                                 </details>
                             </div>
                         </details>
 
-                        <details class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50" {{ $isAccessManagementActive ? 'open' : '' }}>
-                            <summary class="cursor-pointer list-none px-4 py-3 font-medium text-slate-800">
+                        <details
+                            x-data="{ open: {{ $isAccessManagementActive ? 'true' : 'false' }} }"
+                            x-bind:open="open"
+                            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
+                        >
+                            <summary
+                                @click.prevent="open = !open"
+                                class="cursor-pointer list-none rounded-xl px-3 py-2.5 font-medium text-slate-300 hover:bg-white/5 hover:text-white"
+                            >
                                 <div class="flex items-center justify-between">
-                                    <span>Access Management</span>
+                                    <span>จัดการสิทธิ์ผู้ใช้งาน</span>
                                     <span class="text-xs text-slate-500">3</span>
                                 </div>
                             </summary>
 
-                            <div class="space-y-1 px-2 pb-2">
+                            <div class="mt-2 space-y-1">
                                 <a
                                     href="{{ route('admin.users.index') }}"
                                     class="{{ request()->routeIs('admin.users.*')
-                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
+                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                 >
-                                    User Management
+                                    ผู้ใช้งาน
                                 </a>
 
                                 <a
                                     href="{{ route('admin.roles.index') }}"
                                     class="{{ request()->routeIs('admin.roles.*')
-                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
+                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                 >
-                                    Role Management
+                                    บทบาทผู้ใช้งาน
                                 </a>
 
                                 <a
                                     href="{{ route('admin.permissions.index') }}"
                                     class="{{ request()->routeIs('admin.permissions.*')
-                                        ? 'block rounded-lg bg-slate-900 px-3 py-2.5 text-white'
-                                        : 'block rounded-lg px-3 py-2.5 text-slate-700 hover:bg-white' }}"
+                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                 >
-                                    Permission Management
+                                    สิทธิ์การใช้งาน
                                 </a>
-                            </div>
-                        </details>
-
-                        {{-- CMS Layout Management --}}
-                        <details class="overflow-hidden rounded-lg border border-slate-200 bg-white"
-                            {{ request()->routeIs('admin.content.menus.*') || request()->routeIs('admin.content.pages.*') ? 'open' : '' }}
-                        >
-                            <summary class="cursor-pointer list-none px-3 py-2.5 font-medium text-slate-800">
-                                <div class="flex items-center justify-between">
-                                    <span>Layout Management</span>
-                                </div>
-                            </summary>
-
-                            <div class="space-y-1 p-2">
-
-                                {{-- Menus --}}
-                                <a
-                                    href="{{ route('admin.content.menus.index') }}"
-                                    class="{{ request()->routeIs('admin.content.menus.*')
-                                        ? 'block rounded-xl bg-slate-900 px-4 py-2 text-white'
-                                        : 'block rounded-xl px-4 py-2 text-slate-700 hover:bg-slate-100' }}"
-                                >
-                                    Menus
-                                </a>
-
-                                {{-- Pages --}}
-                                <a
-                                    href="{{ route('admin.content.pages.index') }}"
-                                    class="{{ request()->routeIs('admin.content.pages.*')
-                                        ? 'block rounded-xl bg-slate-900 px-4 py-2 text-white'
-                                        : 'block rounded-xl px-4 py-2 text-slate-700 hover:bg-slate-100' }}"
-                                >
-                                    Pages
-                                </a>
-
-                                {{-- Templates --}}
-                                <a
-                                    href="{{ route('admin.content.templates.index') }}"
-                                    class="{{ request()->routeIs('admin.content.templates.*')
-                                        ? 'block rounded-xl bg-slate-900 px-4 py-2 text-white'
-                                        : 'block rounded-xl px-4 py-2 text-slate-700 hover:bg-slate-100' }}"
-                                >
-                                    Templates
-                                </a>
-
                             </div>
                         </details>
                     </nav>
 
-                    <div class="mt-auto px-4 pb-4 pt-3">
-                        <div class="border-t border-slate-200 pt-4">
-                            <form method="POST" action="{{ route('admin.logout') }}">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white hover:bg-slate-800"
-                                >
-                                    Logout
-                                </button>
-                            </form>
-                        </div>
+                    <div class="mt-auto border-t border-white/10 px-4 py-4">
+                        <form method="POST" action="{{ route('admin.logout') }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                            >
+                                ออกจากระบบ
+                            </button>
+                        </form>
                     </div>
                 </div>
             </aside>
 
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-                <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+                <header class="sticky top-0 z-20 border-b border-white/10 bg-white/[0.03] backdrop-blur">
                     <div class="flex items-center justify-between px-5 py-4 md:px-6">
                         <div class="flex items-center gap-3">
                             <button
                                 type="button"
                                 @click="sidebarOpen = !sidebarOpen"
-                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white"
                                 aria-label="Toggle sidebar"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -301,19 +346,19 @@
                             </button>
 
                             <div>
-                                <h2 class="text-xl font-semibold text-slate-900">
-                                    {{ $header ?? 'Dashboard' }}
+                                <h2 class="text-xl font-semibold text-white">
+                                    {{ $header ?? 'แดชบอร์ด' }}
                                 </h2>
                             </div>
                         </div>
 
-                        <div class="text-sm text-slate-500">
+                        <div class="text-sm text-slate-400">
                             {{ $admin?->email ?? '-' }}
                         </div>
                     </div>
                 </header>
 
-                <main class="flex-1 p-5 md:p-6">
+                <main class="flex-1 bg-slate-950/60 p-5 md:p-6">
                     {{ $slot }}
                 </main>
             </div>

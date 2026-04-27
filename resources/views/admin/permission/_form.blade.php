@@ -6,55 +6,56 @@
     $currentDescription = old('description', $permission->description ?? '');
 @endphp
 
-<div class="grid gap-6">
+<div class="grid gap-6 text-white">
+
     <div class="grid gap-6 md:grid-cols-2">
         <div>
-            <label for="group_key" class="mb-1 block text-sm font-medium text-gray-700">
+            <label for="group_key" class="mb-1 block text-sm font-medium text-slate-400">
                 กลุ่มสิทธิ์
             </label>
             <select
                 id="group_key"
                 name="group_key"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
             >
-                <option value="">เลือกกลุ่มสิทธิ์</option>
+                <option class="bg-slate-900 text-white" value="">เลือกกลุ่มสิทธิ์</option>
                 @foreach ($groupOptions as $groupKey => $groupLabel)
-                    <option value="{{ $groupKey }}" @selected($selectedGroupKey === $groupKey)>
+                    <option class="bg-slate-900 text-white" value="{{ $groupKey }}" @selected($selectedGroupKey === $groupKey)>
                         {{ $groupLabel }} ({{ $groupKey }})
                     </option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-gray-500">ตัวอย่าง: users, roles, permissions</p>
+            <p class="mt-1 text-xs text-slate-500">ตัวอย่าง: users, roles, permissions</p>
             @error('group_key')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
         <div>
-            <label for="action_key" class="mb-1 block text-sm font-medium text-gray-700">
+            <label for="action_key" class="mb-1 block text-sm font-medium text-slate-400">
                 ประเภทสิทธิ์
             </label>
             <select
                 id="action_key"
                 name="action_key"
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
             >
-                <option value="">เลือกประเภทสิทธิ์</option>
+                <option class="bg-slate-900 text-white" value="">เลือกประเภทสิทธิ์</option>
                 @foreach ($actionOptions as $actionKey => $actionLabel)
-                    <option value="{{ $actionKey }}" @selected($selectedActionKey === $actionKey)>
+                    <option class="bg-slate-900 text-white" value="{{ $actionKey }}" @selected($selectedActionKey === $actionKey)>
                         {{ $actionLabel }} ({{ $actionKey }})
                     </option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-gray-500">ตัวอย่าง: view, create, update, delete</p>
+            <p class="mt-1 text-xs text-slate-500">ตัวอย่าง: view, create, update, delete</p>
             @error('action_key')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
     </div>
 
     <div>
-        <label for="name" class="mb-1 block text-sm font-medium text-gray-700">
+        <label for="name" class="mb-1 block text-sm font-medium text-slate-400">
             ชื่อสิทธิ์
         </label>
         <input
@@ -62,17 +63,17 @@
             id="name"
             name="name"
             value="{{ $currentName }}"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            class="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
             placeholder="ระบบจะช่วยกรอกให้ เช่น ดูผู้ใช้งาน"
         >
-        <p class="mt-1 text-xs text-gray-500">แก้ไขชื่อเองได้ตามต้องการ</p>
+        <p class="mt-1 text-xs text-slate-500">แก้ไขชื่อเองได้ตามต้องการ</p>
         @error('name')
-            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
         @enderror
     </div>
 
     <div>
-        <label for="key" class="mb-1 block text-sm font-medium text-gray-700">
+        <label for="key" class="mb-1 block text-sm font-medium text-slate-400">
             Permission Key
         </label>
         <input
@@ -81,28 +82,28 @@
             name="key"
             value="{{ $currentKey }}"
             readonly
-            class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-700 focus:outline-none"
+            class="w-full rounded-xl border border-white/10 bg-slate-800 px-3 py-2 text-sm text-slate-300 focus:outline-none"
             placeholder="ระบบจะสร้างให้อัตโนมัติ"
         >
-        <p class="mt-1 text-xs text-gray-500">ระบบจะสร้างจาก กลุ่มสิทธิ์ + ประเภทสิทธิ์ เช่น users.view</p>
+        <p class="mt-1 text-xs text-slate-500">ระบบจะสร้างจาก กลุ่มสิทธิ์ + ประเภทสิทธิ์ เช่น users.view</p>
         @error('key')
-            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
         @enderror
     </div>
 
     <div>
-        <label for="description" class="mb-1 block text-sm font-medium text-gray-700">
+        <label for="description" class="mb-1 block text-sm font-medium text-slate-400">
             คำอธิบาย
         </label>
         <textarea
             id="description"
             name="description"
             rows="4"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            placeholder="อธิบายว่สิทธิ์นี้ใช้ทำอะไร"
+            class="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
+            placeholder="อธิบายว่าสิทธิ์นี้ใช้ทำอะไร"
         >{{ $currentDescription }}</textarea>
         @error('description')
-            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
         @enderror
     </div>
 </div>
