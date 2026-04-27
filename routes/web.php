@@ -14,7 +14,6 @@ use App\Http\Controllers\Admin\Content\Temple\TempleController;
 use App\Http\Controllers\Admin\Content\Article\ArticleController;
 use App\Http\Controllers\Admin\Content\Article\ArticleTagController;
 use App\Http\Controllers\Frontend\FrontendPageController;
-
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Admin\Content\Layout\MenuController;
 use App\Http\Controllers\Admin\Content\Layout\MenuItemController;
@@ -23,13 +22,6 @@ use App\Http\Controllers\Admin\Content\Layout\PageSectionController;
 use App\Http\Controllers\Admin\Content\Layout\TemplateController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-
-Route::get('/{slug}', [FrontendPageController::class, 'show'])
-    ->name('pages.show');
-
-Route::get('/admin/login', function () {
-    return view('admin.auth.login');
-});
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('admin.guest')->group(function () {
@@ -405,21 +397,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('content/menus/{menu}/items')
             ->name('content.menu-items.')
             ->group(function () {
-                Route::get('/create', [MenuItemController::class, 'create'])
-                    ->name('create');
-
-                Route::post('/', [MenuItemController::class, 'store'])
-                    ->name('store');
-
-                Route::get('/{menuItem}/edit', [MenuItemController::class, 'edit'])
-                    ->name('edit');
-
-                Route::put('/{menuItem}', [MenuItemController::class, 'update'])
-                    ->name('update');
-
-                Route::delete('/{menuItem}', [MenuItemController::class, 'destroy'])
-                    ->name('destroy');
-        });
+                Route::get('/create', [MenuItemController::class, 'create'])->name('create');
+                Route::post('/', [MenuItemController::class, 'store'])->name('store');
+                Route::get('/{menuItem}/edit', [MenuItemController::class, 'edit'])->name('edit');
+                Route::put('/{menuItem}', [MenuItemController::class, 'update'])->name('update');
+                Route::delete('/{menuItem}', [MenuItemController::class, 'destroy'])->name('destroy');
+            });
 
         Route::prefix('content/templates')
             ->name('content.templates.')
@@ -434,3 +417,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             });
     });
 });
+
+Route::get('/{slug}', [FrontendPageController::class, 'show'])
+    ->name('pages.show');
