@@ -285,7 +285,7 @@
                             >
                                 <div class="flex items-center justify-between">
                                     <span>จัดการสิทธิ์ผู้ใช้งาน</span>
-                                    <span class="text-xs text-slate-500">3</span>
+                                    <span class="text-xs text-slate-500">2</span>
                                 </div>
                             </summary>
 
@@ -308,14 +308,6 @@
                                     บทบาทผู้ใช้งาน
                                 </a>
 
-                                <a
-                                    href="{{ route('admin.permissions.index') }}"
-                                    class="{{ request()->routeIs('admin.permissions.*')
-                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                >
-                                    สิทธิ์การใช้งาน
-                                </a>
                             </div>
                         </details>
                     </nav>

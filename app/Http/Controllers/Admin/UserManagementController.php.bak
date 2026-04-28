@@ -71,7 +71,7 @@ class UserManagementController extends Controller
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'สร้างผู้ใช้งานเรียบร้อยแล้ว');
+            ->with('success', 'User created successfully.');
     }
 
     public function show(Admin $admin): View
@@ -111,17 +111,11 @@ class UserManagementController extends Controller
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'อัปเดตผู้ใช้งานเรียบร้อยแล้ว');
+            ->with('success', 'User updated successfully.');
     }
 
     public function updateStatus(Request $request, Admin $admin): RedirectResponse
     {
-        if ($admin->id === auth('admin')->id()) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'ไม่สามารถเปลี่ยนสถานะบัญชีของตัวเองได้');
-        }
-
         $validated = $request->validate([
             'status' => ['required', 'in:active,inactive'],
         ]);
@@ -132,73 +126,15 @@ class UserManagementController extends Controller
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'อัปเดตสถานะผู้ใช้งานเรียบร้อยแล้ว');
-    }
-
-    public function bulkUpdateRole(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'admin_ids' => ['required', 'array', 'min:1'],
-            'admin_ids.*' => ['integer', 'exists:admins,id'],
-            'role_id' => ['required', 'exists:roles,id'],
-        ]);
-
-        $updatedCount = Admin::query()
-            ->whereIn('id', $validated['admin_ids'])
-            ->where('id', '!=', auth('admin')->id())
-            ->update([
-                'role_id' => $validated['role_id'],
-            ]);
-
-        if ($updatedCount === 0) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'ไม่สามารถอัปเดตได้ กรุณาเลือกผู้ใช้งานอื่นที่ไม่ใช่บัญชีของคุณเอง');
-        }
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', 'อัปเดตบทบาทผู้ใช้งานที่เลือกเรียบร้อยแล้ว');
-    }
-
-    public function bulkUpdateStatus(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'admin_ids' => ['required', 'array', 'min:1'],
-            'admin_ids.*' => ['integer', 'exists:admins,id'],
-            'status' => ['required', 'in:active,inactive'],
-        ]);
-
-        $updatedCount = Admin::query()
-            ->whereIn('id', $validated['admin_ids'])
-            ->where('id', '!=', auth('admin')->id())
-            ->update([
-                'status' => $validated['status'],
-            ]);
-
-        if ($updatedCount === 0) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'ไม่สามารถอัปเดตได้ กรุณาเลือกผู้ใช้งานอื่นที่ไม่ใช่บัญชีของคุณเอง');
-        }
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', 'อัปเดตสถานะผู้ใช้งานที่เลือกเรียบร้อยแล้ว');
+            ->with('success', 'User status updated successfully.');
     }
 
     public function destroy(Admin $admin): RedirectResponse
     {
-        if ($admin->id === auth('admin')->id()) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'ไม่สามารถลบบัญชีของตัวเองได้');
-        }
-
         $admin->delete();
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'ลบผู้ใช้งานเรียบร้อยแล้ว');
+            ->with('success', 'User deleted successfully.');
     }
 }
