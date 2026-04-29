@@ -20,12 +20,14 @@ class Temple extends Model
         'founded_year',
         'history',
         'dress_code',
-        'recommended_visit_duration_minutes',
+        'recommended_visit_start_time',
+        'recommended_visit_end_time',
     ];
 
     protected $casts = [
         'content_id' => 'integer',
-        'recommended_visit_duration_minutes' => 'integer',
+        'recommended_visit_start_time' => 'datetime:H:i',
+        'recommended_visit_end_time' => 'datetime:H:i',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

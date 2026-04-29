@@ -49,7 +49,8 @@ class StoreTempleRequest extends FormRequest
             'founded_year' => ['nullable', 'string', 'max:20'],
             'history' => ['nullable', 'string'],
             'dress_code' => ['nullable', 'string'],
-            'recommended_visit_duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'recommended_visit_start_time' => ['nullable', 'date_format:H:i'],
+            'recommended_visit_end_time' => ['nullable', 'date_format:H:i', 'after:recommended_visit_start_time'],
 
             // address
             'address.address_line' => ['nullable', 'string'],

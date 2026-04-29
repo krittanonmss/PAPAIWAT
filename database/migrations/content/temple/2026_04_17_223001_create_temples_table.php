@@ -26,7 +26,9 @@ return new class extends Migration
 
             $table->text('history')->nullable();
             $table->text('dress_code')->nullable();
-            $table->unsignedInteger('recommended_visit_duration_minutes')->nullable();
+
+            $table->time('recommended_visit_start_time')->nullable();
+            $table->time('recommended_visit_end_time')->nullable();
 
             $table->timestamps();
 
