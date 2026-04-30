@@ -1,113 +1,162 @@
 <x-layouts.admin :title="'Pages'">
-    <div class="space-y-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold text-slate-900">Page Management</h1>
-                <p class="text-sm text-slate-500">
-                    จัดการหน้าเว็บไซต์ เทมเพลต SEO และสถานะการเผยแพร่
-                </p>
-            </div>
+    <div class="space-y-5 text-white">
 
-            <a
-                href="{{ route('admin.content.pages.create') }}"
-                class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
-            >
-                Create Page
-            </a>
+        {{-- Header --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
+                        Page Management
+                    </p>
+                    <h1 class="text-2xl font-bold text-white">จัดการหน้าเว็บไซต์</h1>
+                    <p class="mt-1 text-sm text-slate-400">
+                        จัดการหน้าเว็บไซต์ เทมเพลต SEO และสถานะการเผยแพร่
+                    </p>
+                </div>
+
+                <a
+                    href="{{ route('admin.content.pages.create') }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
+                >
+                    <span class="text-lg leading-none">+</span>
+                    สร้างหน้าเว็บไซต์
+                </a>
+            </div>
         </div>
 
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4">
-                <h2 class="text-base font-semibold text-slate-900">Pages</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                    รายการหน้าเว็บไซต์ทั้งหมดในระบบ
-                </p>
+        {{-- Table --}}
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">รายการหน้าเว็บไซต์</h2>
+                    <p class="text-sm text-slate-400">
+                        รายการหน้าเว็บไซต์ทั้งหมดในระบบ
+                    </p>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-5 py-3 font-semibold">Page</th>
-                            <th class="px-5 py-3 font-semibold">Slug</th>
-                            <th class="px-5 py-3 font-semibold">Template</th>
-                            <th class="px-5 py-3 font-semibold">Type</th>
-                            <th class="px-5 py-3 font-semibold">Homepage</th>
-                            <th class="px-5 py-3 font-semibold">Status</th>
-                            <th class="px-5 py-3 text-right font-semibold">Action</th>
+                            <th class="px-4 py-3 text-left">Page</th>
+                            <th class="px-4 py-3 text-left">Slug</th>
+                            <th class="px-4 py-3 text-left">Template</th>
+                            <th class="px-4 py-3 text-left">Type</th>
+                            <th class="px-4 py-3 text-left">Homepage</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-right">Action</th>
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-white/10 text-slate-300">
                         @forelse($pages as $page)
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-5 py-4">
-                                    <div class="font-medium text-slate-900">
-                                        {{ $page->title }}
-                                    </div>
+                            <tr class="transition hover:bg-white/[0.06]">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-indigo-950/30">
+                                            {{ strtoupper(substr($page->title, 0, 1)) }}
+                                        </div>
 
-                                    @if($page->excerpt)
-                                        <p class="mt-1 text-xs text-slate-500">
-                                            {{ $page->excerpt }}
-                                        </p>
-                                    @endif
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold text-white">
+                                                {{ $page->title }}
+                                            </p>
+
+                                            @if($page->excerpt)
+                                                <p class="truncate text-xs text-slate-400">
+                                                    {{ $page->excerpt }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
 
-                                <td class="px-5 py-4">
-                                    <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
                                         {{ $page->slug }}
                                     </span>
                                 </td>
 
-                                <td class="px-5 py-4 text-slate-600">
+                                <td class="px-4 py-3 text-slate-400">
                                     {{ $page->template?->name ?? '-' }}
                                 </td>
 
-                                <td class="px-5 py-4 text-slate-600">
-                                    {{ $page->page_type }}
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                        {{ $page->page_type }}
+                                    </span>
                                 </td>
 
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-3">
                                     @if($page->is_homepage)
-                                        <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                                        <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
                                             Homepage
                                         </span>
                                     @else
-                                        <span class="text-xs text-slate-400">-</span>
+                                        <span class="text-xs text-slate-500">-</span>
                                     @endif
                                 </td>
 
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-3">
                                     @if($page->status === 'published')
-                                        <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                             Published
                                         </span>
                                     @elseif($page->status === 'draft')
-                                        <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-yellow-300"></span>
                                             Draft
                                         </span>
                                     @else
-                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
                                             Archived
                                         </span>
                                     @endif
                                 </td>
 
-                                <td class="px-5 py-4 text-right">
-                                    <a
-                                        href="{{ route('admin.content.pages.show', $page) }}"
-                                        class="text-sm font-medium text-slate-700 hover:text-slate-950"
-                                    >
-                                        View
-                                    </a>
+                                <td class="px-4 py-3">
+                                    <div class="flex justify-end gap-2">
+
+                                        <a
+                                            href="{{ route('admin.content.pages.show', $page) }}"
+                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                        >
+                                            ดู
+                                        </a>
+
+                                        <a
+                                            href="{{ route('admin.content.pages.edit', $page) }}"
+                                            class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20 hover:text-blue-200"
+                                        >
+                                            แก้ไข
+                                        </a>
+
+                                        <form
+                                            action="{{ route('admin.content.pages.destroy', $page) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('ยืนยันการลบหน้านี้?')"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button
+                                                type="submit"
+                                                class="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 transition hover:bg-rose-500/20 hover:text-rose-200"
+                                            >
+                                                ลบ
+                                            </button>
+                                        </form>
+
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td colspan="7" class="px-5 py-10 text-center">
-                                    <div class="text-sm font-medium text-slate-700">
-                                        ยังไม่มีหน้าเว็บไซต์
-                                    </div>
+                                    <p class="text-base font-medium text-slate-300">ยังไม่มีหน้าเว็บไซต์</p>
                                     <p class="mt-1 text-sm text-slate-500">
                                         เริ่มสร้างหน้าแรกหรือหน้าเนื้อหาใหม่ได้เลย
                                     </p>
@@ -119,7 +168,7 @@
             </div>
 
             @if($pages->hasPages())
-                <div class="border-t border-slate-200 px-5 py-4">
+                <div class="border-t border-white/10 px-5 py-3">
                     {{ $pages->links() }}
                 </div>
             @endif

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Frontend\FrontendPageController;
+use App\Http\Controllers\Frontend\TempleController;
 use App\Http\Controllers\Frontend\HomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,3 +27,6 @@ require __DIR__ . '/admin/media.php';
 */
 Route::get('/{slug}', [FrontendPageController::class, 'show'])
     ->name('pages.show');
+
+Route::get('/temples/{temple}', [TempleController::class, 'show'])
+    ->name('temples.show');
