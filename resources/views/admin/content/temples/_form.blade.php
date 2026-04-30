@@ -84,9 +84,9 @@
     {{-- Section: Basic Info --}}
     <section
         x-data="{
-            title: @js(old('title', $content?->title)),
-            slug: @js(old('slug', $content?->slug)),
-            slugEdited: Boolean(@js(old('slug', $content?->slug))),
+            title: window.templeDraftValue('title', @js(old('title', $content?->title))),
+            slug: window.templeDraftValue('slug', @js(old('slug', $content?->slug))),
+            slugEdited: Boolean(window.templeDraftValue('slug', @js(old('slug', $content?->slug)))),
             makeSlug(value) {
                 return value
                     .toString()
@@ -427,11 +427,24 @@
 
         {{-- Section: Categories --}}
         <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-6 py-4">
-                <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
-                <p class="mt-1 text-xs text-slate-400">เลือกหมวดหมู่และหมวดหมู่หลักของวัด</p>
+            
+            {{-- Header --}}
+            <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
+                <div>
+                    <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
+                    <p class="mt-1 text-xs text-slate-400">เลือกหมวดหมู่และหมวดหมู่หลักของวัด</p>
+                </div>
+
+                <a
+                    href="{{ route('admin.categories.index') }}"
+                    target="_blank"
+                    class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition hover:bg-blue-500/20"
+                >
+                    + ไปจัดการหมวดหมู่
+                </a>
             </div>
 
+            {{-- Content --}}
             <div class="p-6">
                 @if ($categories->isEmpty())
                     <p class="text-sm text-slate-400">ไม่มีหมวดหมู่</p>
@@ -457,7 +470,10 @@
                     </div>
 
                     <div class="mt-4">
-                        <label for="primary_category_id" class="mb-1.5 block text-sm font-medium text-slate-300">หมวดหมู่หลัก</label>
+                        <label for="primary_category_id" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            หมวดหมู่หลัก
+                        </label>
+
                         <select
                             id="primary_category_id"
                             name="primary_category_id"
@@ -759,107 +775,269 @@
     </section>
 
     {{-- Section: Opening Hours --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="openingHoursManager()">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="openingHoursManager()"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">เวลาเปิด-ปิด</h2>
-                <p class="mt-1 text-xs text-slate-400">เวลาทำการของวัด</p>
+                <p class="mt-1 text-xs text-slate-400">กำหนดเวลาทำการแบบช่วงวัน เช่น ทุกวัน หรือ จันทร์ - ศุกร์</p>
             </div>
-            <button type="button" @click="addRow()" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
-                + เพิ่มเวลา
+
+            <button
+                type="button"
+                @click="addRow()"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
+                + เพิ่มช่วงเวลา
             </button>
         </div>
-        <div class="p-6">
-            <div class="space-y-3">
-                <template x-for="(row, index) in rows" :key="index">
-                    <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                        <div class="col-span-12 sm:col-span-3">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">วัน</label>
-                            <select :name="`opening_hours[${index}][day_of_week]`" x-model="row.day_of_week" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400">
+
+        <div class="space-y-4 p-6">
+            <template x-for="(row, rowIndex) in rows" :key="rowIndex">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+
+                        {{-- Preset --}}
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">รูปแบบวัน</label>
+                            <select
+                                x-model="row.preset"
+                                @change="applyPreset(row)"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+                            >
+                                <option value="everyday">ทุกวัน</option>
+                                <option value="weekdays">จันทร์ - ศุกร์</option>
+                                <option value="weekend">เสาร์ - อาทิตย์</option>
+                                <option value="oneday">วันเดียว</option>
+                                <option value="custom">กำหนดเอง</option>
+                            </select>
+                        </div>
+
+                        {{-- From Day --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">จากวัน</label>
+                            <select
+                                x-model.number="row.day_from"
+                                :disabled="!['custom','oneday'].includes(row.preset)"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50"
+                            >
                                 @foreach ($days as $di => $dayName)
                                     <option value="{{ $di }}">{{ $dayName }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-span-5 sm:col-span-2">
+
+                        {{-- To Day --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ถึงวัน</label>
+                            <select
+                                x-model.number="row.day_to"
+                                :disabled="!['custom','oneday'].includes(row.preset)"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50"
+                            >
+                                @foreach ($days as $di => $dayName)
+                                    <option value="{{ $di }}">{{ $dayName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Open --}}
+                        <div class="col-span-6 md:col-span-2">
                             <label class="mb-1 block text-xs font-medium text-slate-400">เปิด</label>
-                            <input type="time" :name="`opening_hours[${index}][open_time]`" x-model="row.open_time" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50" :disabled="row.is_closed">
+                            <input
+                                type="time"
+                                x-model="row.open_time"
+                                :disabled="row.is_closed"
+                                class="w-full min-w-[120px] rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50"
+                            >
                         </div>
-                        <div class="col-span-5 sm:col-span-2">
+
+                        {{-- Close --}}
+                        <div class="col-span-6 md:col-span-2">
                             <label class="mb-1 block text-xs font-medium text-slate-400">ปิด</label>
-                            <input type="time" :name="`opening_hours[${index}][close_time]`" x-model="row.close_time" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50" :disabled="row.is_closed">
+                            <input
+                                type="time"
+                                x-model="row.close_time"
+                                :disabled="row.is_closed"
+                                class="w-full min-w-[120px] rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400 disabled:opacity-50"
+                            >
                         </div>
-                        <div class="col-span-12 sm:col-span-3">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">หมายเหตุ</label>
-                            <input type="text" :name="`opening_hours[${index}][note]`" x-model="row.note" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="หมายเหตุ">
-                        </div>
-                        <div class="col-span-6 flex items-end gap-3 pb-1 sm:col-span-1">
+
+                        {{-- Actions --}}
+                        <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
                             <label class="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
-                                <input type="checkbox" :name="`opening_hours[${index}][is_closed]`" value="1" x-model="row.is_closed" class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600">
-                                Closed
+                                <input
+                                    type="checkbox"
+                                    x-model="row.is_closed"
+                                    class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600"
+                                >
+                                ปิด
                             </label>
-                        </div>
-                        <div class="col-span-6 flex items-end justify-end pb-1 sm:col-span-1">
-                            <button type="button" @click="removeRow(index)" class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">
+
+                            <button
+                                type="button"
+                                @click="removeRow(rowIndex)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
                                 ✕
                             </button>
                         </div>
+
+                        {{-- Note --}}
+                        <div class="col-span-12">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">หมายเหตุ</label>
+                            <input
+                                type="text"
+                                x-model="row.note"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น วันหยุดนักขัตฤกษ์"
+                            >
+                        </div>
                     </div>
-                </template>
-                <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล — กดเพิ่มเวลาเพื่อเพิ่ม</p>
-            </div>
+
+                    <div class="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-400">
+                        จะบันทึกเป็น:
+                        <span class="text-slate-200" x-text="previewDays(row)"></span>
+                    </div>
+                </div>
+            </template>
+
+            <p x-show="rows.length === 0" class="text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มช่วงเวลาเพื่อเพิ่ม
+            </p>
+
+            <template x-for="(item, index) in expandedRows()" :key="index">
+                <div>
+                    <input type="hidden" :name="`opening_hours[${index}][day_of_week]`" :value="item.day_of_week">
+                    <input type="hidden" :name="`opening_hours[${index}][open_time]`" :value="item.is_closed ? '' : item.open_time">
+                    <input type="hidden" :name="`opening_hours[${index}][close_time]`" :value="item.is_closed ? '' : item.close_time">
+                    <input type="hidden" :name="`opening_hours[${index}][note]`" :value="item.note">
+                    <input type="hidden" :name="`opening_hours[${index}][is_closed]`" :value="item.is_closed ? 1 : 0">
+                </div>
+            </template>
         </div>
     </section>
 
     {{-- Section: Fees --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="feesManager()">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="feesManager()"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">ค่าธรรมเนียม</h2>
                 <p class="mt-1 text-xs text-slate-400">ค่าเข้าชม ค่าจอดรถ หรือค่าใช้จ่ายอื่น ๆ</p>
             </div>
-            <button type="button" @click="addRow()" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
+
+            <button
+                type="button"
+                @click="addRow()"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
                 + เพิ่มค่าธรรมเนียม
             </button>
         </div>
+
         <div class="p-6">
-            <div class="space-y-3">
+            <div class="space-y-4">
                 <template x-for="(row, index) in rows" :key="index">
-                    <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                        <div class="col-span-12 sm:col-span-3">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Fee Type</label>
-                            <input type="text" :name="`fees[${index}][fee_type]`" x-model="row.fee_type" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น admission, parking">
-                        </div>
-                        <div class="col-span-12 sm:col-span-3">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Label</label>
-                            <input type="text" :name="`fees[${index}][label]`" x-model="row.label" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น ค่าเข้าชม ผู้ใหญ่">
-                        </div>
-                        <div class="col-span-6 sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Amount</label>
-                            <input type="number" :name="`fees[${index}][amount]`" x-model="row.amount" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" min="0" step="0.01">
-                        </div>
-                        <div class="col-span-6 sm:col-span-1">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Currency</label>
-                            <input type="text" :name="`fees[${index}][currency]`" x-model="row.currency" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="THB">
-                        </div>
-                        <div class="col-span-12 sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Note</label>
-                            <input type="text" :name="`fees[${index}][note]`" x-model="row.note" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="หมายเหตุ">
-                        </div>
-                        <div class="col-span-6 flex items-end gap-3 pb-1 sm:col-span-1">
-                            <label class="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
-                                <input type="checkbox" :name="`fees[${index}][is_active]`" value="1" x-model="row.is_active" class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600">
-                                Active
-                            </label>
-                        </div>
-                        <div class="col-span-6 flex items-end justify-end pb-1 sm:col-span-12 xl:col-span-1">
-                            <button type="button" @click="removeRow(index)" class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">
-                                ✕ Remove
-                            </button>
+                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                        <div class="grid grid-cols-12 items-start gap-3">
+                            {{-- Fee Type --}}
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="mb-1 block text-xs font-medium text-slate-400">ประเภทค่าธรรมเนียม</label>
+                                <input
+                                    type="text"
+                                    :name="`fees[${index}][fee_type]`"
+                                    x-model="row.fee_type"
+                                    class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                    placeholder="เช่น admission, parking"
+                                >
+                            </div>
+
+                            {{-- Label --}}
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="mb-1 block text-xs font-medium text-slate-400">ชื่อที่แสดง</label>
+                                <input
+                                    type="text"
+                                    :name="`fees[${index}][label]`"
+                                    x-model="row.label"
+                                    class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                    placeholder="เช่น ค่าเข้าชมผู้ใหญ่"
+                                >
+                            </div>
+
+                            {{-- Amount --}}
+                            <div class="col-span-6 md:col-span-2">
+                                <label class="mb-1 block text-xs font-medium text-slate-400">จำนวนเงิน</label>
+                                <input
+                                    type="number"
+                                    :name="`fees[${index}][amount]`"
+                                    x-model="row.amount"
+                                    class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                    placeholder="0"
+                                    min="0"
+                                    step="0.01"
+                                >
+                            </div>
+
+                            {{-- Currency --}}
+                            <div class="col-span-6 md:col-span-2">
+                                <label class="mb-1 block text-xs font-medium text-slate-400">สกุลเงิน</label>
+                                <input
+                                    type="text"
+                                    :name="`fees[${index}][currency]`"
+                                    x-model="row.currency"
+                                    class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                    placeholder="THB"
+                                >
+                            </div>
+
+                            {{-- Active --}}
+                            <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
+                                <label class="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-slate-400 md:mt-7">
+                                    <input
+                                        type="checkbox"
+                                        :name="`fees[${index}][is_active]`"
+                                        value="1"
+                                        x-model="row.is_active"
+                                        class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600"
+                                    >
+                                    ใช้งาน
+                                </label>
+                            </div>
+
+                            {{-- Note --}}
+                            <div class="col-span-12">
+                                <label class="mb-1 block text-xs font-medium text-slate-400">หมายเหตุ</label>
+                                <input
+                                    type="text"
+                                    :name="`fees[${index}][note]`"
+                                    x-model="row.note"
+                                    class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                    placeholder="เช่น เด็กอายุต่ำกว่า 12 ปีเข้าฟรี"
+                                >
+                            </div>
+
+                            {{-- Remove --}}
+                            <div class="col-span-12 flex justify-end">
+                                <button
+                                    type="button"
+                                    @click="removeRow(index)"
+                                    class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                                >
+                                    ✕ ลบรายการนี้
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </template>
-                <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล — กดเพิ่มค่าธรรมเนียมเพื่อเพิ่ม</p>
+
+                <p x-show="rows.length === 0" class="text-sm text-slate-400">
+                    ยังไม่มีข้อมูล — กดเพิ่มค่าธรรมเนียมเพื่อเพิ่ม
+                </p>
             </div>
         </div>
     </section>
@@ -900,193 +1078,493 @@
     </section>
 
     {{-- Section: Highlights --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="repeaterManager('highlights', @json($jsHighlights))">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="repeaterManager('highlights', @json($jsHighlights))"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">จุดเด่นของวัด</h2>
                 <p class="mt-1 text-xs text-slate-400">ไฮไลต์สำคัญที่ใช้แสดงในหน้า detail</p>
             </div>
-            <button type="button" @click="addRow({title:'',description:'',sort_order:rows.length})" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
+
+            <button
+                type="button"
+                @click="addRow({ title: '', description: '', sort_order: rows.length })"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
                 + เพิ่มจุดเด่น
             </button>
         </div>
-        <div class="space-y-3 p-6">
+
+        <div class="space-y-4 p-6">
             <template x-for="(row, index) in rows" :key="index">
-                <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                    <div class="col-span-12 sm:col-span-4">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Title <span class="text-rose-400">*</span></label>
-                        <input type="text" :name="`highlights[${index}][title]`" x-model="row.title" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น พระพุทธรูปสำคัญ">
-                    </div>
-                    <div class="col-span-12 sm:col-span-6">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Description</label>
-                        <input type="text" :name="`highlights[${index}][description]`" x-model="row.description" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="รายละเอียดเพิ่มเติม">
-                    </div>
-                    <div class="col-span-8 sm:col-span-1">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Order</label>
-                        <input type="number" :name="`highlights[${index}][sort_order]`" x-model="row.sort_order" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400" min="0">
-                    </div>
-                    <div class="col-span-4 flex items-end justify-end pb-1 sm:col-span-1">
-                        <button type="button" @click="removeRow(index)" class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">✕</button>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+                        {{-- Title --}}
+                        <div class="col-span-12 md:col-span-5">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">
+                                ชื่อจุดเด่น <span class="text-rose-400">*</span>
+                            </label>
+
+                            <input
+                                type="text"
+                                :name="`highlights[${index}][title]`"
+                                x-model="row.title"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น พระพุทธรูปสำคัญ"
+                            >
+                        </div>
+
+                        {{-- Sort Order --}}
+                        <div class="col-span-12 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
+
+                            <input
+                                type="number"
+                                :name="`highlights[${index}][sort_order]`"
+                                x-model="row.sort_order"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Description --}}
+                        <div class="col-span-12">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">รายละเอียด</label>
+
+                            <textarea
+                                :name="`highlights[${index}][description]`"
+                                x-model="row.description"
+                                rows="3"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="รายละเอียดเพิ่มเติมของจุดเด่นนี้"
+                            ></textarea>
+                        </div>
+
+                        {{-- Remove --}}
+                        <div class="col-span-12 flex justify-end">
+                            <button
+                                type="button"
+                                @click="removeRow(index)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
+                                ✕ ลบรายการนี้
+                            </button>
+                        </div>
                     </div>
                 </div>
             </template>
-            <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>
+
+            <p x-show="rows.length === 0" class="text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มจุดเด่นเพื่อเพิ่ม
+            </p>
         </div>
     </section>
 
     {{-- Section: Visit Rules --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="repeaterManager('visit_rules', @json($jsVisitRules))">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="repeaterManager('visit_rules', @json($jsVisitRules))"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">กฎการเข้าชม</h2>
-                <p class="mt-1 text-xs text-slate-400">ข้อควรปฏิบัติสำหรับผู้เข้าชม</p>
+                <p class="mt-1 text-xs text-slate-400">ข้อควรปฏิบัติสำหรับผู้เข้าชม เช่น การแต่งกาย การถ่ายภาพ หรือพื้นที่ห้ามเข้า</p>
             </div>
-            <button type="button" @click="addRow({rule_text:'',sort_order:rows.length})" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
+
+            <button
+                type="button"
+                @click="addRow({ rule_text: '', sort_order: rows.length })"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
                 + เพิ่มกฎ
             </button>
         </div>
-        <div class="space-y-3 p-6">
+
+        <div class="space-y-4 p-6">
             <template x-for="(row, index) in rows" :key="index">
-                <div class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                    <div class="flex-1">
-                        <input type="text" :name="`visit_rules[${index}][rule_text]`" x-model="row.rule_text" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น แต่งกายสุภาพ ไม่สวมกางเกงขาสั้น">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+                        {{-- Rule Text --}}
+                        <div class="col-span-12 md:col-span-10">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">
+                                รายละเอียดกฎ <span class="text-rose-400">*</span>
+                            </label>
+
+                            <textarea
+                                :name="`visit_rules[${index}][rule_text]`"
+                                x-model="row.rule_text"
+                                rows="3"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น แต่งกายสุภาพ ไม่สวมกางเกงขาสั้น หรือเสื้อแขนกุด"
+                            ></textarea>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                เขียนเป็นข้อความสั้น กระชับ และอ่านเข้าใจง่ายสำหรับผู้เข้าชม
+                            </p>
+                        </div>
+
+                        {{-- Sort Order --}}
+                        <div class="col-span-12 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
+
+                            <input
+                                type="number"
+                                :name="`visit_rules[${index}][sort_order]`"
+                                x-model="row.sort_order"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Remove --}}
+                        <div class="col-span-12 flex justify-end">
+                            <button
+                                type="button"
+                                @click="removeRow(index)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
+                                ✕ ลบรายการนี้
+                            </button>
+                        </div>
                     </div>
-                    <div class="w-20">
-                        <input type="number" :name="`visit_rules[${index}][sort_order]`" x-model="row.sort_order" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" min="0">
-                    </div>
-                    <button type="button" @click="removeRow(index)" class="mt-0.5 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">✕</button>
                 </div>
             </template>
-            <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>
+
+            <p x-show="rows.length === 0" class="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-5 text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มกฎเพื่อเพิ่มข้อควรปฏิบัติ
+            </p>
         </div>
     </section>
 
     {{-- Section: Travel Infos --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="travelInfosManager()">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="travelInfosManager()"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">ข้อมูลการเดินทาง</h2>
-                <p class="mt-1 text-xs text-slate-400">วิธีเดินทาง ระยะทาง ระยะเวลา และค่าใช้จ่าย</p>
+                <p class="mt-1 text-xs text-slate-400">วิธีเดินทาง ระยะทาง ระยะเวลา และค่าใช้จ่ายโดยประมาณ</p>
             </div>
-            <button type="button" @click="addRow()" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
+
+            <button
+                type="button"
+                @click="addRow()"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
                 + เพิ่มข้อมูลเดินทาง
             </button>
         </div>
-        <div class="space-y-3 p-6">
+
+        <div class="space-y-4 p-6">
             <template x-for="(row, index) in rows" :key="index">
-                <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                    <div class="col-span-12 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Type <span class="text-rose-400">*</span></label>
-                        <input type="text" :name="`travel_infos[${index}][travel_type]`" x-model="row.travel_type" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น BTS, รถยนต์">
-                    </div>
-                    <div class="col-span-12 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Start Place</label>
-                        <input type="text" :name="`travel_infos[${index}][start_place]`" x-model="row.start_place" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="จากจุดเริ่มต้น">
-                    </div>
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Distance (km)</label>
-                        <input type="number" :name="`travel_infos[${index}][distance_km]`" x-model="row.distance_km" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" step="0.1" min="0">
-                    </div>
-                    <div class="col-span-6 sm:col-span-1">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Duration</label>
-                        <input type="number" :name="`travel_infos[${index}][duration_minutes]`" x-model="row.duration_minutes" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" min="0">
-                    </div>
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Cost Estimate</label>
-                        <input type="text" :name="`travel_infos[${index}][cost_estimate]`" x-model="row.cost_estimate" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น 30-50 บาท">
-                    </div>
-                    <div class="col-span-12 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Note</label>
-                        <input type="text" :name="`travel_infos[${index}][note]`" x-model="row.note" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="หมายเหตุ">
-                    </div>
-                    <div class="col-span-6 flex items-end gap-3 pb-1 sm:col-span-1">
-                        <label class="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
-                            <input type="checkbox" :name="`travel_infos[${index}][is_active]`" value="1" x-model="row.is_active" class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600">
-                            Active
-                        </label>
-                    </div>
-                    <div class="col-span-6 flex items-end justify-end pb-1">
-                        <button type="button" @click="removeRow(index)" class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">✕</button>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+                        {{-- Travel Type --}}
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">
+                                วิธีเดินทาง <span class="text-rose-400">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                :name="`travel_infos[${index}][travel_type]`"
+                                x-model="row.travel_type"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น BTS, รถยนต์, รถเมล์"
+                            >
+                        </div>
+
+                        {{-- Start Place --}}
+                        <div class="col-span-12 md:col-span-4">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">จุดเริ่มต้น</label>
+                            <input
+                                type="text"
+                                :name="`travel_infos[${index}][start_place]`"
+                                x-model="row.start_place"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น สถานีสนามไชย, อนุสาวรีย์ชัยฯ"
+                            >
+                        </div>
+
+                        {{-- Distance --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ระยะทาง (กม.)</label>
+                            <input
+                                type="number"
+                                :name="`travel_infos[${index}][distance_km]`"
+                                x-model="row.distance_km"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Duration --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">เวลา (นาที)</label>
+                            <input
+                                type="number"
+                                :name="`travel_infos[${index}][duration_minutes]`"
+                                x-model="row.duration_minutes"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Active --}}
+                        <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
+                            <label class="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-slate-400 md:mt-7">
+                                <input
+                                    type="checkbox"
+                                    :name="`travel_infos[${index}][is_active]`"
+                                    value="1"
+                                    x-model="row.is_active"
+                                    class="h-3.5 w-3.5 rounded border-white/20 bg-slate-950 text-blue-600"
+                                >
+                                ใช้งาน
+                            </label>
+                        </div>
+
+                        {{-- Cost Estimate --}}
+                        <div class="col-span-12 md:col-span-4">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ค่าใช้จ่ายโดยประมาณ</label>
+                            <input
+                                type="text"
+                                :name="`travel_infos[${index}][cost_estimate]`"
+                                x-model="row.cost_estimate"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น 30-50 บาท"
+                            >
+                        </div>
+
+                        {{-- Note --}}
+                        <div class="col-span-12 md:col-span-8">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">หมายเหตุ</label>
+                            <input
+                                type="text"
+                                :name="`travel_infos[${index}][note]`"
+                                x-model="row.note"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น เดินต่อประมาณ 5 นาทีจากสถานี"
+                            >
+                        </div>
+
+                        {{-- Remove --}}
+                        <div class="col-span-12 flex justify-end">
+                            <button
+                                type="button"
+                                @click="removeRow(index)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
+                                ✕ ลบรายการนี้
+                            </button>
+                        </div>
                     </div>
                 </div>
             </template>
-            <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>
+
+            <p x-show="rows.length === 0" class="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-5 text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มข้อมูลเดินทางเพื่อเพิ่มวิธีเดินทาง
+            </p>
         </div>
     </section>
 
     {{-- Section: Nearby Places --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur" x-data="nearbyPlacesManager()">
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="nearbyPlacesManager()"
+    >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">วัดใกล้เคียง</h2>
                 <p class="mt-1 text-xs text-slate-400">เชื่อมโยงวัดที่อยู่ใกล้กันหรือเกี่ยวข้องกัน</p>
             </div>
-            <button type="button" @click="addRow()" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20">
+
+            <button
+                type="button"
+                @click="addRow()"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
                 + เพิ่มวัดใกล้เคียง
             </button>
         </div>
-        <div class="space-y-3 p-6">
+
+        <div class="space-y-4 p-6">
             <template x-for="(row, index) in rows" :key="index">
-                <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                    <div class="col-span-12 sm:col-span-3">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Temple <span class="text-rose-400">*</span></label>
-                        <select :name="`nearby_places[${index}][nearby_temple_id]`" x-model="row.nearby_temple_id" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400">
-                            <option value="">— เลือกวัด —</option>
-                            @foreach ($nearbyTemples as $nt)
-                                <option value="{{ $nt->id }}">{{ $nt->content?->title ?? "Temple #$nt->id" }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-span-12 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Relation Type</label>
-                        <input type="text" :name="`nearby_places[${index}][relation_type]`" x-model="row.relation_type" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น nearby, same_complex">
-                    </div>
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Distance</label>
-                        <input type="number" :name="`nearby_places[${index}][distance_km]`" x-model="row.distance_km" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" step="0.1" min="0">
-                    </div>
-                    <div class="col-span-6 sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Duration</label>
-                        <input type="number" :name="`nearby_places[${index}][duration_minutes]`" x-model="row.duration_minutes" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" min="0">
-                    </div>
-                    <div class="col-span-6 sm:col-span-1">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Score</label>
-                        <input type="number" :name="`nearby_places[${index}][score]`" x-model="row.score" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" step="0.1">
-                    </div>
-                    <div class="col-span-6 sm:col-span-1">
-                        <label class="mb-1 block text-xs font-medium text-slate-400">Order</label>
-                        <input type="number" :name="`nearby_places[${index}][sort_order]`" x-model="row.sort_order" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="0" min="0">
-                    </div>
-                    <div class="col-span-12 flex items-end justify-end pb-1 sm:col-span-1">
-                        <button type="button" @click="removeRow(index)" class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-2 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20">✕</button>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+                        {{-- Temple --}}
+                        <div class="col-span-12 md:col-span-5">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">
+                                วัดที่เกี่ยวข้อง <span class="text-rose-400">*</span>
+                            </label>
+
+                            <select
+                                :name="`nearby_places[${index}][nearby_temple_id]`"
+                                x-model="row.nearby_temple_id"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+                            >
+                                <option value="">— เลือกวัด —</option>
+                                @foreach ($nearbyTemples as $nt)
+                                    <option value="{{ $nt->id }}">{{ $nt->content?->title ?? "Temple #$nt->id" }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Relation Type --}}
+                        <div class="col-span-12 md:col-span-3">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ประเภทความเกี่ยวข้อง</label>
+
+                            <input
+                                type="text"
+                                :name="`nearby_places[${index}][relation_type]`"
+                                x-model="row.relation_type"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น nearby, same_complex"
+                            >
+                        </div>
+
+                        {{-- Distance --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ระยะทาง (กม.)</label>
+
+                            <input
+                                type="number"
+                                :name="`nearby_places[${index}][distance_km]`"
+                                x-model="row.distance_km"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Duration --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">เวลาเดินทาง (นาที)</label>
+
+                            <input
+                                type="number"
+                                :name="`nearby_places[${index}][duration_minutes]`"
+                                x-model="row.duration_minutes"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Score --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">คะแนนความเกี่ยวข้อง</label>
+
+                            <input
+                                type="number"
+                                :name="`nearby_places[${index}][score]`"
+                                x-model="row.score"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                step="0.1"
+                            >
+                        </div>
+
+                        {{-- Sort Order --}}
+                        <div class="col-span-6 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
+
+                            <input
+                                type="number"
+                                :name="`nearby_places[${index}][sort_order]`"
+                                x-model="row.sort_order"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="0"
+                                min="0"
+                            >
+                        </div>
+
+                        {{-- Remove --}}
+                        <div class="col-span-12 flex justify-end">
+                            <button
+                                type="button"
+                                @click="removeRow(index)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
+                                ✕ ลบรายการนี้
+                            </button>
+                        </div>
                     </div>
                 </div>
             </template>
-            <p x-show="rows.length === 0" class="text-sm text-slate-400">ยังไม่มีข้อมูล</p>
+
+            <p x-show="rows.length === 0" class="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-5 text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มวัดใกล้เคียงเพื่อเชื่อมโยงวัดที่เกี่ยวข้อง
+            </p>
         </div>
     </section>
 </div>
 
 <script>
+    window.templeDraft = {
+        key: 'papaiwat:temple-form-draft:' + window.location.pathname,
+
+        read() {
+            try {
+                return JSON.parse(localStorage.getItem(this.key)) || {};
+            } catch (error) {
+                return {};
+            }
+        },
+
+        write(payload) {
+            localStorage.setItem(this.key, JSON.stringify({
+                ...this.read(),
+                ...payload,
+            }));
+        },
+
+        get(key, fallback = null) {
+            const draft = this.read();
+
+            return Object.prototype.hasOwnProperty.call(draft, key)
+                ? draft[key]
+                : fallback;
+        },
+
+        clear() {
+            localStorage.removeItem(this.key);
+        },
+    };
+
+    window.templeDraftValue = function (name, fallback = '') {
+        const fields = window.templeDraft.get('fields', {});
+
+        return Object.prototype.hasOwnProperty.call(fields, name)
+            ? fields[name]
+            : fallback;
+    };
+
+    function getTempleForm() {
+        return document.getElementById('temple-form');
+    }
+
     function updatePrimaryCategoryOptions() {
-        const categoryCheckboxes = document.querySelectorAll('input[name="category_ids[]"]');
+        const form = getTempleForm();
         const primarySelect = document.getElementById('primary_category_id');
 
-        if (!primarySelect) {
+        if (!form || !primarySelect) {
             return;
         }
 
-        const selectedValues = Array.from(categoryCheckboxes)
+        const selectedValues = Array.from(form.querySelectorAll('input[name="category_ids[]"]'))
             .filter((checkbox) => checkbox.checked)
             .map((checkbox) => checkbox.value);
 
         Array.from(primarySelect.options).forEach((option) => {
-            if (!option.value) {
-                option.hidden = false;
-                return;
-            }
-
-            option.hidden = !selectedValues.includes(option.value);
+            option.hidden = option.value ? !selectedValues.includes(option.value) : false;
         });
 
         if (primarySelect.value && !selectedValues.includes(primarySelect.value)) {
@@ -1094,14 +1572,144 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', updatePrimaryCategoryOptions);
+    function collectTempleFields() {
+        const form = getTempleForm();
+        const data = {};
+
+        if (!form) {
+            return data;
+        }
+
+        form.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
+            if (field.type === 'hidden') {
+                return;
+            }
+
+            if (field.type === 'checkbox') {
+                if (field.name.endsWith('[]')) {
+                    data[field.name] = data[field.name] || [];
+
+                    if (field.checked) {
+                        data[field.name].push(field.value);
+                    }
+
+                    return;
+                }
+
+                data[field.name] = field.checked;
+                return;
+            }
+
+            if (field.type === 'radio') {
+                if (field.checked) {
+                    data[field.name] = field.value;
+                }
+
+                return;
+            }
+
+            data[field.name] = field.value;
+        });
+
+        return data;
+    }
+
+    function saveTempleDraft() {
+        window.templeDraft.write({
+            fields: collectTempleFields(),
+        });
+    }
+
+    function restoreTempleFields() {
+        const form = getTempleForm();
+        const fields = window.templeDraft.get('fields', {});
+
+        if (!form || !fields) {
+            return;
+        }
+
+        Object.entries(fields).forEach(([name, value]) => {
+            const elements = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+
+            elements.forEach((field) => {
+                if (field.type === 'checkbox') {
+                    field.checked = Array.isArray(value)
+                        ? value.includes(field.value)
+                        : Boolean(value);
+
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                    return;
+                }
+
+                if (field.type === 'radio') {
+                    field.checked = String(field.value) === String(value);
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                    return;
+                }
+
+                field.value = value ?? '';
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+
+        updatePrimaryCategoryOptions();
+    }
+
+    function bindTempleDraftEvents() {
+        const form = getTempleForm();
+
+        if (!form || form.dataset.draftBound === 'true') {
+            return;
+        }
+
+        form.dataset.draftBound = 'true';
+
+        form.addEventListener('input', saveTempleDraft, true);
+        form.addEventListener('change', () => {
+            updatePrimaryCategoryOptions();
+            saveTempleDraft();
+        }, true);
+
+        form.addEventListener('submit', () => {
+            window.templeDraft.clear();
+        });
+
+        window.addEventListener('beforeunload', saveTempleDraft);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        bindTempleDraftEvents();
+    });
+
+    document.addEventListener('alpine:load', () => {
+        setTimeout(() => {
+            window.Alpine.nextTick(() => {
+                restoreTempleFields();
+                bindTempleDraftEvents();
+                saveTempleDraft();
+            });
+        }, 100);
+    });
 
     function repeaterManager(prefix, initialRows = []) {
         return {
-            rows: initialRows.length ? initialRows : [],
+            rows: [],
+
+            init() {
+                this.rows = window.templeDraft.get(prefix, initialRows.length ? initialRows : []);
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        [prefix]: value,
+                    });
+                });
+            },
+
             addRow(defaults = {}) {
                 this.rows.push(defaults);
             },
+
             removeRow(index) {
                 this.rows.splice(index, 1);
             },
@@ -1112,18 +1720,126 @@
         const existing = @json($jsOpeningHours);
 
         return {
-            rows: existing.length ? existing : [],
-            addRow() {
-                this.rows.push({
-                    day_of_week: 1,
-                    open_time: '08:00',
-                    close_time: '17:00',
-                    is_closed: false,
-                    note: '',
+            dayNames: @json(array_values($days)),
+            rows: [],
+
+            init() {
+                const defaultRows = existing.length
+                    ? existing.map((row) => ({
+                        preset: 'oneday',
+                        day_from: Number(row.day_of_week ?? 0),
+                        day_to: Number(row.day_of_week ?? 0),
+                        open_time: row.open_time || '',
+                        close_time: row.close_time || '',
+                        is_closed: Boolean(row.is_closed),
+                        note: row.note || '',
+                    }))
+                    : [
+                        {
+                            preset: 'everyday',
+                            day_from: 0,
+                            day_to: 6,
+                            open_time: '08:00',
+                            close_time: '17:00',
+                            note: '',
+                            is_closed: false,
+                        },
+                    ];
+
+                this.rows = window.templeDraft.get('opening_hours_rows', defaultRows);
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        opening_hours_rows: value,
+                    });
                 });
             },
+
+            addRow() {
+                this.rows.push({
+                    preset: 'weekdays',
+                    day_from: 1,
+                    day_to: 5,
+                    open_time: '08:00',
+                    close_time: '17:00',
+                    note: '',
+                    is_closed: false,
+                });
+            },
+
             removeRow(index) {
                 this.rows.splice(index, 1);
+            },
+
+            applyPreset(row) {
+                if (row.preset === 'everyday') {
+                    row.day_from = 0;
+                    row.day_to = 6;
+                }
+
+                if (row.preset === 'weekdays') {
+                    row.day_from = 1;
+                    row.day_to = 5;
+                }
+
+                if (row.preset === 'weekend') {
+                    row.day_from = 6;
+                    row.day_to = 0;
+                }
+
+                if (row.preset === 'oneday') {
+                    row.day_to = row.day_from;
+                }
+            },
+
+            getDaysInRange(from, to) {
+                const days = [];
+
+                if (from <= to) {
+                    for (let day = from; day <= to; day++) {
+                        days.push(day);
+                    }
+
+                    return days;
+                }
+
+                for (let day = from; day <= 6; day++) {
+                    days.push(day);
+                }
+
+                for (let day = 0; day <= to; day++) {
+                    days.push(day);
+                }
+
+                return days;
+            },
+
+            previewDays(row) {
+                const days = this.getDaysInRange(Number(row.day_from), Number(row.day_to));
+
+                if (days.length === 1) {
+                    return this.dayNames[days[0]];
+                }
+
+                return days.map((day) => this.dayNames[day]).join(', ');
+            },
+
+            expandedRows() {
+                const items = [];
+
+                this.rows.forEach((row) => {
+                    this.getDaysInRange(Number(row.day_from), Number(row.day_to)).forEach((day) => {
+                        items.push({
+                            day_of_week: day,
+                            open_time: row.open_time,
+                            close_time: row.close_time,
+                            note: row.note,
+                            is_closed: row.is_closed,
+                        });
+                    });
+                });
+
+                return items;
             },
         };
     }
@@ -1132,7 +1848,18 @@
         const existing = @json($jsFees);
 
         return {
-            rows: existing.length ? existing : [],
+            rows: [],
+
+            init() {
+                this.rows = window.templeDraft.get('fees_rows', existing.length ? existing : []);
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        fees_rows: value,
+                    });
+                });
+            },
+
             addRow() {
                 this.rows.push({
                     fee_type: '',
@@ -1144,6 +1871,7 @@
                     sort_order: this.rows.length,
                 });
             },
+
             removeRow(index) {
                 this.rows.splice(index, 1);
             },
@@ -1154,7 +1882,18 @@
         const existing = @json($jsTravelInfos);
 
         return {
-            rows: existing.length ? existing : [],
+            rows: [],
+
+            init() {
+                this.rows = window.templeDraft.get('travel_infos_rows', existing.length ? existing : []);
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        travel_infos_rows: value,
+                    });
+                });
+            },
+
             addRow() {
                 this.rows.push({
                     travel_type: '',
@@ -1167,6 +1906,7 @@
                     sort_order: this.rows.length,
                 });
             },
+
             removeRow(index) {
                 this.rows.splice(index, 1);
             },
@@ -1177,7 +1917,18 @@
         const existing = @json($jsNearbyPlaces);
 
         return {
-            rows: existing.length ? existing : [],
+            rows: [],
+
+            init() {
+                this.rows = window.templeDraft.get('nearby_places_rows', existing.length ? existing : []);
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        nearby_places_rows: value,
+                    });
+                });
+            },
+
             addRow() {
                 this.rows.push({
                     nearby_temple_id: '',
@@ -1188,6 +1939,7 @@
                     sort_order: this.rows.length,
                 });
             },
+
             removeRow(index) {
                 this.rows.splice(index, 1);
             },
