@@ -1,85 +1,109 @@
 <x-layouts.admin title="จัดการหมวดหมู่" header="Category Management">
-    <div class="space-y-6 text-white">
+    <div class="space-y-5 text-white">
 
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-white">Category Management</h1>
-                <p class="text-sm text-slate-400">จัดการหมวดหมู่เนื้อหา</p>
+        {{-- Header --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
+                        Category Management
+                    </p>
+                    <h1 class="text-2xl font-bold text-white">จัดการหมวดหมู่</h1>
+                    <p class="mt-1 text-sm text-slate-400">
+                        จัดการหมวดหมู่เนื้อหา และโครงสร้างลำดับชั้นของระบบ
+                    </p>
+                </div>
+
+                <a
+                    href="{{ route('admin.categories.create') }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
+                >
+                    <span class="text-lg leading-none">+</span>
+                    สร้างหมวดหมู่
+                </a>
             </div>
-
-            <a
-                href="{{ route('admin.categories.create') }}"
-                class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-                + สร้างหมวดหมู่
-            </a>
         </div>
 
+        {{-- Alert --}}
         @if (session('success'))
-            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-3 text-sm text-emerald-300">
                 {{ session('success') }}
             </div>
         @endif
 
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl backdrop-blur">
-
-            <form method="GET" action="{{ route('admin.categories.index') }}" class="border-b border-white/10 p-4">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-
-                    <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm text-slate-400">ค้นหา</label>
-                        <input
-                            type="text"
-                            name="search"
-                            value="{{ request('search') }}"
-                            placeholder="ค้นหาชื่อหรือ slug"
-                            class="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-400 focus:outline-none"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm text-slate-400">ประเภท</label>
-                        <select
-                            name="type_key"
-                            class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-                        >
-                            <option value="">ทั้งหมด</option>
-                            @foreach ($types as $type)
-                                <option class="bg-slate-900" value="{{ $type }}" @selected(request('type_key') === $type)>
-                                    {{ ucfirst($type) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm text-slate-400">สถานะ</label>
-                        <select
-                            name="status"
-                            class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-400 focus:outline-none"
-                        >
-                            <option value="">ทั้งหมด</option>
-                            <option class="bg-slate-900" value="active" @selected(request('status') === 'active')>เปิดใช้งาน</option>
-                            <option class="bg-slate-900" value="inactive" @selected(request('status') === 'inactive')>ปิดใช้งาน</option>
-                        </select>
-                    </div>
+        {{-- Filter --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <form method="GET" action="{{ route('admin.categories.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div class="lg:col-span-5">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาหมวดหมู่</label>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="ชื่อ / slug"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
                 </div>
 
-                <div class="mt-4 flex gap-3">
-                    <button class="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-sm text-white">
+                <div class="lg:col-span-3">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">ประเภท</label>
+                    <select
+                        name="type_key"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ทั้งหมด</option>
+                        @foreach ($types as $type)
+                            <option class="bg-slate-900" value="{{ $type }}" @selected(request('type_key') === $type)>
+                                {{ ucfirst($type) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
+                    <select
+                        name="status"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ทั้งหมด</option>
+                        <option class="bg-slate-900" value="active" @selected(request('status') === 'active')>เปิดใช้งาน</option>
+                        <option class="bg-slate-900" value="inactive" @selected(request('status') === 'inactive')>ปิดใช้งาน</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
+                    <button
+                        type="submit"
+                        class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
                         ค้นหา
                     </button>
 
-                    <a href="{{ route('admin.categories.index') }}"
-                       class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">
+                    <a
+                        href="{{ route('admin.categories.index') }}"
+                        class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
+                    >
                         ล้าง
                     </a>
                 </div>
             </form>
+        </div>
+
+        {{-- Table --}}
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">รายการหมวดหมู่</h2>
+                    <p class="text-sm text-slate-400">
+                        จัดการโครงสร้างหมวดหมู่ และการแสดงผล
+                    </p>
+                </div>
+            </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/10 text-sm">
-                    <thead class="bg-white/[0.03] text-slate-400">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
                             <th class="px-4 py-3 text-left">ชื่อ</th>
                             <th class="px-4 py-3 text-left">ประเภท</th>
@@ -93,33 +117,53 @@
 
                     <tbody class="divide-y divide-white/10 text-slate-300">
                         @forelse ($categories as $category)
-                            <tr class="hover:bg-white/5">
-                                <td class="px-4 py-4">
-                                    <div class="text-white font-medium">{{ $category->name }}</div>
-                                    <div class="text-xs text-slate-500">{{ $category->slug }}</div>
+                            <tr class="transition hover:bg-white/[0.06]">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-indigo-950/30">
+                                            {{ strtoupper(substr($category->name, 0, 1)) }}
+                                        </div>
+
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold text-white">{{ $category->name }}</p>
+                                            <p class="truncate text-xs text-slate-400">{{ $category->slug }}</p>
+                                        </div>
+                                    </div>
                                 </td>
 
-                                <td class="px-4 py-4">{{ ucfirst($category->type_key) }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                        {{ ucfirst($category->type_key) }}
+                                    </span>
+                                </td>
 
-                                <td class="px-4 py-4">{{ $category->parent?->name ?? '-' }}</td>
+                                <td class="px-4 py-3 text-slate-300">
+                                    {{ $category->parent?->name ?? '-' }}
+                                </td>
 
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-3">
                                     @if ($category->status === 'active')
-                                        <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                             เปิดใช้งาน
                                         </span>
                                     @else
-                                        <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs text-slate-400">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
                                             ปิดใช้งาน
                                         </span>
                                     @endif
                                 </td>
 
-                                <td class="px-4 py-4">{{ $category->sort_order }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                        {{ $category->sort_order }}
+                                    </span>
+                                </td>
 
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-3">
                                     @if ($category->is_featured)
-                                        <span class="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs text-amber-300">
+                                        <span class="inline-flex rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300">
                                             แนะนำ
                                         </span>
                                     @else
@@ -127,10 +171,12 @@
                                     @endif
                                 </td>
 
-                                <td class="px-4 py-4">
+                                <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('admin.categories.edit', $category->id) }}"
-                                           class="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">
+                                        <a
+                                            href="{{ route('admin.categories.edit', $category->id) }}"
+                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                        >
                                             แก้ไข
                                         </a>
 
@@ -138,7 +184,9 @@
                                             @csrf
                                             @method('DELETE')
 
-                                            <button class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/10">
+                                            <button
+                                                class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
+                                            >
                                                 ลบ
                                             </button>
                                         </form>
@@ -147,8 +195,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-10 text-center text-slate-500">
-                                    ไม่พบข้อมูล
+                                <td colspan="7" class="px-5 py-10 text-center">
+                                    <p class="text-base font-medium text-slate-300">ไม่พบข้อมูลหมวดหมู่</p>
+                                    <p class="mt-1 text-sm text-slate-500">
+                                        ลองเปลี่ยนเงื่อนไขการค้นหา หรือสร้างหมวดหมู่ใหม่
+                                    </p>
                                 </td>
                             </tr>
                         @endforelse
@@ -157,11 +208,10 @@
             </div>
 
             @if ($categories->hasPages())
-                <div class="border-t border-white/10 px-4 py-4">
+                <div class="border-t border-white/10 px-5 py-3">
                     {{ $categories->links() }}
                 </div>
             @endif
-
         </div>
     </div>
 </x-layouts.admin>

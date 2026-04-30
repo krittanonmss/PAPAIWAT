@@ -1,234 +1,248 @@
 <x-layouts.admin :title="$title" header="จัดการข้อมูลวัด">
-    <div class="space-y-6 text-white">
+    <div class="space-y-5 text-white">
 
         {{-- Header --}}
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-                <p class="text-sm font-medium text-blue-300">Temple Management</p>
-                <h1 class="mt-1 text-2xl font-bold text-white">จัดการข้อมูลวัด</h1>
-                <p class="mt-1 text-sm text-slate-400">
-                    จัดการข้อมูลวัด หมวดหมู่ สถานะการเผยแพร่ และข้อมูลสำหรับแสดงผลหน้าเว็บไซต์
-                </p>
-            </div>
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
+                        Temple Management
+                    </p>
+                    <h1 class="text-2xl font-bold text-white">จัดการข้อมูลวัด</h1>
+                    <p class="mt-1 text-sm text-slate-400">
+                        จัดการข้อมูลวัด หมวดหมู่ สถานะการเผยแพร่ และข้อมูลสำหรับแสดงผลหน้าเว็บไซต์
+                    </p>
+                </div>
 
-            <a
-                href="{{ route('admin.temples.create') }}"
-                class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
-            >
-                + เพิ่มข้อมูลวัด
-            </a>
+                <a
+                    href="{{ route('admin.temples.create') }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
+                >
+                    <span class="text-lg leading-none">+</span>
+                    เพิ่มข้อมูลวัด
+                </a>
+            </div>
         </div>
 
         {{-- Alerts --}}
         @if (session('success'))
-            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 shadow-lg shadow-emerald-950/20">
+            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-3 text-sm text-emerald-300">
                 {{ session('success') }}
             </div>
         @endif
 
         @if (session('error'))
-            <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
+            <div class="rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-3 text-sm text-red-300">
                 {{ session('error') }}
             </div>
         @endif
 
-        {{-- Filter Panel --}}
-        <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-5 py-4">
-                <div class="flex flex-col gap-1">
-                    <h2 class="text-base font-semibold text-white">ค้นหาและกรองข้อมูล</h2>
-                    <p class="text-sm text-slate-400">
-                        ค้นหาจากชื่อวัด slug รายละเอียด สถานะ หรือหมวดหมู่
-                    </p>
-                </div>
-            </div>
-
-            <form method="GET" action="{{ route('admin.temples.index') }}" class="space-y-5 p-5">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <div>
-                        <label for="search" class="mb-2 block text-sm font-medium text-slate-300">
-                            ค้นหา
-                        </label>
-                        <input
-                            type="text"
-                            id="search"
-                            name="search"
-                            value="{{ request('search') }}"
-                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            placeholder="ชื่อวัด, slug, รายละเอียด"
-                        >
-                    </div>
-
-                    <div>
-                        <label for="status" class="mb-2 block text-sm font-medium text-slate-300">
-                            สถานะ
-                        </label>
-                        <select
-                            id="status"
-                            name="status"
-                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="">ทุกสถานะ</option>
-                            @foreach ($statuses as $status)
-                                <option value="{{ $status }}" @selected(request('status') === $status)>
-                                    {{ ucfirst($status) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="category_id" class="mb-2 block text-sm font-medium text-slate-300">
-                            หมวดหมู่
-                        </label>
-                        <select
-                            id="category_id"
-                            name="category_id"
-                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="">ทุกหมวดหมู่</option>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected((string) request('category_id') === (string) $category->id)>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="sort" class="mb-2 block text-sm font-medium text-slate-300">
-                            เรียงลำดับ
-                        </label>
-                        <select
-                            id="sort"
-                            name="sort"
-                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="">ล่าสุด</option>
-                            <option value="popular" @selected(request('sort') === 'popular')>ยอดนิยม</option>
-                            <option value="oldest" @selected(request('sort') === 'oldest')>เก่าสุด</option>
-                        </select>
-                    </div>
+        {{-- Filter --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <form method="GET" action="{{ route('admin.temples.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div class="lg:col-span-4">
+                    <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาข้อมูลวัด</label>
+                    <input
+                        type="text"
+                        id="search"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="ชื่อวัด / slug / รายละเอียด"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="lg:col-span-2">
+                    <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
+                    <select
+                        id="status"
+                        name="status"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ทุกสถานะ</option>
+                        @foreach ($statuses as $status)
+                            <option value="{{ $status }}" class="bg-slate-900" @selected(request('status') === $status)>
+                                {{ ucfirst($status) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <label for="category_id" class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่</label>
+                    <select
+                        id="category_id"
+                        name="category_id"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ทุกหมวดหมู่</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}" class="bg-slate-900" @selected((string) request('category_id') === (string) $category->id)>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <label for="sort" class="mb-1.5 block text-xs font-medium text-slate-400">เรียงลำดับ</label>
+                    <select
+                        id="sort"
+                        name="sort"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ล่าสุด</option>
+                        <option value="popular" class="bg-slate-900" @selected(request('sort') === 'popular')>ยอดนิยม</option>
+                        <option value="oldest" class="bg-slate-900" @selected(request('sort') === 'oldest')>เก่าสุด</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500"
+                        class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
                     >
-                        กรองข้อมูล
+                        ค้นหา
                     </button>
 
                     <a
                         href="{{ route('admin.temples.index') }}"
-                        class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
                     >
-                        รีเซ็ต
+                        ล้าง
                     </a>
                 </div>
             </form>
         </div>
 
         {{-- Table --}}
-        <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-4">
-                <h2 class="text-base font-semibold text-white">รายการข้อมูลวัด</h2>
-                <p class="text-sm text-slate-400">
-                    จำนวน {{ $temples->total() }} รายการ
-                </p>
+        <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">รายการข้อมูลวัด</h2>
+                    <p class="text-sm text-slate-400">
+                        จำนวน {{ $temples->total() }} รายการ
+                    </p>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/10 text-sm">
-                    <thead class="bg-slate-950/50">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-5 py-3 text-left font-semibold text-slate-300">ข้อมูลวัด</th>
-                            <th class="px-5 py-3 text-left font-semibold text-slate-300">หมวดหมู่หลัก</th>
-                            <th class="px-5 py-3 text-left font-semibold text-slate-300">สถานะ</th>
-                            <th class="px-5 py-3 text-left font-semibold text-slate-300">แนะนำ</th>
-                            <th class="px-5 py-3 text-left font-semibold text-slate-300">เผยแพร่เมื่อ</th>
-                            <th class="px-5 py-3 text-right font-semibold text-slate-300">จัดการ</th>
+                            <th class="px-4 py-3 text-left">ข้อมูลวัด</th>
+                            <th class="px-4 py-3 text-left">หมวดหมู่หลัก</th>
+                            <th class="px-4 py-3 text-left">สถานะ</th>
+                            <th class="px-4 py-3 text-left">แนะนำ</th>
+                            <th class="px-4 py-3 text-left">เผยแพร่เมื่อ</th>
+                            <th class="px-4 py-3 text-right">จัดการ</th>
                         </tr>
                     </thead>
 
-                    <tbody class="divide-y divide-white/10">
+                    <tbody class="divide-y divide-white/10 text-slate-300">
                         @forelse ($temples as $temple)
                             @php
                                 $content = $temple->content;
                                 $primaryCategory = $content?->categories?->firstWhere('pivot.is_primary', true);
+                                $coverMedia = $content?->mediaUsages?->firstWhere('role_key', 'cover')?->media;
                             @endphp
 
-                            <tr class="align-top transition hover:bg-white/[0.03]">
-                                <td class="px-5 py-4">
-                                    <div class="font-semibold text-white">
-                                        {{ $content?->title ?? '-' }}
-                                    </div>
-
-                                    <div class="mt-1 text-xs text-slate-500">
-                                        slug: {{ $content?->slug ?? '-' }}
-                                    </div>
-
-                                    @if ($temple->address?->province)
-                                        <div class="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-slate-300">
-                                            {{ $temple->address->province }}
+                            <tr class="align-top transition hover:bg-white/[0.06]">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-start gap-3">
+                                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 shadow-lg shadow-slate-950/30">
+                                            @if ($coverMedia)
+                                                <img
+                                                    src="{{ asset('storage/' . $coverMedia->path) }}"
+                                                    alt="{{ $coverMedia->alt_text ?: $content?->title }}"
+                                                    class="h-full w-full object-cover"
+                                                >
+                                            @else
+                                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white">
+                                                    {{ strtoupper(substr($content?->title ?? '-', 0, 1)) }}
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endif
+
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold text-white">
+                                                {{ $content?->title ?? '-' }}
+                                            </p>
+
+                                            <p class="mt-1 truncate text-xs text-slate-400">
+                                                slug: {{ $content?->slug ?? '-' }}
+                                            </p>
+
+                                            @if ($temple->address?->province)
+                                                <span class="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                                    {{ $temple->address->province }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
 
-                                <td class="px-5 py-4 text-slate-300">
-                                    {{ $primaryCategory?->name ?? '-' }}
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                        {{ $primaryCategory?->name ?? '-' }}
+                                    </span>
                                 </td>
 
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-3">
                                     @php
                                         $status = $content?->status;
                                     @endphp
 
                                     @if ($status === 'published')
-                                        <span class="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                             Published
                                         </span>
                                     @elseif ($status === 'draft')
-                                        <span class="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-yellow-300"></span>
                                             Draft
                                         </span>
                                     @elseif ($status === 'archived')
-                                        <span class="inline-flex rounded-full border border-slate-400/20 bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-300">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
                                             Archived
                                         </span>
                                     @else
-                                        <span class="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-300">
+                                        <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
                                             -
                                         </span>
                                     @endif
                                 </td>
 
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-3">
                                     @if ($content?->is_featured)
                                         <span class="inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
                                             ใช่
                                         </span>
                                     @else
-                                        <span class="text-sm text-slate-500">ไม่ใช่</span>
+                                        <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-400">
+                                            ไม่ใช่
+                                        </span>
                                     @endif
                                 </td>
 
-                                <td class="px-5 py-4 text-slate-300">
+                                <td class="px-4 py-3 text-slate-400">
                                     {{ $content?->published_at?->format('d/m/Y H:i') ?? '-' }}
                                 </td>
 
-                                <td class="px-5 py-4">
+                                <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
                                         <a
                                             href="{{ route('admin.temples.show', $temple) }}"
-                                            class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
                                         >
                                             ดู
                                         </a>
 
                                         <a
                                             href="{{ route('admin.temples.edit', $temple) }}"
-                                            class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-500"
+                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
                                         >
                                             แก้ไข
                                         </a>
@@ -239,7 +253,7 @@
 
                                             <button
                                                 type="submit"
-                                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300 transition hover:bg-rose-500/20"
+                                                class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
                                             >
                                                 ลบ
                                             </button>
@@ -249,22 +263,19 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-14 text-center">
-                                    <div class="mx-auto max-w-sm">
-                                        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-xl text-slate-400">
-                                            ฯ
-                                        </div>
-                                        <h3 class="mt-4 text-base font-semibold text-white">ยังไม่มีข้อมูลวัด</h3>
-                                        <p class="mt-1 text-sm text-slate-400">
-                                            เริ่มเพิ่มข้อมูลวัดแรกเพื่อใช้แสดงผลบนหน้าเว็บไซต์
-                                        </p>
-                                        <a
-                                            href="{{ route('admin.temples.create') }}"
-                                            class="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500"
-                                        >
-                                            + เพิ่มข้อมูลวัด
-                                        </a>
-                                    </div>
+                                <td colspan="6" class="px-5 py-10 text-center">
+                                    <p class="text-base font-medium text-slate-300">ยังไม่มีข้อมูลวัด</p>
+                                    <p class="mt-1 text-sm text-slate-500">
+                                        เริ่มเพิ่มข้อมูลวัดแรกเพื่อใช้แสดงผลบนหน้าเว็บไซต์
+                                    </p>
+
+                                    <a
+                                        href="{{ route('admin.temples.create') }}"
+                                        class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
+                                    >
+                                        <span class="text-lg leading-none">+</span>
+                                        เพิ่มข้อมูลวัด
+                                    </a>
                                 </td>
                             </tr>
                         @endforelse
@@ -273,10 +284,11 @@
             </div>
 
             @if ($temples->hasPages())
-                <div class="border-t border-white/10 px-5 py-4 text-slate-300">
+                <div class="border-t border-white/10 px-5 py-3">
                     {{ $temples->links() }}
                 </div>
             @endif
         </div>
+
     </div>
 </x-layouts.admin>

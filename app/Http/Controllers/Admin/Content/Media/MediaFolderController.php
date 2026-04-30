@@ -120,7 +120,9 @@ class MediaFolderController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.media-folders.edit', $folder)
+            ->route('admin.media.index', [
+                'media_folder_id' => $folder->id,
+            ])
             ->with('success', 'สร้างโฟลเดอร์สื่อเรียบร้อยแล้ว');
     }
 
@@ -153,7 +155,9 @@ class MediaFolderController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.media-folders.edit', $mediaFolder)
+            ->route('admin.media.index', [
+                'media_folder_id' => $mediaFolder->id,
+            ])
             ->with('success', 'อัปเดตโฟลเดอร์สื่อเรียบร้อยแล้ว');
     }
 
@@ -174,7 +178,7 @@ class MediaFolderController extends Controller
         $mediaFolder->delete();
 
         return redirect()
-            ->route('admin.media-folders.index')
+            ->route('admin.media.index')
             ->with('success', 'ลบโฟลเดอร์สื่อเรียบร้อยแล้ว');
     }
 }

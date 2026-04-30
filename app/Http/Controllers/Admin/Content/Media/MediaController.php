@@ -11,12 +11,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Illuminate\Validation\Rule;
 
 class MediaController extends Controller
 {
     public function index(Request $request): View
     {
+        $selectedFolderId = $request->string('media_folder_id')->toString();
+
         $query = Media::query()
             ->with(['folder', 'uploader'])
             ->latest('id');
@@ -41,30 +42,26 @@ class MediaController extends Controller
         }
 
         if ($request->filled('media_folder_id')) {
-            if ($request->string('media_folder_id')->toString() === 'none') {
+            if ($selectedFolderId === 'none') {
                 $query->whereNull('media_folder_id');
             } else {
-                $query->where('media_folder_id', (int) $request->input('media_folder_id'));
+                $query->where('media_folder_id', (int) $selectedFolderId);
             }
         }
 
-        $mediaItems = $query->paginate(15)->withQueryString();
+        $mediaItems = $query->paginate(24)->withQueryString();
 
         $folders = MediaFolder::query()
             ->with([
-                'parent:id,name',
                 'children' => function ($query) {
                     $query->orderBy('sort_order')->orderBy('name');
                 },
-                'children.parent:id,name',
                 'children.children' => function ($query) {
                     $query->orderBy('sort_order')->orderBy('name');
                 },
-                'children.children.parent:id,name',
                 'children.children.children' => function ($query) {
                     $query->orderBy('sort_order')->orderBy('name');
                 },
-                'children.children.children.parent:id,name',
             ])
             ->whereNull('parent_id')
             ->orderBy('sort_order')
@@ -75,24 +72,38 @@ class MediaController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $selectedFolder = null;
+
+        if ($request->filled('media_folder_id') && $selectedFolderId !== 'none') {
+            $selectedFolder = MediaFolder::query()->find((int) $selectedFolderId);
+        }
+
+        $stats = [
+            'total' => Media::query()->count(),
+            'images' => Media::query()->where('media_type', 'image')->count(),
+            'documents' => Media::query()->where('media_type', 'document')->count(),
+            'unfoldered' => Media::query()->whereNull('media_folder_id')->count(),
+        ];
+
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'media_type' => $request->string('media_type')->toString(),
+            'visibility' => $request->string('visibility')->toString(),
+            'media_folder_id' => $selectedFolderId,
+        ];
+
         $mediaTypes = ['image', 'video', 'audio', 'document', 'other'];
-
-        $mediaByFolderId = $mediaItems->getCollection()
-            ->filter(fn ($media) => $media->media_folder_id !== null)
-            ->groupBy('media_folder_id');
-
-        $ungroupedMedia = $mediaItems->getCollection()
-            ->filter(fn ($media) => $media->media_folder_id === null)
-            ->values();
 
         return view('admin.content.media.items.index', [
             'title' => 'Media Management',
             'mediaItems' => $mediaItems,
             'folders' => $folders,
             'folderOptions' => $folderOptions,
+            'selectedFolder' => $selectedFolder,
+            'selectedFolderId' => $selectedFolderId,
+            'stats' => $stats,
+            'filters' => $filters,
             'mediaTypes' => $mediaTypes,
-            'mediaByFolderId' => $mediaByFolderId,
-            'ungroupedMedia' => $ungroupedMedia,
         ]);
     }
 
@@ -164,8 +175,36 @@ class MediaController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.media.index')
+            ->route('admin.media.index', [
+                'media_folder_id' => $validated['media_folder_id'] ?? null,
+            ])
             ->with('success', 'อัปโหลดไฟล์สำเร็จ');
+    }
+
+    public function edit(Media $media): View
+    {
+        $folders = MediaFolder::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('admin.content.media.items.edit', [
+            'title' => 'Edit Media',
+            'media' => $media,
+            'folders' => $folders,
+        ]);
+    }
+
+    public function update(Request $request, Media $media): RedirectResponse
+    {
+        $media->update([
+            'title' => $request->input('title'),
+            'alt_text' => $request->input('alt_text'),
+            'caption' => $request->input('caption'),
+            'description' => $request->input('description'),
+            'media_folder_id' => $request->input('media_folder_id') ?: null,
+        ]);
+
+        return back()->with('success', 'อัปเดตข้อมูลสำเร็จ');
     }
 
     public function destroy(Media $media): RedirectResponse
@@ -219,29 +258,5 @@ class MediaController extends Controller
         }
 
         return 'other';
-    }
-
-    public function edit(Media $media): View
-    {
-        $folders = MediaFolder::orderBy('name')->get(['id','name']);
-
-        return view('admin.content.media.items.edit', [
-            'title' => 'Edit Media',
-            'media' => $media,
-            'folders' => $folders,
-        ]);
-    }
-
-    public function update(Request $request, Media $media): RedirectResponse
-    {
-        $media->update([
-            'title' => $request->input('title'),
-            'alt_text' => $request->input('alt_text'),
-            'caption' => $request->input('caption'),
-            'description' => $request->input('description'),
-            'media_folder_id' => $request->input('media_folder_id'),
-        ]);
-
-        return back()->with('success', 'อัปเดตข้อมูลสำเร็จ');
     }
 }

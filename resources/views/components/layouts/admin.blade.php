@@ -202,19 +202,11 @@
                                     >
                                         <div class="flex items-center justify-between">
                                             <span>จัดการคลังสื่อ</span>
-                                            <span class="text-xs text-slate-500">2</span>
+                                            <span class="text-xs text-slate-500">1</span>
                                         </div>
                                     </summary>
 
                                     <div class="mt-1 space-y-1">
-                                        <a
-                                            href="{{ route('admin.media-folders.index') }}"
-                                            class="{{ request()->routeIs('admin.media-folders.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            โฟลเดอร์สื่อ
-                                        </a>
 
                                         <a
                                             href="{{ route('admin.media.index') }}"

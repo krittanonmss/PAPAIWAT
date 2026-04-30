@@ -1,136 +1,101 @@
 @php
-    $indentClass = match ($level) {
-        0 => '',
-        1 => 'ml-6',
-        2 => 'ml-12',
-        3 => 'ml-16',
-        default => 'ml-20',
+    $currentFolderId = (string) $folder->id;
+    $isActive = $selectedFolderId === $currentFolderId;
+
+    $paddingClass = match ($level) {
+        0 => 'pl-0',
+        1 => 'pl-4',
+        2 => 'pl-8',
+        3 => 'pl-12',
+        default => 'pl-14',
     };
 
-    $directMedia = $mediaByFolderId->get($folder->id) ?? collect();
-
-    $hasVisibleChildMedia = false;
-
-    foreach ($folder->children as $child) {
-        if (($mediaByFolderId->get($child->id) ?? collect())->isNotEmpty()) {
-            $hasVisibleChildMedia = true;
-            break;
-        }
-
-        foreach ($child->children as $grandChild) {
-            if (($mediaByFolderId->get($grandChild->id) ?? collect())->isNotEmpty()) {
-                $hasVisibleChildMedia = true;
-                break 2;
+    $hasActiveDescendant = function ($folder) use (&$hasActiveDescendant, $selectedFolderId) {
+        foreach ($folder->children as $child) {
+            if ((string) $child->id === (string) $selectedFolderId) {
+                return true;
             }
 
-            foreach ($grandChild->children as $greatGrandChild) {
-                if (($mediaByFolderId->get($greatGrandChild->id) ?? collect())->isNotEmpty()) {
-                    $hasVisibleChildMedia = true;
-                    break 3;
-                }
+            if ($hasActiveDescendant($child)) {
+                return true;
             }
         }
-    }
 
-    $hasChildren = $directMedia->isNotEmpty() || $hasVisibleChildMedia;
+        return false;
+    };
+
+    $shouldOpen = $isActive || $hasActiveDescendant($folder);
 @endphp
 
-<div class="{{ $indentClass }}">
-    <details class="group rounded-2xl border border-slate-200 bg-white shadow-sm" @if($level === 0) open @endif>
-        <summary class="list-none cursor-pointer px-4 py-4">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex min-w-0 items-center gap-3">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7.5A2.5 2.5 0 015.5 5h4.379a2.5 2.5 0 011.768.732l.621.622A2.5 2.5 0 0014.036 7H18.5A2.5 2.5 0 0121 9.5v8A2.5 2.5 0 0118.5 20h-13A2.5 2.5 0 013 17.5v-10z" />
+<div class="{{ $paddingClass }}">
+    @if ($folder->children->isNotEmpty())
+        <details class="group" @if ($shouldOpen) open @endif>
+            <summary class="list-none cursor-pointer select-none">
+                <div
+                    class="{{ $isActive ? 'border-blue-500/30 bg-blue-500/15 text-blue-300' : 'border-transparent text-slate-400 hover:bg-white/5 hover:text-slate-200' }} group/row flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-all duration-150"
+                >
+                    <span class="shrink-0 text-slate-500 transition-transform duration-200 group-open:rotate-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 4.293a1 1 0 011.414 0L14 9.586a1 1 0 010 1.414l-5.293 5.293a1 1 0 01-1.414-1.414L11.586 10 7.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
-                    </div>
+                    </span>
 
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-300 text-xs text-slate-500 transition group-open:rotate-90">
-                                >
-                            </span>
+                    <a
+                        href="{{ route('admin.media.index', ['media_folder_id' => $folder->id]) }}"
+                        class="flex min-w-0 flex-1 items-center gap-2"
+                        onclick="event.stopPropagation()"
+                    >
+                        <span class="{{ $isActive ? 'text-blue-400' : 'text-slate-500 group-hover/row:text-slate-400' }} shrink-0 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                            </svg>
+                        </span>
 
-                            <h3 class="truncate text-base font-semibold text-slate-900">
-                                {{ $folder->name }}
-                            </h3>
+                        <span class="min-w-0 flex-1 truncate">
+                            {{ $folder->name }}
+                        </span>
+                    </a>
 
-                            @if ($folder->status === 'active')
-                                <span class="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
-                                    Active
-                                </span>
-                            @else
-                                <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                    Inactive
-                                </span>
-                            @endif
-                        </div>
-
-                        <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                            <span>{{ $folder->parent?->name ?? 'Root Folder' }}</span>
-                            <span>/{{ $folder->slug }}</span>
-                            <span>{{ $directMedia->count() }} files</span>
-                        </div>
-                    </div>
+                    @if ($folder->status !== 'active')
+                        <span class="ml-auto shrink-0 rounded-full bg-slate-700/80 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                            ปิด
+                        </span>
+                    @endif
                 </div>
+            </summary>
 
-                <div class="text-sm text-slate-400">
-                    {{ $hasChildren ? 'Click to expand' : 'Empty folder' }}
-                </div>
+            <div class="ml-4 mt-0.5 space-y-0.5 border-l border-slate-700/50">
+                @foreach ($folder->children as $child)
+                    @include('admin.content.media.items.partials.folder-node', [
+                        'folder' => $child,
+                        'level' => $level + 1,
+                        'selectedFolderId' => $selectedFolderId,
+                    ])
+                @endforeach
             </div>
-        </summary>
+        </details>
+    @else
+        <a
+            href="{{ route('admin.media.index', ['media_folder_id' => $folder->id]) }}"
+            class="{{ $isActive ? 'border-blue-500/30 bg-blue-500/15 text-blue-300' : 'border-transparent text-slate-400 hover:bg-white/5 hover:text-slate-200' }} group/row flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm transition-all duration-150"
+        >
+            <span class="h-3.5 w-3.5 shrink-0"></span>
 
-        <div class="border-t border-slate-100 px-4 py-4">
-            @if ($directMedia->isNotEmpty())
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                    @foreach ($directMedia as $media)
-                        @include('admin.content.media.items.partials.media-card', [
-                            'media' => $media,
-                        ])
-                    @endforeach
-                </div>
+            <span class="{{ $isActive ? 'text-blue-400' : 'text-slate-500 group-hover/row:text-slate-400' }} shrink-0 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                </svg>
+            </span>
+
+            <span class="min-w-0 flex-1 truncate">
+                {{ $folder->name }}
+            </span>
+
+            @if ($folder->status !== 'active')
+                <span class="ml-auto shrink-0 rounded-full bg-slate-700/80 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                    ปิด
+                </span>
             @endif
-
-            @php
-                $visibleChildren = $folder->children->filter(function ($child) use ($mediaByFolderId) {
-                    if (($mediaByFolderId->get($child->id) ?? collect())->isNotEmpty()) {
-                        return true;
-                    }
-
-                    foreach ($child->children as $grandChild) {
-                        if (($mediaByFolderId->get($grandChild->id) ?? collect())->isNotEmpty()) {
-                            return true;
-                        }
-
-                        foreach ($grandChild->children as $greatGrandChild) {
-                            if (($mediaByFolderId->get($greatGrandChild->id) ?? collect())->isNotEmpty()) {
-                                return true;
-                            }
-                        }
-                    }
-
-                    return false;
-                });
-            @endphp
-
-            @if ($visibleChildren->isNotEmpty())
-                <div class="@if($directMedia->isNotEmpty()) mt-4 @endif space-y-4">
-                    @foreach ($visibleChildren as $child)
-                        @include('admin.content.media.items.partials.folder-node', [
-                            'folder' => $child,
-                            'level' => $level + 1,
-                            'mediaByFolderId' => $mediaByFolderId,
-                        ])
-                    @endforeach
-                </div>
-            @endif
-
-            @if ($directMedia->isEmpty() && $visibleChildren->isEmpty())
-                <div class="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-                    No media in this folder on this page.
-                </div>
-            @endif
-        </div>
-    </details>
+        </a>
+    @endif
 </div>
