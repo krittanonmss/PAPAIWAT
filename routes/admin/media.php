@@ -22,17 +22,26 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth', 'admin.active'
     });
 
     Route::prefix('media')->name('media.')->group(function () {
-        Route::get('/', [MediaController::class, 'index'])
-            ->middleware('admin.permission:media.view')->name('index');
-        Route::get('/create', [MediaController::class, 'create'])
-            ->middleware('admin.permission:media.create')->name('create');
-        Route::post('/', [MediaController::class, 'store'])
-            ->middleware('admin.permission:media.create')->name('store');
-        Route::get('/{media}/edit', [MediaController::class, 'edit'])
-            ->middleware('admin.permission:media.update')->name('edit');
-        Route::put('/{media}', [MediaController::class, 'update'])
-            ->middleware('admin.permission:media.update')->name('update');
-        Route::delete('/{media}', [MediaController::class, 'destroy'])
-            ->middleware('admin.permission:media.delete')->name('destroy');
+    Route::get('/', [MediaController::class, 'index'])
+        ->middleware('admin.permission:media.view')->name('index');
+
+    Route::get('/create', [MediaController::class, 'create'])
+        ->middleware('admin.permission:media.create')->name('create');
+
+    Route::post('/', [MediaController::class, 'store'])
+        ->middleware('admin.permission:media.create')->name('store');
+
+    Route::post('/{media}/regenerate-variants', [MediaController::class, 'regenerateVariants'])
+        ->middleware('admin.permission:media.update')
+        ->name('regenerate-variants');
+
+    Route::get('/{media}/edit', [MediaController::class, 'edit'])
+        ->middleware('admin.permission:media.update')->name('edit');
+
+    Route::put('/{media}', [MediaController::class, 'update'])
+        ->middleware('admin.permission:media.update')->name('update');
+
+    Route::delete('/{media}', [MediaController::class, 'destroy'])
+        ->middleware('admin.permission:media.delete')->name('destroy');
     });
 });

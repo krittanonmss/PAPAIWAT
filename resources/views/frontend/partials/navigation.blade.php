@@ -10,11 +10,11 @@
             หน้าแรก
         </a>
 
-        <a href="#" class="text-slate-700 hover:text-slate-900">
+        <a href="temple-list" class="text-slate-700 hover:text-slate-900">
             วัด
         </a>
 
-        <a href="#" class="text-slate-700 hover:text-slate-900">
+        <a href="articles" class="text-slate-700 hover:text-slate-900">
             บทความ
         </a>
     @endforelse

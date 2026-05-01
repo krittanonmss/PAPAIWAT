@@ -223,11 +223,16 @@
                     @if ($mediaItems->count())
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                             @foreach ($mediaItems as $media)
+                                @php
+                                    $thumbnail = $media->variants->firstWhere('variant_name', 'thumbnail');
+                                    $previewPath = $thumbnail?->path ?? $media->path;
+                                @endphp
+
                                 <article class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
                                     <div class="relative aspect-[4/3] bg-slate-950">
                                         @if ($media->media_type === 'image')
                                             <img
-                                                src="{{ asset('storage/' . $media->path) }}"
+                                                src="{{ asset('storage/' . $previewPath) }}"
                                                 alt="{{ $media->alt_text ?: $media->title ?: $media->original_filename }}"
                                                 class="h-full w-full object-cover"
                                                 loading="lazy"
@@ -280,6 +285,12 @@
                                                 {{ number_format($media->file_size / 1024, 1) }} KB
                                             </span>
 
+                                            @if ($media->width || $media->height)
+                                                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
+                                                    {{ $media->width ?? '-' }} × {{ $media->height ?? '-' }}
+                                                </span>
+                                            @endif
+
                                             <span class="{{ $media->visibility === 'public' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-300' }} rounded-full border px-2.5 py-1">
                                                 {{ $media->visibility }}
                                             </span>
@@ -292,6 +303,15 @@
                                             </span>
                                         </div>
 
+                                        @if ($media->variants->isNotEmpty())
+                                            <div class="truncate text-xs text-slate-400">
+                                                Variants:
+                                                <span class="text-slate-300">
+                                                    {{ $media->variants->pluck('variant_name')->join(', ') }}
+                                                </span>
+                                            </div>
+                                        @endif
+
                                         <div class="flex items-center justify-end gap-2 border-t border-white/10 pt-3">
                                             <a
                                                 href="{{ route('admin.media.edit', $media) }}"
@@ -303,7 +323,7 @@
                                             <form
                                                 method="POST"
                                                 action="{{ route('admin.media.destroy', $media) }}"
-                                                onsubmit="return confirm('ต้องการลบไฟล์นี้ใช่หรือไม่?');"
+                                                onsubmit="return confirm('ต้องการลบไฟล์นี้ใช่หรือไม่? หากไฟล์ถูกใช้งานอยู่ ระบบจะไม่อนุญาตให้ลบ');"
                                                 class="inline-flex"
                                             >
                                                 @csrf

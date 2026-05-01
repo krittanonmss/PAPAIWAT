@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin\Content\Media;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Media\StoreMediaRequest;
+use App\Http\Requests\Admin\Content\Media\UpdateMediaRequest;
+use App\Services\Content\Media\MediaVariantService;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Media\MediaFolder;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +21,7 @@ class MediaController extends Controller
         $selectedFolderId = $request->string('media_folder_id')->toString();
 
         $query = Media::query()
-            ->with(['folder', 'uploader'])
+            ->with(['folder', 'uploader', 'variants'])
             ->latest('id');
 
         if ($request->filled('search')) {
@@ -148,7 +150,7 @@ class MediaController extends Controller
             }
         }
 
-        Media::query()->create([
+        $media = Media::query()->create([
             'media_folder_id' => $validated['media_folder_id'] ?? null,
             'sort_order' => 0,
             'disk' => $disk,
@@ -174,6 +176,8 @@ class MediaController extends Controller
             'uploaded_at' => now(),
         ]);
 
+        app(MediaVariantService::class)->generate($media);
+
         return redirect()
             ->route('admin.media.index', [
                 'media_folder_id' => $validated['media_folder_id'] ?? null,
@@ -183,6 +187,8 @@ class MediaController extends Controller
 
     public function edit(Media $media): View
     {
+        $media->load(['folder', 'variants', 'usages', 'tags']);
+
         $folders = MediaFolder::query()
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -194,17 +200,20 @@ class MediaController extends Controller
         ]);
     }
 
-    public function update(Request $request, Media $media): RedirectResponse
+    public function update(UpdateMediaRequest $request, Media $media): RedirectResponse
     {
+        $validated = $request->validated();
+
         $media->update([
-            'title' => $request->input('title'),
-            'alt_text' => $request->input('alt_text'),
-            'caption' => $request->input('caption'),
-            'description' => $request->input('description'),
-            'media_folder_id' => $request->input('media_folder_id') ?: null,
+            'title' => $validated['title'] ?? null,
+            'alt_text' => $validated['alt_text'] ?? null,
+            'caption' => $validated['caption'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'media_folder_id' => $validated['media_folder_id'] ?? null,
+            'visibility' => $validated['visibility'],
         ]);
 
-        return back()->with('success', 'อัปเดตข้อมูลสำเร็จ');
+        return back()->with('success', 'อัปเดตข้อมูลสื่อสำเร็จ');
     }
 
     public function destroy(Media $media): RedirectResponse
@@ -258,5 +267,16 @@ class MediaController extends Controller
         }
 
         return 'other';
+    }
+
+    public function regenerateVariants(Media $media, MediaVariantService $mediaVariantService): RedirectResponse
+    {
+        if ($media->media_type !== 'image') {
+            return back()->with('error', 'ไฟล์นี้ไม่ใช่รูปภาพ จึงไม่สามารถ resize ได้');
+        }
+
+        $mediaVariantService->generate($media);
+
+        return back()->with('success', 'สร้าง thumbnail / resize ใหม่สำเร็จ');
     }
 }

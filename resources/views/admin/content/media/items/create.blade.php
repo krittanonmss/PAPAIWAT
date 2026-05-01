@@ -60,13 +60,10 @@
             @csrf
 
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-
-                {{-- Main Form --}}
                 <div class="space-y-6">
                     @include('admin.content.media.items._form')
                 </div>
 
-                {{-- Side Panel --}}
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
                     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h3 class="text-sm font-semibold text-white">เช็กลิสต์ก่อนอัปโหลด</h3>
@@ -83,6 +80,13 @@
                                 <p class="text-sm font-medium text-slate-200">ข้อมูลประกอบ</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     กรอกชื่อ คำอธิบาย caption และ alt text ให้ครบถ้วนเมื่อเป็นรูปภาพ
+                                </p>
+                            </div>
+
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <p class="text-sm font-medium text-slate-200">Image Variants</p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    หลังอัปโหลด ระบบจะสร้าง thumbnail, medium และ large สำหรับรูปภาพโดยอัตโนมัติ
                                 </p>
                             </div>
 

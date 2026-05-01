@@ -62,14 +62,16 @@
             @csrf
             @method('PUT')
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
 
                 {{-- Main Form --}}
                 <div class="space-y-6">
                     <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                         <div class="border-b border-white/10 px-6 py-4">
                             <h2 class="text-base font-semibold text-white">ข้อมูลไฟล์</h2>
-                            <p class="mt-1 text-xs text-slate-400">ข้อมูลนี้ใช้แสดงผลและช่วยเรื่อง accessibility</p>
+                            <p class="mt-1 text-xs text-slate-400">
+                                ข้อมูลนี้ใช้แสดงผล ค้นหา SEO และช่วยเรื่อง Accessibility
+                            </p>
                         </div>
 
                         <div class="space-y-5 p-6">
@@ -98,8 +100,12 @@
                                     type="text"
                                     name="alt_text"
                                     value="{{ old('alt_text', $media->alt_text) }}"
-                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                    placeholder="อธิบายภาพแบบสั้นและชัดเจน"
+                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                                 >
+                                <p class="mt-1 text-xs text-slate-500">
+                                    สำคัญสำหรับรูปภาพ เพื่อรองรับ screen reader และ SEO
+                                </p>
                                 @error('alt_text')
                                     <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
                                 @enderror
@@ -109,13 +115,12 @@
                                 <label for="caption" class="mb-1.5 block text-sm font-medium text-slate-300">
                                     Caption
                                 </label>
-                                <input
+                                <textarea
                                     id="caption"
-                                    type="text"
                                     name="caption"
-                                    value="{{ old('caption', $media->caption) }}"
+                                    rows="3"
                                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                >
+                                >{{ old('caption', $media->caption) }}</textarea>
                                 @error('caption')
                                     <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
                                 @enderror
@@ -136,31 +141,58 @@
                                 @enderror
                             </div>
 
-                            <div>
-                                <label for="media_folder_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                    โฟลเดอร์
-                                </label>
-                                <select
-                                    id="media_folder_id"
-                                    name="media_folder_id"
-                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                >
-                                    <option value="" class="bg-slate-900">ไม่มีโฟลเดอร์</option>
-                                    @foreach ($folders as $folder)
-                                        <option value="{{ $folder->id }}" class="bg-slate-900" @selected((string) old('media_folder_id', $media->media_folder_id) === (string) $folder->id)>
-                                            {{ $folder->name }}
+                            <div class="grid gap-5 md:grid-cols-2">
+                                <div>
+                                    <label for="media_folder_id" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                        โฟลเดอร์
+                                    </label>
+                                    <select
+                                        id="media_folder_id"
+                                        name="media_folder_id"
+                                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                    >
+                                        <option value="" class="bg-slate-900">ไม่มีโฟลเดอร์</option>
+                                        @foreach ($folders as $folder)
+                                            <option
+                                                value="{{ $folder->id }}"
+                                                class="bg-slate-900"
+                                                @selected((string) old('media_folder_id', $media->media_folder_id) === (string) $folder->id)
+                                            >
+                                                {{ $folder->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('media_folder_id')
+                                        <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="visibility" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                        การมองเห็น
+                                    </label>
+                                    <select
+                                        id="visibility"
+                                        name="visibility"
+                                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                    >
+                                        <option value="public" class="bg-slate-900" @selected(old('visibility', $media->visibility) === 'public')>
+                                            Public
                                         </option>
-                                    @endforeach
-                                </select>
-                                @error('media_folder_id')
-                                    <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
-                                @enderror
+                                        <option value="private" class="bg-slate-900" @selected(old('visibility', $media->visibility) === 'private')>
+                                            Private
+                                        </option>
+                                    </select>
+                                    @error('visibility')
+                                        <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                     </section>
                 </div>
 
-                {{-- Side Panel --}}
+               {{-- Side Panel --}}
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
                     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h3 class="text-sm font-semibold text-white">ตัวอย่างไฟล์</h3>
@@ -182,6 +214,23 @@
                                 @endif
                             </div>
 
+                            @if ($media->media_type === 'image')
+                                <form
+                                    method="POST"
+                                    action="{{ route('admin.media.regenerate-variants', $media) }}"
+                                    onsubmit="return confirm('ต้องการสร้าง thumbnail / resize ใหม่ใช่หรือไม่?');"
+                                >
+                                    @csrf
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex w-full items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20 hover:text-blue-200"
+                                    >
+                                        สร้าง Thumbnail / Resize ใหม่
+                                    </button>
+                                </form>
+                            @endif
+
                             <div class="space-y-3">
                                 <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                     <p class="text-xs text-slate-500">ชื่อไฟล์เดิม</p>
@@ -198,15 +247,68 @@
                                     <p class="mt-1 text-sm text-slate-300">{{ number_format($media->file_size / 1024, 1) }} KB</p>
                                 </div>
 
+                                @if ($media->width || $media->height)
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                        <p class="text-xs text-slate-500">ขนาดรูปภาพ</p>
+                                        <p class="mt-1 text-sm text-slate-300">
+                                            {{ $media->width ?? '-' }} × {{ $media->height ?? '-' }} px
+                                        </p>
+                                    </div>
+                                @endif
+
                                 <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                     <p class="text-xs text-slate-500">Visibility</p>
-                                    <p class="mt-1 text-sm text-slate-300">{{ $media->visibility }}</p>
+                                    <p class="mt-1">
+                                        <span class="{{ $media->visibility === 'public' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-300' }} rounded-full border px-2.5 py-1 text-xs">
+                                            {{ $media->visibility }}
+                                        </span>
+                                    </p>
                                 </div>
+
+                                @if ($media->variants->isNotEmpty())
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                        <p class="text-xs text-slate-500">Image Variants</p>
+
+                                        <div class="mt-3 space-y-2">
+                                            @foreach ($media->variants as $variant)
+                                                <div class="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                                                    <div class="flex items-center justify-between gap-3">
+                                                        <p class="text-sm font-medium text-slate-200">
+                                                            {{ ucfirst($variant->variant_name) }}
+                                                        </p>
+
+                                                        <span class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">
+                                                            {{ $variant->processing_status }}
+                                                        </span>
+                                                    </div>
+
+                                                    <p class="mt-1 text-xs text-slate-500">
+                                                        {{ $variant->width ?? '-' }} × {{ $variant->height ?? '-' }} px
+                                                        ·
+                                                        {{ number_format($variant->file_size / 1024, 1) }} KB
+                                                    </p>
+
+                                                    <a
+                                                        href="{{ asset('storage/' . $variant->path) }}"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="mt-2 inline-flex text-xs font-medium text-blue-300 hover:text-blue-200"
+                                                    >
+                                                        เปิดไฟล์ variant
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-4">
+                                        <p class="text-sm text-slate-400">ยังไม่มี variants สำหรับไฟล์นี้</p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </aside>
-            </div>
 
             {{-- Sticky Action Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
