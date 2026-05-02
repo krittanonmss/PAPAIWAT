@@ -1,12 +1,11 @@
 <?php
 
-use App\Http\Controllers\Frontend\FrontendPageController;
 use App\Http\Controllers\Frontend\FrontendArticleController;
-use App\Http\Controllers\Frontend\TempleController;
-use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\FrontendPageController;
+use App\Http\Controllers\Frontend\FrontendTempleController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [FrontendPageController::class, 'home'])->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -26,7 +25,7 @@ require __DIR__ . '/admin/media.php';
 | Frontend Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/temples/{temple}', [TempleController::class, 'show'])
+Route::get('/temples/{temple}', [FrontendTempleController::class, 'show'])
     ->name('temples.show');
 
 Route::get('/articles/{slug}', [FrontendArticleController::class, 'show'])

@@ -1,13 +1,9 @@
-<header class="bg-white border-b border-slate-200">
-    <div class="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-
-        {{-- Logo --}}
-        <a href="/" class="text-lg font-semibold text-slate-900">
+<header class="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <a href="{{ route('home') }}" class="text-lg font-bold text-white">
             PAPAIWAT
         </a>
 
-        {{-- Navigation --}}
         @include('frontend.partials.navigation')
-
     </div>
 </header>

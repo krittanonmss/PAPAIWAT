@@ -13,6 +13,11 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RolePermissionSeeder::class,
             AdminSeeder::class,
+            FrontendTemplateSeeder::class,
+            HomePageSeeder::class,
+            TempleListPageSeeder::class,
+            TempleTemplateSeeder::class,
+
         ]);
     }
 }

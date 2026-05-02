@@ -1,26 +1,30 @@
-<section class="relative py-16">
-    <div class="mx-auto max-w-6xl px-4">
-        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-                <h2 class="text-3xl font-bold text-white">
-                    {{ $content['title'] ?? 'วัดแนะนำ' }}
-                </h2>
+@extends('frontend.layouts.app')
 
-                @if (!empty($content['subtitle']))
-                    <p class="mt-2 text-slate-400">
-                        {{ $content['subtitle'] }}
-                    </p>
-                @endif
-            </div>
+@section('title', $page->meta_title ?? $page->title ?? 'รายการวัดแนะนำ')
+@section('meta_description', $page->meta_description ?? $page->excerpt ?? 'รายการวัดแนะนำ')
 
-            <a href="{{ url('/temple-list') }}" class="text-sm font-medium text-slate-300 hover:text-white">
-                ดูทั้งหมด →
-            </a>
+@section('content')
+    @php
+        $items = $items ?? collect();
+    @endphp
+
+    <section class="mx-auto max-w-6xl px-4 py-16">
+        <div class="mb-10">
+            <p class="text-sm font-medium text-blue-300">Featured Temples</p>
+            <h1 class="mt-2 text-3xl font-bold text-white">
+                {{ $page->title ?? 'วัดแนะนำ' }}
+            </h1>
+
+            @if ($page->excerpt)
+                <p class="mt-3 text-slate-400">
+                    {{ $page->excerpt }}
+                </p>
+            @endif
         </div>
 
-        @if ($data && $data->isNotEmpty())
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                @foreach ($data as $temple)
+        @if ($items->isNotEmpty())
+            <div class="space-y-6">
+                @foreach ($items as $temple)
                     @php
                         $contentModel = $temple->content;
                         $address = $temple->address;
@@ -32,14 +36,14 @@
 
                     <a
                         href="{{ route('temples.show', $temple) }}"
-                        class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur transition hover:-translate-y-1 hover:border-white/20"
+                        class="grid overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur transition hover:border-white/20 md:grid-cols-[280px_minmax(0,1fr)]"
                     >
-                        <div class="h-48 overflow-hidden bg-slate-900">
+                        <div class="h-64 bg-slate-900 md:h-full">
                             @if ($imageUrl)
                                 <img
                                     src="{{ $imageUrl }}"
                                     alt="{{ $contentModel?->title ?? 'Temple image' }}"
-                                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                    class="h-full w-full object-cover"
                                 >
                             @else
                                 <div class="flex h-full items-center justify-center text-xs text-slate-500">
@@ -48,16 +52,16 @@
                             @endif
                         </div>
 
-                        <div class="space-y-2 p-5">
-                            <h3 class="line-clamp-1 text-base font-semibold text-white">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-white">
                                 {{ $contentModel?->title ?? '-' }}
-                            </h3>
+                            </h2>
 
-                            <p class="line-clamp-2 text-sm text-slate-400">
+                            <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
                                 {{ $contentModel?->excerpt ?? '-' }}
                             </p>
 
-                            <p class="text-xs text-slate-500">
+                            <p class="mt-5 text-xs text-slate-500">
                                 {{ $address?->province ?? '-' }}
                             </p>
                         </div>
@@ -69,5 +73,5 @@
                 ยังไม่มีข้อมูลวัด
             </div>
         @endif
-    </div>
-</section>
+    </section>
+@endsection

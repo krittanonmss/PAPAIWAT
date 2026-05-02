@@ -21,7 +21,7 @@ class FrontendArticleController extends Controller
             ])
             ->firstOrFail();
 
-        return view('frontend.articles.show', [
+        return view('frontend.templates.details.article-default', [
             'articleContent' => $articleContent,
             'article' => $articleContent->article,
         ]);

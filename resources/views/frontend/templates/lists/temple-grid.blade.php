@@ -1,26 +1,29 @@
-<section class="relative py-16">
-    <div class="mx-auto max-w-6xl px-4">
-        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-                <h2 class="text-3xl font-bold text-white">
-                    {{ $content['title'] ?? 'วัดแนะนำ' }}
-                </h2>
+@extends('frontend.layouts.app')
 
-                @if (!empty($content['subtitle']))
-                    <p class="mt-2 text-slate-400">
-                        {{ $content['subtitle'] }}
-                    </p>
-                @endif
-            </div>
+@section('title', $page->meta_title ?? $page->title ?? 'รายการวัด')
+@section('meta_description', $page->meta_description ?? $page->excerpt ?? 'รายการวัด')
 
-            <a href="{{ url('/temple-list') }}" class="text-sm font-medium text-slate-300 hover:text-white">
-                ดูทั้งหมด →
-            </a>
+@section('content')
+    @php
+        $items = $items ?? collect();
+    @endphp
+
+    <section class="mx-auto max-w-6xl px-4 py-16">
+        <div class="mb-10">
+            <h1 class="text-3xl font-bold text-white">
+                {{ $page->title ?? 'รายการวัด' }}
+            </h1>
+
+            @if ($page->excerpt)
+                <p class="mt-3 text-slate-400">
+                    {{ $page->excerpt }}
+                </p>
+            @endif
         </div>
 
-        @if ($data && $data->isNotEmpty())
+        @if ($items->isNotEmpty())
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                @foreach ($data as $temple)
+                @foreach ($items as $temple)
                     @php
                         $contentModel = $temple->content;
                         $address = $temple->address;
@@ -34,7 +37,7 @@
                         href="{{ route('temples.show', $temple) }}"
                         class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur transition hover:-translate-y-1 hover:border-white/20"
                     >
-                        <div class="h-48 overflow-hidden bg-slate-900">
+                        <div class="h-52 overflow-hidden bg-slate-900">
                             @if ($imageUrl)
                                 <img
                                     src="{{ $imageUrl }}"
@@ -49,9 +52,9 @@
                         </div>
 
                         <div class="space-y-2 p-5">
-                            <h3 class="line-clamp-1 text-base font-semibold text-white">
+                            <h2 class="line-clamp-1 text-base font-semibold text-white">
                                 {{ $contentModel?->title ?? '-' }}
-                            </h3>
+                            </h2>
 
                             <p class="line-clamp-2 text-sm text-slate-400">
                                 {{ $contentModel?->excerpt ?? '-' }}
@@ -69,5 +72,5 @@
                 ยังไม่มีข้อมูลวัด
             </div>
         @endif
-    </div>
-</section>
+    </section>
+@endsection
