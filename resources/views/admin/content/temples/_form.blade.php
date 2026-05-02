@@ -498,7 +498,78 @@
 
     {{-- Section: Media --}}
     <section
-        x-data="{ mediaSearch: '' }"
+        x-data="{
+            mediaSearch: '',
+            selectedCover: @js((string) old('cover_media_id', $coverMedia?->media_id ?? '')),
+            selectedGallery: @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds))),
+
+            coverHtml: @js(view('admin.content.temples.partials._cover_media_grid', [
+                'mediaItems' => $coverMediaItems ?? $mediaItems,
+            ])->render()),
+
+            galleryHtml: @js(view('admin.content.temples.partials._gallery_media_grid', [
+                'mediaItems' => $galleryMediaItems ?? $mediaItems,
+            ])->render()),
+
+            toggleGallery(id) {
+                id = String(id);
+
+                if (this.selectedGallery.includes(id)) {
+                    this.selectedGallery = this.selectedGallery.filter((item) => item !== id);
+                    return;
+                }
+
+                this.selectedGallery.push(id);
+            },
+
+            async loadCoverPage(event) {
+            const link = event.target.closest('a');
+
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const response = await fetch(link.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (response.ok) {
+                this.coverHtml = await response.text();
+
+                this.$nextTick(() => {
+                    window.Alpine.initTree(this.$refs.coverPicker);
+                });
+            }
+        },
+
+        async loadGalleryPage(event) {
+            const link = event.target.closest('a');
+
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const response = await fetch(link.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (response.ok) {
+                this.galleryHtml = await response.text();
+
+                this.$nextTick(() => {
+                    window.Alpine.initTree(this.$refs.galleryPicker);
+                });
+            }
+        },
+        }"
         class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
@@ -517,6 +588,47 @@
         </div>
 
         <div class="space-y-8 p-6">
+            {{-- Quick Upload --}}
+            <div
+                x-data="quickMediaUploader()"
+                class="rounded-2xl border border-dashed border-blue-400/30 bg-blue-500/5 p-4"
+            >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="flex-1">
+                        <label for="quick_media_file" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            อัปโหลดรูปใหม่แบบด่วน
+                        </label>
+
+                        <input
+                            id="quick_media_file"
+                            type="file"
+                            accept="image/*"
+                            x-ref="fileInput"
+                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white
+                                file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500
+                                file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white
+                                hover:file:bg-blue-600"
+                        >
+
+                        <p x-show="errorMessage" x-text="errorMessage" class="mt-1 text-xs text-rose-400"></p>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="upload()"
+                        :disabled="isUploading"
+                        class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <span x-show="!isUploading">อัปโหลด</span>
+                        <span x-show="isUploading">กำลังอัปโหลด...</span>
+                    </button>
+                </div>
+
+                <p class="mt-2 text-xs text-slate-500">
+                    รูปจะถูกบันทึกเข้า Media Library แบบไม่มีโฟลเดอร์ แล้ว refresh หน้าเพื่อให้เลือกรูปได้
+                </p>
+            </div>
+
             {{-- Search --}}
             <div class="max-w-md">
                 <label for="media_search" class="mb-1.5 block text-sm font-medium text-slate-300">
@@ -532,9 +644,16 @@
                 >
 
                 <p class="mt-1 text-xs text-slate-500">
-                    ใช้ค้นหาได้ทั้งส่วน Cover และ Gallery
+                    ใช้ค้นหาเฉพาะรูปที่แสดงอยู่ในหน้าปัจจุบันของ Cover และ Gallery
                 </p>
             </div>
+
+            {{-- Hidden values --}}
+            <input type="hidden" name="cover_media_id" :value="selectedCover">
+
+            <template x-for="mediaId in selectedGallery" :key="mediaId">
+                <input type="hidden" name="gallery_media_ids[]" :value="mediaId">
+            </template>
 
             {{-- Cover --}}
             <div class="space-y-3">
@@ -545,97 +664,11 @@
                     </p>
                 </div>
 
-                @if ($mediaItems->isEmpty())
-                    <div class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-4 text-sm text-slate-400">
-                        ยังไม่มีไฟล์มีเดีย
-                    </div>
-                @else
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        {{-- No Cover --}}
-                        <label class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]">
-                            <input
-                                type="radio"
-                                name="cover_media_id"
-                                value=""
-                                class="peer sr-only"
-                                @checked(old('cover_media_id', $coverMedia?->media_id) == null)
-                            >
-
-                            <div class="flex aspect-video items-center justify-center bg-slate-950/70 text-xs text-slate-500">
-                                ไม่ใช้รูป Cover
-                            </div>
-
-                            <div class="border-t border-white/10 p-3">
-                                <p class="text-sm font-medium text-slate-200">ไม่ระบุรูป Cover</p>
-                                <p class="mt-0.5 text-xs text-slate-500">ใช้ค่าเริ่มต้นของระบบ</p>
-                            </div>
-
-                            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
-                            <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white peer-checked:block">
-                                เลือกอยู่
-                            </div>
-                        </label>
-
-                        @foreach ($mediaItems as $media)
-                            @php
-                                $mediaUrl = $media->path
-                                    ? (filter_var($media->path, FILTER_VALIDATE_URL)
-                                        ? $media->path
-                                        : \Illuminate\Support\Facades\Storage::url($media->path))
-                                    : null;
-
-                                $isImage = $media->media_type === 'image';
-                                $mediaSearchText = strtolower(($media->title ?: '') . ' ' . ($media->original_filename ?: ''));
-                            @endphp
-
-                            <label
-                                x-show="mediaSearch === '' || '{{ e($mediaSearchText) }}'.includes(mediaSearch.toLowerCase())"
-                                class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]"
-                            >
-                                <input
-                                    type="radio"
-                                    name="cover_media_id"
-                                    value="{{ $media->id }}"
-                                    class="peer sr-only"
-                                    @checked(old('cover_media_id', $coverMedia?->media_id) == $media->id)
-                                >
-
-                                <div class="aspect-video overflow-hidden bg-slate-950">
-                                    @if ($isImage && $mediaUrl)
-                                        <img
-                                            src="{{ $mediaUrl }}"
-                                            alt="{{ $media->title ?: $media->original_filename }}"
-                                            class="h-full w-full object-cover transition peer-checked:scale-105"
-                                            loading="lazy"
-                                        >
-                                    @else
-                                        <div class="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                            ไม่มีตัวอย่างรูป
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="border-t border-white/10 p-3">
-                                    <p class="truncate text-sm font-medium text-slate-200">
-                                        {{ $media->title ?: $media->original_filename }}
-                                    </p>
-                                    <p class="mt-0.5 text-xs text-slate-500">
-                                        #{{ $media->id }} · {{ $media->media_type }}
-                                    </p>
-                                </div>
-
-                                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
-                                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white peer-checked:block">
-                                    Cover
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                @endif
-
-                <p class="text-xs text-slate-500">
-                    ถ้ายังไม่มีรูป ให้เปิดหน้า Media Management ในแท็บใหม่ แล้วกลับมา refresh หน้านี้
-                </p>
+                <div
+                    x-ref="coverPicker"
+                    x-html="coverHtml"
+                    @click="loadCoverPage($event)"
+                ></div>
             </div>
 
             {{-- Gallery --}}
@@ -647,77 +680,11 @@
                     </p>
                 </div>
 
-                @if ($mediaItems->isEmpty())
-                    <div class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-4 text-sm text-slate-400">
-                        ยังไม่มีไฟล์มีเดีย
-                    </div>
-                @else
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        @foreach ($mediaItems as $media)
-                            @php
-                                $mediaUrl = $media->path
-                                    ? (filter_var($media->path, FILTER_VALIDATE_URL)
-                                        ? $media->path
-                                        : \Illuminate\Support\Facades\Storage::url($media->path))
-                                    : null;
-
-                                $isImage = $media->media_type === 'image';
-                                $isChecked = in_array($media->id, old('gallery_media_ids', $galleryMediaIds));
-                                $mediaSearchText = strtolower(($media->title ?: '') . ' ' . ($media->original_filename ?: ''));
-                            @endphp
-
-                            <label
-                                x-show="mediaSearch === '' || '{{ e($mediaSearchText) }}'.includes(mediaSearch.toLowerCase())"
-                                class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-emerald-400/40 hover:bg-white/[0.06]"
-                            >
-                                <input
-                                    type="checkbox"
-                                    name="gallery_media_ids[]"
-                                    value="{{ $media->id }}"
-                                    class="peer sr-only"
-                                    @checked($isChecked)
-                                >
-
-                                <div class="aspect-video overflow-hidden bg-slate-950">
-                                    @if ($isImage && $mediaUrl)
-                                        <img
-                                            src="{{ $mediaUrl }}"
-                                            alt="{{ $media->title ?: $media->original_filename }}"
-                                            class="h-full w-full object-cover transition peer-checked:scale-105"
-                                            loading="lazy"
-                                        >
-                                    @else
-                                        <div class="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                            ไม่มีตัวอย่างรูป
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="border-t border-white/10 p-3">
-                                    <div class="flex items-start gap-3">
-                                        <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-white/20 bg-slate-950 text-transparent transition peer-checked:border-emerald-400 peer-checked:bg-emerald-500 peer-checked:text-white">
-                                            ✓
-                                        </div>
-
-                                        <div class="min-w-0 flex-1">
-                                            <p class="truncate text-sm font-medium text-slate-200">
-                                                {{ $media->title ?: $media->original_filename }}
-                                            </p>
-                                            <p class="mt-0.5 text-xs text-slate-500">
-                                                #{{ $media->id }} · {{ $media->media_type }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-emerald-400 peer-checked:block"></div>
-                                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-emerald-500 px-2 py-1 text-xs font-medium text-white peer-checked:block">
-                                    เลือกแล้ว
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                @endif
+                <div
+                    x-ref="galleryPicker"
+                    x-html="galleryHtml"
+                    @click="loadGalleryPage($event)"
+                ></div>
             </div>
         </div>
     </section>
@@ -1549,6 +1516,52 @@
 
     function getTempleForm() {
         return document.getElementById('temple-form');
+    }
+
+    function quickMediaUploader() {
+        return {
+            isUploading: false,
+            errorMessage: '',
+
+            async upload() {
+                this.errorMessage = '';
+
+                const file = this.$refs.fileInput.files[0];
+
+                if (!file) {
+                    this.errorMessage = 'กรุณาเลือกรูปก่อนอัปโหลด';
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('file', file);
+                formData.append('visibility', 'public');
+
+                this.isUploading = true;
+
+                try {
+                    const response = await fetch('{{ route('admin.media.store') }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        this.errorMessage = 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
+                        return;
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    this.errorMessage = 'เกิดข้อผิดพลาดระหว่างอัปโหลด';
+                } finally {
+                    this.isUploading = false;
+                }
+            },
+        };
     }
 
     function updatePrimaryCategoryOptions() {

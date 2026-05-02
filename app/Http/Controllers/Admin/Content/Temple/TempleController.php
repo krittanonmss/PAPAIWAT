@@ -100,7 +100,8 @@ class TempleController extends Controller
             'title' => 'Create Temple',
             'statusOptions' => self::STATUS_OPTIONS,
             'categories' => $this->templeCategories(),
-            'mediaItems' => $this->mediaItems(),
+            'coverMediaItems' => $this->coverMediaItems(),
+            'galleryMediaItems' => $this->galleryMediaItems(),
             'facilities' => $this->facilities(),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
@@ -161,7 +162,8 @@ class TempleController extends Controller
             'temple' => $temple,
             'statusOptions' => self::STATUS_OPTIONS,
             'categories' => $this->templeCategories(),
-            'mediaItems' => $this->mediaItems(),
+            'coverMediaItems' => $this->coverMediaItems(),
+            'galleryMediaItems' => $this->galleryMediaItems(),
             'facilities' => $this->facilities(),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
@@ -190,6 +192,20 @@ class TempleController extends Controller
             ->with('success', 'ลบข้อมูลวัดเรียบร้อยแล้ว');
     }
 
+    public function coverMediaPicker(Request $request): View
+    {
+        return view('admin.content.temples.partials._cover_media_grid', [
+            'mediaItems' => $this->coverMediaItems(),
+        ]);
+    }
+
+    public function galleryMediaPicker(Request $request): View
+    {
+        return view('admin.content.temples.partials._gallery_media_grid', [
+            'mediaItems' => $this->galleryMediaItems(),
+        ]);
+    }
+
     private function templeCategories()
     {
         return Category::query()
@@ -198,12 +214,36 @@ class TempleController extends Controller
             ->get(['id', 'name', 'parent_id']);
     }
 
-    private function mediaItems()
+    private function coverMediaItems()
+    {
+        return $this->paginatedMediaItems(
+            pageName: 'cover_media_page',
+            path: route('admin.temples.media-picker.cover'),
+            perPage: 7
+        );
+    }
+
+    private function galleryMediaItems()
+    {
+        return $this->paginatedMediaItems(
+            pageName: 'gallery_media_page',
+            path: route('admin.temples.media-picker.gallery'),
+            perPage: 8
+        );
+    }
+
+    private function paginatedMediaItems(string $pageName, string $path, int $perPage)
     {
         return Media::query()
             ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
             ->orderByDesc('id')
-            ->get(['id', 'title', 'original_filename', 'media_type', 'path']);
+            ->paginate(
+                perPage: $perPage,
+                columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
+                pageName: $pageName
+            )
+            ->withPath($path);
     }
 
     private function facilities()

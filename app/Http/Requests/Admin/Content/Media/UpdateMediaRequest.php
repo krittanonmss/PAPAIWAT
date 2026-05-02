@@ -15,6 +15,7 @@ class UpdateMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'file' => ['nullable', 'file', 'max:10240'],
             'title' => ['nullable', 'string', 'max:255'],
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],
@@ -27,6 +28,7 @@ class UpdateMediaRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'file' => 'ไฟล์',
             'title' => 'ชื่อไฟล์',
             'alt_text' => 'Alt text',
             'caption' => 'คำบรรยาย',

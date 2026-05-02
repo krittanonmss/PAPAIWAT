@@ -20,7 +20,7 @@ class StoreMediaRequest extends FormRequest
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'visibility' => ['required', 'in:public,private'],
+            'visibility' => ['nullable', 'in:public,private'],
         ];
     }
 }

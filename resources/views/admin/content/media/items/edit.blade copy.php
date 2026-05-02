@@ -1,4 +1,24 @@
 <x-layouts.admin title="Edit Media" header="Edit Media">
+    @php
+        $previewDisk = $media->disk;
+        $previewPath = $media->path;
+
+        $thumbnail = $media->variants->firstWhere('variant_name', 'thumbnail');
+
+        if (
+            $thumbnail
+            && $thumbnail->path
+            && \Illuminate\Support\Facades\Storage::disk($thumbnail->disk)->exists($thumbnail->path)
+        ) {
+            $previewDisk = $thumbnail->disk;
+            $previewPath = $thumbnail->path;
+        }
+
+        $previewUrl = $previewPath && \Illuminate\Support\Facades\Storage::disk($previewDisk)->exists($previewPath)
+            ? \Illuminate\Support\Facades\Storage::disk($previewDisk)->url($previewPath)
+            : null;
+    @endphp
+
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -69,14 +89,13 @@
         <form
             action="{{ route('admin.media.update', $media) }}"
             method="POST"
+            enctype="multipart/form-data"
             class="space-y-6"
         >
             @csrf
             @method('PUT')
 
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-
-                {{-- Main Form --}}
                 <div class="space-y-6">
                     <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                         <div class="border-b border-white/10 px-6 py-4">
@@ -87,6 +106,24 @@
                         </div>
 
                         <div class="space-y-5 p-6">
+                            <div>
+                                <label for="file" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                    เปลี่ยนไฟล์
+                                </label>
+                                <input
+                                    id="file"
+                                    type="file"
+                                    name="file"
+                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
+                                >
+                                <p class="mt-1 text-xs text-slate-500">
+                                    ถ้าไม่เลือกไฟล์ใหม่ ระบบจะเก็บไฟล์เดิมไว้
+                                </p>
+                                @error('file')
+                                    <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <div>
                                 <label for="title" class="mb-1.5 block text-sm font-medium text-slate-300">
                                     ชื่อแสดงผล
@@ -211,12 +248,21 @@
 
                         <div class="mt-4 space-y-4">
                             <div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950">
-                                @if ($media->media_type === 'image')
+                                @if ($media->media_type === 'image' && $previewUrl)
                                     <img
-                                        src="{{ asset('storage/' . $media->path) }}"
+                                        src="{{ $previewUrl }}"
                                         alt="{{ $media->alt_text ?: $media->title ?: $media->original_filename }}"
-                                        class="h-auto w-full object-cover"
+                                        class="aspect-[4/3] w-full object-contain"
                                     >
+                                @elseif ($media->media_type === 'image')
+                                    <div class="flex aspect-[4/3] items-center justify-center p-4 text-center">
+                                        <div>
+                                            <p class="text-sm font-medium text-rose-300">ไม่พบไฟล์รูปภาพ</p>
+                                            <p class="mt-2 break-all text-xs text-slate-500">
+                                                {{ $previewPath }}
+                                            </p>
+                                        </div>
+                                    </div>
                                 @else
                                     <div class="flex aspect-[4/3] items-center justify-center">
                                         <span class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-300">
@@ -235,6 +281,11 @@
                                     สร้าง Thumbnail / Resize ใหม่
                                 </button>
                             @endif
+
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <p class="text-xs text-slate-500">Path</p>
+                                <p class="mt-1 break-all text-xs text-slate-300">{{ $media->path }}</p>
+                            </div>
 
                             <div class="space-y-3">
                                 <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
@@ -260,56 +311,6 @@
                                         </p>
                                     </div>
                                 @endif
-
-                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                    <p class="text-xs text-slate-500">Visibility</p>
-                                    <p class="mt-1">
-                                        <span class="{{ $media->visibility === 'public' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-300' }} rounded-full border px-2.5 py-1 text-xs">
-                                            {{ $media->visibility }}
-                                        </span>
-                                    </p>
-                                </div>
-
-                                @if ($media->variants->isNotEmpty())
-                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                        <p class="text-xs text-slate-500">Image Variants</p>
-
-                                        <div class="mt-3 space-y-2">
-                                            @foreach ($media->variants as $variant)
-                                                <div class="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                                                    <div class="flex items-center justify-between gap-3">
-                                                        <p class="text-sm font-medium text-slate-200">
-                                                            {{ ucfirst($variant->variant_name) }}
-                                                        </p>
-
-                                                        <span class="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-300">
-                                                            {{ $variant->processing_status }}
-                                                        </span>
-                                                    </div>
-
-                                                    <p class="mt-1 text-xs text-slate-500">
-                                                        {{ $variant->width ?? '-' }} × {{ $variant->height ?? '-' }} px
-                                                        ·
-                                                        {{ number_format($variant->file_size / 1024, 1) }} KB
-                                                    </p>
-
-                                                    <a
-                                                        href="{{ asset('storage/' . $variant->path) }}"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        class="mt-2 inline-flex text-xs font-medium text-blue-300 hover:text-blue-200"
-                                                    >
-                                                        เปิดไฟล์ variant
-                                                    </a>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-4">
-                                        <p class="text-sm text-slate-400">ยังไม่มี variants สำหรับไฟล์นี้</p>
-                                    </div>
-                                @endif
                             </div>
                         </div>
                     </div>
@@ -319,9 +320,7 @@
             {{-- Sticky Action Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-xs text-slate-500">
-                        ตรวจสอบข้อมูลไฟล์ก่อนบันทึกการแก้ไข
-                    </p>
+                    <p class="text-xs text-slate-500">ตรวจสอบข้อมูลไฟล์ก่อนบันทึกการแก้ไข</p>
 
                     <div class="flex items-center justify-end gap-3">
                         <a
