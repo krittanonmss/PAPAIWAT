@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -39,6 +40,11 @@ class PageController extends Controller
             ->get();
 
         return view('admin.content.layout.pages.create', compact('templates', 'media'));
+    }
+
+    public function previewCreate(Request $request): JsonResponse
+    {
+        return $this->previewResponse($request);
     }
 
     public function store(Request $request): RedirectResponse
@@ -109,6 +115,11 @@ class PageController extends Controller
         return view('admin.content.layout.pages.edit', compact('page', 'templates', 'media'));
     }
 
+    public function preview(Request $request, Page $page): JsonResponse
+    {
+        return $this->previewResponse($request, $page);
+    }
+
     public function update(Request $request, Page $page): RedirectResponse
     {
         $validated = $request->validate([
@@ -157,5 +168,96 @@ class PageController extends Controller
         return redirect()
             ->route('admin.content.pages.index')
             ->with('success', 'ลบหน้าเว็บเรียบร้อยแล้ว');
+    }
+
+    private function previewResponse(Request $request, ?Page $existingPage = null): JsonResponse
+    {
+        $page = $this->previewPage($request, $existingPage);
+        $viewPath = $this->previewViewPath($page);
+        $sections = $this->previewSections($existingPage);
+        $sectionData = [];
+        $items = collect();
+
+        try {
+            $html = view($viewPath, compact('page', 'sections', 'sectionData', 'items'))->render();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $html = view('frontend.templates.previews.admin-iframe', [
+                'previewTitle' => 'Preview error',
+                'previewMessage' => $exception->getMessage(),
+            ])->render();
+        }
+
+        return response()->json([
+            'html' => $html,
+        ]);
+    }
+
+    private function previewPage(Request $request, ?Page $existingPage = null): Page
+    {
+        $page = new Page([
+            'template_id' => $request->integer('template_id') ?: null,
+            'title' => $request->input('title') ?: $existingPage?->title ?: 'Untitled page',
+            'slug' => $request->input('slug') ?: $existingPage?->slug ?: 'preview',
+            'page_type' => $request->input('page_type') ?: $existingPage?->page_type ?: 'custom',
+            'status' => $request->input('status') ?: $existingPage?->status ?: 'draft',
+            'is_homepage' => $request->boolean('is_homepage'),
+            'sort_order' => (int) ($request->input('sort_order') ?? $existingPage?->sort_order ?? 0),
+            'excerpt' => $request->input('excerpt') ?: null,
+            'description' => $request->input('description') ?: null,
+            'meta_title' => $request->input('meta_title') ?: null,
+            'meta_description' => $request->input('meta_description') ?: null,
+            'meta_keywords' => $request->input('meta_keywords') ?: null,
+            'canonical_url' => $request->input('canonical_url') ?: null,
+            'og_title' => $request->input('og_title') ?: null,
+            'og_description' => $request->input('og_description') ?: null,
+            'og_image_media_id' => $request->integer('og_image_media_id') ?: null,
+        ]);
+
+        if ($existingPage) {
+            $page->id = $existingPage->id;
+            $page->exists = true;
+        }
+
+        if ($page->template_id) {
+            $template = Template::query()
+                ->active()
+                ->find($page->template_id);
+
+            if ($template) {
+                $page->setRelation('template', $template);
+            }
+        } elseif ($existingPage?->template) {
+            $page->setRelation('template', $existingPage->template);
+        }
+
+        return $page;
+    }
+
+    private function previewViewPath(Page $page): string
+    {
+        $viewPath = $page->template?->view_path;
+
+        if ($viewPath && view()->exists($viewPath)) {
+            return $viewPath;
+        }
+
+        return view()->exists('frontend.templates.pages.default')
+            ? 'frontend.templates.pages.default'
+            : 'frontend.templates.previews.admin-iframe';
+    }
+
+    private function previewSections(?Page $page)
+    {
+        if (! $page) {
+            return collect();
+        }
+
+        return $page->sections()
+            ->where('status', 'active')
+            ->where('is_visible', true)
+            ->orderBy('sort_order')
+            ->get();
     }
 }

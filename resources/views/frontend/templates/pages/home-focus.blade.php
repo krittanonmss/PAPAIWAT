@@ -1,0 +1,230 @@
+@extends('frontend.layouts.app')
+
+@section('title', $page->meta_title ?? $page->title ?? 'PAPAIWAT')
+@section('meta_description', $page->meta_description ?? $page->excerpt ?? 'PAPAIWAT Platform')
+
+@section('content')
+    @php
+        $homeTemples = collect($homeTemples ?? []);
+        $homeArticles = collect($homeArticles ?? []);
+    @endphp
+
+    <main class="bg-[#f8f3ea] text-slate-900">
+        <section class="relative min-h-screen overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#fffaf0] via-[#f4ead8] to-[#e8dcc5]"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(180,133,72,0.18),transparent_38%)]"></div>
+
+            <div class="absolute inset-0 flex items-center">
+                <div class="mx-auto max-w-5xl px-4 text-center">
+                    <p class="text-sm font-semibold tracking-wide text-amber-700">PAPAIWAT</p>
+
+                    <h1 class="mt-4 text-4xl font-bold leading-tight text-slate-950 md:text-6xl">
+                        {{ $page->title ?? 'ค้นพบวัดและวัฒนธรรมไทย' }}
+                    </h1>
+
+                    <p class="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600">
+                        {{ $page->excerpt ?? 'สำรวจวัด บทความ และข้อมูลวัฒนธรรมไทยจากฐานข้อมูลที่จัดการผ่าน CMS' }}
+                    </p>
+
+                    <div class="mt-7 flex flex-wrap justify-center gap-3">
+                        <a href="{{ url('/temple-list') }}" class="rounded-2xl bg-amber-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-900/20 transition hover:bg-amber-800">
+                            สำรวจวัด
+                        </a>
+
+                        <a href="{{ url('/article-list') }}" class="rounded-2xl border border-amber-900/10 bg-white/70 px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white hover:text-slate-950">
+                            อ่านบทความ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mx-auto max-w-7xl px-4 py-14">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-amber-700">PAPAIWAT Temples</p>
+                    <h2 class="mt-2 text-3xl font-bold text-slate-950">วัดแนะนำ</h2>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                        วัดเด่นและวัดยอดนิยมที่คัดจากฐานข้อมูล
+                    </p>
+                </div>
+
+                <a href="{{ url('/temples') }}" class="inline-flex items-center justify-center rounded-2xl border border-amber-900/10 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white hover:text-slate-950">
+                    ดูวัดทั้งหมด
+                </a>
+            </div>
+
+            @if ($homeTemples->isNotEmpty())
+                <div class="grid gap-7 md:grid-cols-2 xl:grid-cols-4">
+                    @foreach ($homeTemples as $temple)
+                        @php
+                            $content = $temple->relationLoaded('content') ? $temple->content : null;
+                            $mediaUsages = ($content && $content->relationLoaded('mediaUsages')) ? $content->mediaUsages : collect();
+                            $cover = $mediaUsages->firstWhere('role_key', 'cover');
+                            $coverMedia = ($cover && $cover->relationLoaded('media')) ? $cover->media : null;
+                            $path = $coverMedia?->path;
+                            $imageUrl = $path ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : \Illuminate\Support\Facades\Storage::url($path)) : null;
+                            $address = $temple->relationLoaded('address') ? $temple->address : null;
+                            $stat = $temple->relationLoaded('stat') ? $temple->stat : null;
+                            $categories = ($content && $content->relationLoaded('categories')) ? $content->categories : collect();
+                            $category = $categories->firstWhere('pivot.is_primary', true) ?? $categories->first();
+                        @endphp
+
+                        <article class="group overflow-hidden rounded-3xl border border-amber-900/10 bg-white/75 shadow-xl shadow-amber-950/5 backdrop-blur transition hover:-translate-y-1 hover:border-amber-700/25 hover:bg-white">
+                            <a href="{{ route('temples.show', $temple) }}">
+                                <div class="relative h-72 overflow-hidden bg-[#eadfcc]">
+                                    @if ($imageUrl)
+                                        <img src="{{ $imageUrl }}" alt="{{ $coverMedia?->alt_text ?: $content?->title ?: 'Temple image' }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
+                                    @else
+                                        <div class="flex h-full items-center justify-center text-sm text-slate-400">No Image</div>
+                                    @endif
+
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/5 to-transparent"></div>
+
+                                    @if ($temple->temple_type)
+                                        <span class="absolute left-4 top-4 rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white">
+                                            {{ $temple->temple_type }}
+                                        </span>
+                                    @endif
+
+                                    @if ($category)
+                                        <span class="absolute bottom-4 left-4 rounded-xl bg-white/85 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm backdrop-blur">
+                                            {{ $category->name }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="space-y-4 p-6">
+                                    <div>
+                                        <h3 class="line-clamp-2 text-2xl font-semibold text-slate-950">
+                                            {{ $content?->title ?? '-' }}
+                                        </h3>
+
+                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                                            {{ $content?->excerpt ?? $content?->description ?? 'ยังไม่มีคำโปรย' }}
+                                        </p>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2 border-t border-amber-900/10 pt-4 text-xs text-slate-600">
+                                        <span class="rounded-full bg-[#f3eadb] px-3 py-1">{{ $address?->province ?? 'ไม่ระบุจังหวัด' }}</span>
+
+                                        @if ($stat?->average_rating)
+                                            <span class="rounded-full bg-[#f3eadb] px-3 py-1">
+                                                {{ number_format((float) $stat->average_rating, 1) }} rating
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-3xl border border-amber-900/10 bg-white/70 p-8 text-center text-slate-500">
+                    ยังไม่มีวัดแนะนำ
+                </div>
+            @endif
+        </section>
+
+        <section class="mx-auto max-w-7xl px-4 pb-16">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-amber-700">PAPAIWAT Articles</p>
+                    <h2 class="mt-2 text-3xl font-bold text-slate-950">Article แนะนำ</h2>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                        บทความเด่นและเรื่องราวที่น่าสนใจจากฐานข้อมูล
+                    </p>
+                </div>
+
+                <a href="{{ url('/articles') }}" class="inline-flex items-center justify-center rounded-2xl border border-amber-900/10 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white hover:text-slate-950">
+                    ดูบทความทั้งหมด
+                </a>
+            </div>
+
+            @if ($homeArticles->isNotEmpty())
+                <div class="grid gap-7 md:grid-cols-2 xl:grid-cols-4">
+                    @foreach ($homeArticles as $articleContent)
+                        @php
+                            $mediaUsages = $articleContent->relationLoaded('mediaUsages') ? $articleContent->mediaUsages : collect();
+                            $cover = $mediaUsages->firstWhere('role_key', 'cover');
+                            $coverMedia = ($cover && $cover->relationLoaded('media')) ? $cover->media : null;
+                            $path = $coverMedia?->path;
+                            $imageUrl = $path ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : \Illuminate\Support\Facades\Storage::url($path)) : null;
+                            $categories = $articleContent->relationLoaded('categories') ? $articleContent->categories : collect();
+                            $category = $categories->firstWhere('pivot.is_primary', true) ?? $categories->first();
+                            $article = $articleContent->relationLoaded('article') ? $articleContent->article : null;
+                            $tags = ($article && $article->relationLoaded('tags')) ? $article->tags : collect();
+                            $stat = ($article && $article->relationLoaded('stat')) ? $article->stat : null;
+                        @endphp
+
+                        <article class="group overflow-hidden rounded-3xl border border-amber-900/10 bg-white/75 shadow-xl shadow-amber-950/5 backdrop-blur transition hover:-translate-y-1 hover:border-amber-700/25 hover:bg-white">
+                            <a href="{{ route('articles.show', $articleContent->slug) }}">
+                                <div class="relative h-72 overflow-hidden bg-[#eadfcc]">
+                                    @if ($imageUrl)
+                                        <img src="{{ $imageUrl }}" alt="{{ $coverMedia?->alt_text ?: $articleContent->title }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
+                                    @else
+                                        <div class="flex h-full items-center justify-center text-sm text-slate-400">No Image</div>
+                                    @endif
+
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/5 to-transparent"></div>
+
+                                    <span class="absolute left-4 top-4 rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white">
+                                        {{ $category?->name ?? 'Article' }}
+                                    </span>
+                                </div>
+
+                                <div class="space-y-4 p-6">
+                                    <div>
+                                        <p class="text-xs font-medium text-amber-700">
+                                            {{ $articleContent->published_at?->format('d M Y') ?? 'Published' }}
+                                        </p>
+
+                                        <h3 class="mt-2 line-clamp-2 text-2xl font-semibold text-slate-950">
+                                            {{ $articleContent->title }}
+                                        </h3>
+
+                                        @if ($article?->title_en)
+                                            <p class="mt-1 line-clamp-1 text-sm text-amber-800">
+                                                {{ $article->title_en }}
+                                            </p>
+                                        @endif
+
+                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+                                            {{ $articleContent->excerpt ?? 'ยังไม่มีคำโปรย' }}
+                                        </p>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2 border-t border-amber-900/10 pt-4 text-xs text-slate-600">
+                                        <span class="rounded-full bg-[#f3eadb] px-3 py-1">
+                                            {{ $article?->author_name ?: 'PAPAIWAT Editorial' }}
+                                        </span>
+
+                                        @if ($article?->reading_time_minutes)
+                                            <span class="rounded-full bg-[#f3eadb] px-3 py-1">
+                                                อ่าน {{ number_format($article->reading_time_minutes) }} นาที
+                                            </span>
+                                        @endif
+
+                                        <span class="rounded-full bg-[#f3eadb] px-3 py-1">
+                                            {{ number_format((int) ($stat?->view_count ?? 0)) }} views
+                                        </span>
+
+                                        @foreach ($tags->take(1) as $tag)
+                                            <span class="rounded-full border border-amber-700/20 bg-amber-100/70 px-3 py-1 text-amber-800">
+                                                #{{ $tag->name }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </a>
+                        </article>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-3xl border border-amber-900/10 bg-white/70 p-8 text-center text-slate-500">
+                    ยังไม่มี Article แนะนำ
+                </div>
+            @endif
+        </section>
+    </main>
+@endsection

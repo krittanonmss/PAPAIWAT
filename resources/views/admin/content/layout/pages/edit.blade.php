@@ -60,7 +60,7 @@
             @csrf
             @method('PUT')
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px]">
 
                 {{-- Main Form --}}
                 <div class="space-y-6">
@@ -71,6 +71,10 @@
 
                 {{-- Side Panel --}}
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
+                    @include('admin.content.layout.pages._realtime_preview', [
+                        'previewUrl' => route('admin.content.pages.preview', $page),
+                    ])
+
                     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h3 class="text-sm font-semibold text-white">สถานะการแก้ไข</h3>
 

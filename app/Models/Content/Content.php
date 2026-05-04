@@ -105,4 +105,12 @@ class Content extends Model
     {
         return $this->hasOne(Article::class, 'content_id');
     }
+
+    public function template()
+    {
+        return $this->belongsTo(
+            \App\Models\Content\Layout\Template::class,
+            'template_id'
+        );
+    }
 }

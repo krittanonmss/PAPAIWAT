@@ -7,7 +7,7 @@
             <a href="{{ url('/temple-list') }}" class="hover:text-white">วัด</a>
         </li>
         <li>
-            <a href="{{ url('/articles') }}" class="hover:text-white">บทความ</a>
+            <a href="{{ url('/article-list') }}" class="hover:text-white">บทความ</a>
         </li>
     </ul>
 </nav>

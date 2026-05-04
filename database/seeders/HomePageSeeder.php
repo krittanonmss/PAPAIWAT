@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Content\Layout\Page;
-use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Layout\Template;
 use Illuminate\Database\Seeder;
 
@@ -30,47 +29,5 @@ class HomePageSeeder extends Seeder
             ]
         );
 
-        // Hero
-        PageSection::updateOrCreate(
-            [
-                'page_id' => $page->id,
-                'section_key' => 'hero',
-            ],
-            [
-                'name' => 'Hero Section',
-                'component_key' => 'home.hero',
-                'settings' => [
-                    'title' => 'ค้นหาวัดทั่วประเทศไทย',
-                    'subtitle' => 'สำรวจวัดและวัฒนธรรมไทย',
-                ],
-                'content' => [],
-                'status' => 'active',
-                'is_visible' => true,
-                'sort_order' => 1,
-            ]
-        );
-
-        // Temple list
-        PageSection::updateOrCreate(
-            [
-                'page_id' => $page->id,
-                'section_key' => 'featured_temples',
-            ],
-            [
-                'name' => 'Featured Temples',
-                'component_key' => 'temple_list',
-                'settings' => [
-                    'limit' => 8,
-                    'source' => 'featured',
-                ],
-                'content' => [
-                    'title' => 'วัดแนะนำ',
-                    'subtitle' => 'สถานที่ยอดนิยม',
-                ],
-                'status' => 'active',
-                'is_visible' => true,
-                'sort_order' => 2,
-            ]
-        );
     }
 }

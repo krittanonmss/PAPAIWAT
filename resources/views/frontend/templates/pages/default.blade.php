@@ -23,15 +23,5 @@
             @endif
         </div>
 
-        <div class="mt-10 space-y-10">
-            @foreach ($sections as $section)
-                @includeIf('frontend.sections.' . str_replace('.', '/', $section->component_key), [
-                    'section' => $section,
-                    'content' => $section->content ?? [],
-                    'settings' => $section->settings ?? [],
-                    'data' => $sectionData[$section->id] ?? null,
-                ])
-            @endforeach
-        </div>
     </section>
 @endsection
