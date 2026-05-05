@@ -36,6 +36,18 @@ class UpdateTempleRequest extends FormRequest
                     ->ignore($contentId)
                     ->where(fn ($query) => $query->where('content_type', 'temple')),
             ],
+            'template_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('templates', 'id')->where(function ($query) {
+                    $query->where('status', 'active')
+                        ->where('view_path', 'like', 'frontend.templates.details.%')
+                        ->where(function ($query) {
+                            $query->where('key', 'temple-detail')
+                                ->orWhere('view_path', 'like', 'frontend.templates.details.temple-%');
+                        });
+                }),
+            ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],

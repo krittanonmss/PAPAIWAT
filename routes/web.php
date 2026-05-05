@@ -14,10 +14,7 @@ Route::get('/', [FrontendPageController::class, 'home'])->name('home');
 */
 require __DIR__ . '/admin/auth.php';
 require __DIR__ . '/admin/protected.php';
-require __DIR__ . '/admin/access.php';
 require __DIR__ . '/admin/users.php';
-require __DIR__ . '/admin/content.php';
-require __DIR__ . '/admin/layout.php';
 require __DIR__ . '/admin/media.php';
 
 /*

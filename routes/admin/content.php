@@ -45,7 +45,7 @@ Route::prefix('temples')->name('temples.')->group(function () {
     Route::delete('/{temple}', [TempleController::class, 'destroy'])->middleware('admin.permission:temples.delete')->name('destroy');
 });
 
-Route::prefix('admin/articles')->name('admin.content.articles.')->group(function () {
+Route::prefix('articles')->name('content.articles.')->group(function () {
     Route::get('/', [ArticleController::class, 'index'])
         ->middleware('admin.permission:articles.view')
         ->name('index');

@@ -15,10 +15,10 @@ class ContentTemplateResolver
     ): string
     {
         $templates = collect([
-            $this->selectedTemplate($templateId),
-            $useContentTemplate ? $this->selectedTemplate($content->template_id) : null,
+            $this->selectedTemplate($templateId, $content->content_type),
+            $useContentTemplate ? $this->selectedTemplate($content->template_id, $content->content_type) : null,
             $this->defaultTemplateFor($content->content_type),
-            $this->globalDefaultTemplate(),
+            $this->globalDefaultTemplate($content->content_type),
         ])->filter();
 
         foreach ($templates as $template) {
@@ -32,7 +32,7 @@ class ContentTemplateResolver
             : 'frontend.templates.pages.default';
     }
 
-    private function selectedTemplate(?int $templateId): ?Template
+    private function selectedTemplate(?int $templateId, ?string $contentType): ?Template
     {
         if (! $templateId) {
             return null;
@@ -41,6 +41,12 @@ class ContentTemplateResolver
         return Template::query()
             ->active()
             ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->when($contentType, function ($query) use ($contentType) {
+                $query->where(function ($query) use ($contentType) {
+                    $query->where('key', $contentType . '-detail')
+                        ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
+                });
+            })
             ->find($templateId);
     }
 
@@ -56,12 +62,18 @@ class ContentTemplateResolver
             ->first();
     }
 
-    private function globalDefaultTemplate(): ?Template
+    private function globalDefaultTemplate(?string $contentType): ?Template
     {
         return Template::query()
             ->active()
             ->where('is_default', true)
             ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->when($contentType, function ($query) use ($contentType) {
+                $query->where(function ($query) use ($contentType) {
+                    $query->where('key', $contentType . '-detail')
+                        ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
+                });
+            })
             ->first();
     }
 

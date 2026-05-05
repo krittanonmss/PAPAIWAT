@@ -74,6 +74,15 @@ class CmsTemplateSeeder extends Seeder
                 'sort_order' => 40,
             ],
             [
+                'key' => 'temple-compact-detail',
+                'name' => 'Temple Detail Compact',
+                'description' => 'Compact split layout for temple detail pages.',
+                'view_path' => 'frontend.templates.details.temple-compact',
+                'status' => 'active',
+                'is_default' => false,
+                'sort_order' => 45,
+            ],
+            [
                 'key' => 'article-list',
                 'name' => 'Article List Default',
                 'description' => 'Default article listing template.',
@@ -90,6 +99,15 @@ class CmsTemplateSeeder extends Seeder
                 'status' => 'active',
                 'is_default' => true,
                 'sort_order' => 60,
+            ],
+            [
+                'key' => 'article-editorial-detail',
+                'name' => 'Article Detail Editorial',
+                'description' => 'Editorial reading layout for article detail pages.',
+                'view_path' => 'frontend.templates.details.article-editorial',
+                'status' => 'active',
+                'is_default' => false,
+                'sort_order' => 65,
             ],
             [
                 'key' => 'admin-preview-safe',

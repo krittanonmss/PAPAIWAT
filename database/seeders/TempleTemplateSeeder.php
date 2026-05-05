@@ -16,7 +16,7 @@ class TempleTemplateSeeder extends Seeder
                 'view_path' => 'frontend.templates.details.temple-default',
                 'description' => 'Template หลักสำหรับหน้าแสดงรายละเอียดวัด',
                 'status' => 'active',
-                'is_default' => false,
+                'is_default' => true,
                 'sort_order' => 20,
             ]
         );

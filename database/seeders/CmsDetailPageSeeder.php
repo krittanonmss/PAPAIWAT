@@ -23,6 +23,18 @@ class CmsDetailPageSeeder extends Seeder
         );
 
         Template::updateOrCreate(
+            ['key' => 'temple-compact-detail'],
+            [
+                'name' => 'Temple Detail Compact',
+                'description' => 'Compact split layout for temple detail pages.',
+                'view_path' => 'frontend.templates.details.temple-compact',
+                'status' => 'active',
+                'is_default' => false,
+                'sort_order' => 45,
+            ]
+        );
+
+        Template::updateOrCreate(
             ['key' => 'article-detail'],
             [
                 'name' => 'Article Detail Default',
@@ -31,6 +43,18 @@ class CmsDetailPageSeeder extends Seeder
                 'status' => 'active',
                 'is_default' => true,
                 'sort_order' => 60,
+            ]
+        );
+
+        Template::updateOrCreate(
+            ['key' => 'article-editorial-detail'],
+            [
+                'name' => 'Article Detail Editorial',
+                'description' => 'Editorial reading layout for article detail pages.',
+                'view_path' => 'frontend.templates.details.article-editorial',
+                'status' => 'active',
+                'is_default' => false,
+                'sort_order' => 65,
             ]
         );
 

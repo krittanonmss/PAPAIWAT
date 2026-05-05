@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Temple\StoreTempleRequest;
 use App\Http\Requests\Admin\Content\Temple\UpdateTempleRequest;
 use App\Models\Content\Category;
+use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
@@ -103,6 +104,8 @@ class TempleController extends Controller
             'coverMediaItems' => $this->coverMediaItems(),
             'galleryMediaItems' => $this->galleryMediaItems(),
             'facilities' => $this->facilities(),
+            'detailTemplates' => $this->detailTemplates('temple'),
+            'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'temple']),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
                 ->whereHas('content')
@@ -165,6 +168,10 @@ class TempleController extends Controller
             'coverMediaItems' => $this->coverMediaItems(),
             'galleryMediaItems' => $this->galleryMediaItems(),
             'facilities' => $this->facilities(),
+            'detailTemplates' => $this->detailTemplates('temple'),
+            'templatePreviewUrl' => $temple->content
+                ? route('admin.content.template-preview', ['type' => 'temple', 'content' => $temple->content])
+                : route('admin.content.template-preview.sample', ['type' => 'temple']),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
                 ->where('id', '!=', $temple->id)
@@ -253,5 +260,19 @@ class TempleController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    private function detailTemplates(string $contentType)
+    {
+        return Template::query()
+            ->active()
+            ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->where(function ($query) use ($contentType) {
+                $query->where('key', $contentType . '-detail')
+                    ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
+            })
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 }

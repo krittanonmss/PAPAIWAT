@@ -22,6 +22,7 @@ class Content extends Model
         'content_type',
         'title',
         'slug',
+        'template_id',
         'excerpt',
         'description',
         'status',

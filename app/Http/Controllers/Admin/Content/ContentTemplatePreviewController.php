@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Content;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content\Content;
+use App\Models\Content\Temple\Temple;
 use App\Support\ContentTemplateResolver;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,6 +25,31 @@ class ContentTemplatePreviewController extends Controller
             'temple' => $this->renderTemple($content, $request, $templateResolver),
             'article' => $this->renderArticle($content, $request, $templateResolver),
         };
+    }
+
+    public function sample(
+        Request $request,
+        string $type,
+        ContentTemplateResolver $templateResolver
+    ): View
+    {
+        abort_unless(in_array($type, ['temple', 'article'], true), 404);
+
+        $content = Content::query()
+            ->where('content_type', $type)
+            ->latest('id')
+            ->first();
+
+        if ($content) {
+            return match ($type) {
+                'temple' => $this->renderTemple($content, $request, $templateResolver),
+                'article' => $this->renderArticle($content, $request, $templateResolver),
+            };
+        }
+
+        return view('admin.content.template-preview-empty', [
+            'type' => $type,
+        ]);
     }
 
     private function renderTemple(
@@ -49,6 +75,16 @@ class ContentTemplatePreviewController extends Controller
             'nearbyPlaces.nearbyTemple.content',
         ]);
 
+        return $this->renderTempleView($temple, $content, $request, $templateResolver);
+    }
+
+    private function renderTempleView(
+        Temple $temple,
+        Content $content,
+        Request $request,
+        ContentTemplateResolver $templateResolver
+    ): View
+    {
         $viewPath = $templateResolver->resolveViewPath(
             $content,
             $request->has('template_id') ? ($request->integer('template_id') ?: null) : $content->template_id,
@@ -92,4 +128,5 @@ class ContentTemplatePreviewController extends Controller
 
         return view($viewPath, $viewData);
     }
+
 }

@@ -16,6 +16,7 @@ class TempleDataSyncService
                 'content_type' => 'temple',
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['slug']),
+                'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'status' => $validated['status'],
@@ -54,6 +55,7 @@ class TempleDataSyncService
             $temple->content->update([
                 'title' => $validated['title'],
                 'slug' => Str::slug($validated['slug']),
+                'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'status' => $validated['status'],

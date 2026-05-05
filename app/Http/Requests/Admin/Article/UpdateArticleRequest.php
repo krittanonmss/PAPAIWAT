@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Article;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateArticleRequest extends FormRequest
 {
@@ -16,6 +17,18 @@ class UpdateArticleRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
+            'template_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('templates', 'id')->where(function ($query) {
+                    $query->where('status', 'active')
+                        ->where('view_path', 'like', 'frontend.templates.details.%')
+                        ->where(function ($query) {
+                            $query->where('key', 'article-detail')
+                                ->orWhere('view_path', 'like', 'frontend.templates.details.article-%');
+                        });
+                }),
+            ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:draft,published,archived'],

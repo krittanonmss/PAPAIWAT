@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             FrontendTemplateSeeder::class,
             HomePageSeeder::class,
             TempleListPageSeeder::class,
+            CmsDetailPageSeeder::class,
             TempleTemplateSeeder::class,
 
         ]);

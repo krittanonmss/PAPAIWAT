@@ -15,6 +15,15 @@
     $visitRules = $temple?->visitRules ?? collect();
     $travelInfos = $temple?->travelInfos ?? collect();
     $nearbyPlaces = $temple?->nearbyPlaces ?? collect();
+    $detailTemplates = $detailTemplates ?? collect();
+    $selectedTemplateId = old('template_id', $content?->template_id);
+    $templatePreviewUrl = $templatePreviewUrl ?? null;
+    $templatePreviewSrc = $templatePreviewUrl
+        ? $templatePreviewUrl . '?' . http_build_query(array_filter([
+            'template_id' => $selectedTemplateId,
+            '_preview_ts' => time(),
+        ]))
+        : null;
     $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     $jsOpeningHours = $openingHours->map(function ($h) {
@@ -196,6 +205,107 @@
             </div>
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="template_id" class="mb-1.5 block text-sm font-medium text-slate-300">
+                        Template หน้า Detail
+                    </label>
+                    <select
+                        id="template_id"
+                        name="template_id"
+                        data-template-preview-select
+                        data-preview-target="temple-template-preview"
+                        data-preview-base="{{ $templatePreviewUrl }}"
+                        class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 @error('template_id') border-rose-400 @enderror"
+                    >
+                        <option value="">ใช้ค่าเริ่มต้นของวัด</option>
+                        @foreach ($detailTemplates as $template)
+                            <option value="{{ $template->id }}" @selected((string) old('template_id', $content?->template_id) === (string) $template->id)>
+                                {{ $template->name }} ({{ $template->key }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('template_id')
+                        <p class="mt-1 text-xs text-rose-300">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-1 text-xs text-slate-500">
+                        ถ้าไม่เลือก ระบบจะใช้ temple-detail template ที่ active อยู่
+                    </p>
+
+                    @if ($templatePreviewSrc)
+                        <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
+                            <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-200">Preview template</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">ใช้ข้อมูล temple จาก database ล่าสุด กดบันทึกก่อนรีเฟรช preview</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        data-template-preview-refresh
+                                        class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10"
+                                    >
+                                        รีเฟรชข้อมูลจาก DB
+                                    </button>
+                                    <a
+                                        href="{{ $templatePreviewSrc }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        data-template-preview-open
+                                        class="rounded-lg border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20"
+                                    >
+                                        เปิดเต็มหน้า
+                                    </a>
+                                </div>
+                            </div>
+                            <iframe
+                                id="temple-template-preview"
+                                src="{{ $templatePreviewSrc }}"
+                                class="h-[520px] w-full bg-slate-950"
+                                loading="lazy"
+                            ></iframe>
+                        </div>
+
+                        <script>
+                            document.querySelectorAll('[data-template-preview-select]').forEach((select) => {
+                                if (select.dataset.previewBound === '1') {
+                                    return;
+                                }
+
+                                select.dataset.previewBound = '1';
+                                const updatePreview = () => {
+                                    const baseUrl = select.dataset.previewBase;
+                                    const frame = document.getElementById(select.dataset.previewTarget);
+                                    const openLink = select.closest('div').querySelector('[data-template-preview-open]');
+
+                                    if (!baseUrl || !frame) {
+                                        return;
+                                    }
+
+                                    const url = new URL(baseUrl, window.location.origin);
+
+                                    if (select.value) {
+                                        url.searchParams.set('template_id', select.value);
+                                    }
+
+                                    url.searchParams.set('_preview_ts', Date.now().toString());
+
+                                    frame.src = url.toString();
+
+                                    if (openLink) {
+                                        openLink.href = url.toString();
+                                    }
+                                };
+
+                                select.addEventListener('change', updatePreview);
+
+                                select.closest('div')
+                                    .querySelector('[data-template-preview-refresh]')
+                                    ?.addEventListener('click', updatePreview);
+                            });
+                        </script>
+                    @endif
+                </div>
+
                 <div>
                     <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">
                         สถานะ <span class="text-rose-400">*</span>

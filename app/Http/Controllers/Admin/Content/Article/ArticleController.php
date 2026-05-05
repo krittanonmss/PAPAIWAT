@@ -9,6 +9,7 @@ use App\Models\Content\Article\Article;
 use App\Models\Content\Article\ArticleStat;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
+use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -146,7 +147,10 @@ class ArticleController extends Controller
             'tags',
             'mediaItems',
             'relatedArticles'
-        ));
+        ) + [
+            'detailTemplates' => $this->detailTemplates('article'),
+            'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'article']),
+        ]);
     }
 
     public function store(StoreArticleRequest $request): RedirectResponse
@@ -158,6 +162,7 @@ class ArticleController extends Controller
                 'content_type' => 'article',
                 'title' => $validated['title'],
                 'slug' => $this->generateUniqueSlug($validated['slug'] ?? $validated['title']),
+                'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'status' => $validated['status'],
@@ -266,7 +271,12 @@ class ArticleController extends Controller
             'tags',
             'mediaItems',
             'relatedArticles'
-        ));
+        ) + [
+            'detailTemplates' => $this->detailTemplates('article'),
+            'templatePreviewUrl' => $article->content
+                ? route('admin.content.template-preview', ['type' => 'article', 'content' => $article->content])
+                : route('admin.content.template-preview.sample', ['type' => 'article']),
+        ]);
     }
 
     public function update(UpdateArticleRequest $request, Article $article): RedirectResponse
@@ -282,6 +292,7 @@ class ArticleController extends Controller
                     $validated['slug'] ?? $validated['title'],
                     $article->content->id
                 ),
+                'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'status' => $validated['status'],
@@ -441,5 +452,19 @@ class ArticleController extends Controller
         }
 
         return $slug;
+    }
+
+    private function detailTemplates(string $contentType)
+    {
+        return Template::query()
+            ->active()
+            ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->where(function (Builder $query) use ($contentType) {
+                $query->where('key', $contentType . '-detail')
+                    ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
+            })
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 }
