@@ -9,10 +9,10 @@
                         Page Section
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">Edit Page Section</h1>
+                    <h1 class="text-2xl font-bold text-white">แก้ไข Block</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        กำลังแก้ไข section:
+                        กำลังแก้ไข block:
                         <span class="font-medium text-white">{{ $section->name }}</span>
                     </p>
                 </div>
@@ -78,23 +78,23 @@
 
                         <div class="mt-4 space-y-3">
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ข้อมูล Section</p>
+                                <p class="text-sm font-medium text-slate-200">ข้อมูล Block</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    แก้ไขชื่อ key type และลำดับการแสดงผลของ section
+                                    แก้ไขชนิด block เนื้อหา และลำดับการแสดงผล
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">Config และ Content</p>
+                                <p class="text-sm font-medium text-slate-200">เนื้อหาแสดงผล</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบข้อมูล config หรือ content ให้ตรงกับ template ที่ใช้งาน
+                                    ตรวจสอบหัวข้อ รูป ปุ่ม หรือแหล่งข้อมูลก่อนบันทึก
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4">
-                                <p class="text-sm font-medium text-rose-200">การลบ Section</p>
+                                <p class="text-sm font-medium text-rose-200">การลบ Block</p>
                                 <p class="mt-1 text-xs leading-5 text-rose-300/80">
-                                    การลบ section อาจทำให้ส่วนแสดงผลของหน้าเว็บไซต์หายไป
+                                    การลบ block จะทำให้ส่วนนั้นหายจากหน้าเว็บไซต์
                                 </p>
                             </div>
                         </div>
@@ -117,7 +117,7 @@
                             type="submit"
                             class="inline-flex items-center justify-center rounded-xl border border-rose-400/30 bg-rose-500/10 px-5 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20 hover:text-rose-100"
                         >
-                            Delete Section
+                            ลบ Block
                         </button>
                     </form>
 

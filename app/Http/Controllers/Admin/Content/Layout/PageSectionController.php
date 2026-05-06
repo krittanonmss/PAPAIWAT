@@ -3,24 +3,36 @@
 namespace App\Http\Controllers\Admin\Content\Layout;
 
 use App\Http\Controllers\Controller;
+use App\Models\Content\Media\Media;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
+use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PageSectionController extends Controller
 {
     public function create(Page $page): View
     {
-        return view('admin.content.layout.page-sections.create', compact('page'));
+        $sectionMediaItems = $this->sectionMediaItems();
+
+        return view('admin.content.layout.page-sections.create', compact('page', 'sectionMediaItems'));
+    }
+
+    public function mediaPicker(Request $request): View|Response
+    {
+        $mediaItems = $this->sectionMediaItems();
+
+        return response()->view('admin.content.layout.page-sections.partials._media_grid', compact('mediaItems'));
     }
 
     public function store(Request $request, Page $page): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'section_key' => ['required', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'section_key' => ['nullable', 'string', 'max:255'],
             'component_key' => ['required', 'string', 'max:255'],
             'settings' => ['nullable', 'json'],
             'content' => ['nullable', 'json'],
@@ -30,13 +42,12 @@ class PageSectionController extends Controller
         ]);
 
         $validated['page_id'] = $page->id;
-
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
         $validated['content'] = $this->decodeJson($validated['content'] ?? null);
-
-        unset($validated['settings'], $validated['content']);
-
-        $validated['is_visible'] = $request->boolean('is_visible', true);
+        $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
+        $generatedKey = Str::slug($validated['name'] . '-' . now()->format('His'));
+        $validated['section_key'] = $validated['section_key'] ?: ($generatedKey ?: $validated['component_key'] . '-' . now()->format('His'));
+        $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
         PageSection::create($validated);
@@ -50,7 +61,9 @@ class PageSectionController extends Controller
     {
         abort_if($section->page_id !== $page->id, 404);
 
-        return view('admin.content.layout.page-sections.edit', compact('page', 'section'));
+        $sectionMediaItems = $this->sectionMediaItems();
+
+        return view('admin.content.layout.page-sections.edit', compact('page', 'section', 'sectionMediaItems'));
     }
 
     public function update(Request $request, Page $page, PageSection $section): RedirectResponse
@@ -58,8 +71,8 @@ class PageSectionController extends Controller
         abort_if($section->page_id !== $page->id, 404);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'section_key' => ['required', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'section_key' => ['nullable', 'string', 'max:255'],
             'component_key' => ['required', 'string', 'max:255'],
             'settings' => ['nullable', 'json'],
             'content' => ['nullable', 'json'],
@@ -70,10 +83,10 @@ class PageSectionController extends Controller
 
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
         $validated['content'] = $this->decodeJson($validated['content'] ?? null);
-
-        unset($validated['settings'], $validated['content']);
-
-        $validated['is_visible'] = $request->boolean('is_visible', true);
+        $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
+        $generatedKey = Str::slug($validated['name'] . '-' . $section->id);
+        $validated['section_key'] = $validated['section_key'] ?: ($section->section_key ?: ($generatedKey ?: $validated['component_key'] . '-' . $section->id));
+        $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
         $section->update($validated);
@@ -103,5 +116,38 @@ class PageSectionController extends Controller
         $decoded = json_decode($value, true);
 
         return is_array($decoded) ? $decoded : null;
+    }
+
+    private function defaultSectionName(string $componentKey): string
+    {
+        return match ($componentKey) {
+            'hero' => 'Hero',
+            'rich_text' => 'ข้อความ',
+            'image_text' => 'รูปภาพพร้อมข้อความ',
+            'cta' => 'Call to Action',
+            'article_grid' => 'รายการบทความ',
+            'temple_grid' => 'รายการวัด',
+            'article_list_full' => 'หน้ารวมบทความ',
+            'temple_list_full' => 'หน้ารวมวัด',
+            'gallery' => 'แกลเลอรี',
+            'faq' => 'FAQ',
+            'stats' => 'ตัวเลขสำคัญ',
+            'contact' => 'ข้อมูลติดต่อ',
+            default => Str::headline($componentKey),
+        };
+    }
+
+    private function sectionMediaItems()
+    {
+        return Media::query()
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->orderByDesc('id')
+            ->paginate(
+                perPage: 7,
+                columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
+                pageName: 'section_media_page'
+            )
+            ->withPath(route('admin.content.pages.sections.media-picker'));
     }
 }

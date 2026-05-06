@@ -44,12 +44,27 @@
         'แขวง / ตำบล' => $address?->subdistrict,
         'รหัสไปรษณีย์' => $address?->postal_code,
     ];
+
+    $renderRichText = function (?string $value) {
+        if (! $value) {
+            return '';
+        }
+
+        return $value === strip_tags($value)
+            ? nl2br(e($value))
+            : $value;
+    };
+
+    $summary = $content?->excerpt
+        ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 180) : null);
 @endphp
 
 @section('title', $content?->meta_title ?? $content?->title ?? 'Temple Detail')
 @section('meta_description', $content?->meta_description ?? $content?->excerpt ?? 'Temple Detail')
 
 @section('content')
+    @include('frontend.templates.details.partials._rich_content_styles')
+
     <main class="bg-slate-950 text-white">
         <section class="relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/75 to-slate-950"></div>
@@ -84,7 +99,7 @@
                         </h1>
 
                         <p class="mt-5 max-w-3xl text-base leading-7 text-slate-300">
-                            {{ $content?->excerpt ?? $content?->description ?? 'ยังไม่มีคำอธิบายสั้น' }}
+                            {{ $summary ?? 'ยังไม่มีคำอธิบายสั้น' }}
                         </p>
 
                         <div class="mt-6 grid gap-3 text-sm text-slate-300 md:grid-cols-4">
@@ -114,15 +129,15 @@
             <div class="space-y-6">
                 <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur md:p-8">
                     <h2 class="text-2xl font-semibold">ประวัติและข้อมูลวัด</h2>
-                    <div class="mt-5 space-y-5 text-sm leading-7 text-slate-300">
+                    <div class="temple-rich-content temple-rich-content-dark mt-5 space-y-5 text-sm leading-7 text-slate-300">
                         @if ($content?->description)
-                            <p>{!! nl2br(e($content->description)) !!}</p>
+                            <div>{!! $renderRichText($content->description) !!}</div>
                         @endif
 
                         @if ($temple?->history)
                             <div>
                                 <h3 class="mb-2 font-semibold text-white">ประวัติ</h3>
-                                <p>{!! nl2br(e($temple->history)) !!}</p>
+                                <div>{!! $renderRichText($temple->history) !!}</div>
                             </div>
                         @endif
 
@@ -146,7 +161,9 @@
                             @foreach ($temple->highlights as $highlight)
                                 <div class="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
                                     <h3 class="font-medium">{{ $highlight->title }}</h3>
-                                    <p class="mt-2 text-sm leading-6 text-slate-400">{{ $highlight->description ?: '-' }}</p>
+                                    <div class="temple-rich-content temple-rich-content-dark mt-2 text-sm leading-6 text-slate-400">
+                                        {!! $highlight->description ? $renderRichText($highlight->description) : '-' !!}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -190,7 +207,9 @@
                             @foreach ($temple->visitRules as $rule)
                                 <li class="flex gap-3 text-sm leading-6 text-slate-300">
                                     <span class="text-blue-300">•</span>
-                                    <span>{{ $rule->rule_text }}</span>
+                                    <div class="temple-rich-content temple-rich-content-dark min-w-0 flex-1">
+                                        {!! $renderRichText($rule->rule_text) !!}
+                                    </div>
                                 </li>
                             @endforeach
                         </ul>

@@ -9,12 +9,27 @@
     $coverUsage = $content?->mediaUsages?->firstWhere('role_key', 'cover');
     $coverPath = $coverUsage?->media?->path;
     $coverUrl = $coverPath ? (filter_var($coverPath, FILTER_VALIDATE_URL) ? $coverPath : \Illuminate\Support\Facades\Storage::url($coverPath)) : null;
+
+    $renderRichText = function (?string $value) {
+        if (! $value) {
+            return '';
+        }
+
+        return $value === strip_tags($value)
+            ? nl2br(e($value))
+            : $value;
+    };
+
+    $summary = $content?->excerpt
+        ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 180) : null);
 @endphp
 
 @section('title', $content?->meta_title ?? $content?->title ?? 'Temple Detail')
 @section('meta_description', $content?->meta_description ?? $content?->excerpt ?? 'Temple Detail')
 
 @section('content')
+    @include('frontend.templates.details.partials._rich_content_styles')
+
     <main class="bg-stone-50 text-stone-950">
         <section class="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[420px_minmax(0,1fr)]">
             <aside class="lg:sticky lg:top-24 lg:self-start">
@@ -70,7 +85,7 @@
                     {{ $content?->title ?? 'รายละเอียดวัด' }}
                 </h1>
                 <p class="mt-5 max-w-3xl text-lg leading-8 text-stone-600">
-                    {{ $content?->excerpt ?? $content?->description ?? 'ยังไม่มีคำอธิบายสั้น' }}
+                    {{ $summary ?? 'ยังไม่มีคำอธิบายสั้น' }}
                 </p>
 
                 <div class="mt-8 grid gap-4 md:grid-cols-3">
@@ -90,12 +105,12 @@
 
                 <section class="mt-8 rounded-2xl border border-stone-200 bg-white p-6">
                     <h2 class="text-2xl font-semibold">ประวัติและข้อมูลสำคัญ</h2>
-                    <div class="mt-4 space-y-5 text-base leading-8 text-stone-600">
+                    <div class="temple-rich-content temple-rich-content-light mt-4 space-y-5 text-base leading-8 text-stone-600">
                         @if ($content?->description)
-                            <p>{!! nl2br(e($content->description)) !!}</p>
+                            <div>{!! $renderRichText($content->description) !!}</div>
                         @endif
                         @if ($temple?->history)
-                            <p>{!! nl2br(e($temple->history)) !!}</p>
+                            <div>{!! $renderRichText($temple->history) !!}</div>
                         @endif
                         @if ($temple?->dress_code)
                             <p><span class="font-semibold text-stone-950">การแต่งกาย:</span> {!! nl2br(e($temple->dress_code)) !!}</p>
@@ -110,7 +125,9 @@
                             @foreach ($temple->highlights as $highlight)
                                 <div class="rounded-2xl border border-stone-200 bg-white p-5">
                                     <h3 class="font-semibold">{{ $highlight->title }}</h3>
-                                    <p class="mt-2 text-sm leading-6 text-stone-600">{{ $highlight->description ?: '-' }}</p>
+                                    <div class="temple-rich-content temple-rich-content-light mt-2 text-sm leading-6 text-stone-600">
+                                        {!! $highlight->description ? $renderRichText($highlight->description) : '-' !!}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>

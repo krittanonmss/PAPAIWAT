@@ -9,10 +9,13 @@ use App\Models\Content\Article\ArticleTag;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
 use App\Models\Content\Layout\Page;
+use App\Models\Content\Layout\PageSection;
+use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Temple;
 use App\Models\Content\Temple\TempleAddress;
 use App\Models\Content\Temple\TempleStat;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class FrontendPageController extends Controller
@@ -22,6 +25,7 @@ class FrontendPageController extends Controller
         $page = Page::query()
             ->with([
                 'template',
+                'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
             ->where('is_homepage', true)
             ->where('status', 'published')
@@ -35,6 +39,7 @@ class FrontendPageController extends Controller
         $page = Page::query()
             ->with([
                 'template',
+                'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
             ->where('slug', $slug)
             ->where('status', 'published')
@@ -45,16 +50,19 @@ class FrontendPageController extends Controller
 
     private function renderPage(Page $page): View
     {
-        $viewPath = $page->template?->view_path ?? 'frontend.templates.pages.default';
+        $viewPath = $page->template?->view_path ?? 'frontend.templates.pages.builder';
 
         if (! view()->exists($viewPath)) {
-            $viewPath = 'frontend.templates.pages.default';
+            $viewPath = view()->exists('frontend.templates.pages.builder')
+                ? 'frontend.templates.pages.builder'
+                : 'frontend.templates.pages.default';
         }
 
         $items = collect();
         $filters = [];
         $homeArticles = collect();
         $homeTemples = collect();
+        $sections = $this->buildPageSections($page);
 
         if (str_starts_with($viewPath, 'frontend.templates.lists.')) {
             $isTempleList = str_contains($viewPath, 'temple');
@@ -78,7 +86,52 @@ class FrontendPageController extends Controller
             $homeTemples = $this->getHomeTempleData();
         }
 
-        return view($viewPath, compact('page', 'items', 'filters', 'homeArticles', 'homeTemples'));
+        return view($viewPath, compact('page', 'items', 'filters', 'homeArticles', 'homeTemples', 'sections'));
+    }
+
+    private function buildPageSections(Page $page): Collection
+    {
+        $sections = $page->relationLoaded('sections')
+            ? $page->sections
+            : $page->sections()->visible()->orderBy('sort_order')->get();
+
+        return $sections
+            ->map(function (PageSection $section) {
+                $section->content_data = $section->content ?? [];
+                $section->settings_data = $section->settings ?? [];
+                $section->image_url = $this->resolveSectionImageUrl($section->content_data);
+                $section->items = match ($section->component_key) {
+                    'article_grid' => $this->getArticleListData($section->settings_data),
+                    'temple_grid' => $this->getTempleListData($section->settings_data),
+                    'article_list_full' => $this->getArticleListData(array_merge(['source' => 'all'], $section->settings_data), true),
+                    'temple_list_full' => $this->getTempleListData(array_merge(['source' => 'all'], $section->settings_data), true),
+                    default => collect(),
+                };
+                $section->filters = match ($section->component_key) {
+                    'article_list_full' => $this->getArticleFilterData(),
+                    'temple_list_full' => $this->getTempleFilterData(),
+                    default => [],
+                };
+
+                return $section;
+            })
+            ->values();
+    }
+
+    private function resolveSectionImageUrl(array $content): ?string
+    {
+        if (! empty($content['image_media_id'])) {
+            $media = Media::query()->find((int) $content['image_media_id']);
+            $path = $media?->path;
+
+            if ($path) {
+                return filter_var($path, FILTER_VALIDATE_URL)
+                    ? $path
+                    : Storage::url($path);
+            }
+        }
+
+        return $content['image_url'] ?? null;
     }
 
     private function getTempleListData(array $settings, bool $paginate = false)

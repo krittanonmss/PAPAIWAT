@@ -12,7 +12,7 @@
                     <h1 class="text-2xl font-bold text-white">{{ $page->title }}</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        รายละเอียดหน้าเว็บไซต์และ sections ภายในหน้า
+                        รายละเอียดหน้าเว็บไซต์และ block ภายในหน้า
                     </p>
                 </div>
 
@@ -21,7 +21,7 @@
                         href="{{ route('admin.content.pages.sections.create', $page) }}"
                         class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
                     >
-                        Add Section
+                        เพิ่ม Block
                     </a>
 
                     <a
@@ -80,9 +80,9 @@
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="flex flex-col gap-4 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-white">Page Sections</h2>
+                            <h2 class="text-base font-semibold text-white">Page Builder</h2>
                             <p class="mt-1 text-sm text-slate-400">
-                                Admin จะแสดงทุก section รวมถึง section ที่ซ่อนไว้
+                                จัดการ block ที่ประกอบเป็นหน้าเว็บ
                             </p>
                         </div>
 
@@ -98,7 +98,7 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-950/50 text-xs uppercase tracking-wide text-slate-400">
                                 <tr>
-                                    <th class="px-6 py-4 font-semibold">Section</th>
+                                    <th class="px-6 py-4 font-semibold">Block</th>
                                     <th class="px-6 py-4 font-semibold">Component</th>
                                     <th class="px-6 py-4 font-semibold">Order</th>
                                     <th class="px-6 py-4 font-semibold">Visible</th>
@@ -167,7 +167,7 @@
                                                 <form
                                                     method="POST"
                                                     action="{{ route('admin.content.pages.sections.destroy', [$page, $section]) }}"
-                                                    onsubmit="return confirm('ยืนยันการลบ section นี้?')"
+                                                    onsubmit="return confirm('ยืนยันการลบ block นี้?')"
                                                 >
                                                     @csrf
                                                     @method('DELETE')
@@ -187,10 +187,10 @@
                                         <td colspan="6" class="px-6 py-14 text-center">
                                             <div class="mx-auto max-w-sm rounded-3xl border border-white/10 bg-slate-950/30 p-6">
                                                 <div class="text-sm font-semibold text-white">
-                                                    ยังไม่มี section ในหน้านี้
+                                                    ยังไม่มี block ในหน้านี้
                                                 </div>
                                                 <p class="mt-2 text-sm text-slate-400">
-                                                    เริ่มเพิ่ม section เพื่อกำหนดเนื้อหาและโครงสร้างของหน้า
+                                                    เริ่มเพิ่ม block เพื่อจัดหน้าแบบ page builder
                                                 </p>
                                             </div>
                                         </td>

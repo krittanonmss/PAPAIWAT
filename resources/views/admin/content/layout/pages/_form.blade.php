@@ -2,15 +2,15 @@
     {{-- Page Information --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
-            <p class="text-sm font-medium text-blue-300">Basic Information</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">Page Information</h2>
+            <p class="text-sm font-medium text-blue-300">Page Builder</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">ข้อมูลหน้า</h2>
             <p class="mt-1 text-sm text-slate-400">ข้อมูลหลักของหน้าเว็บไซต์</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
             <div>
                 <label for="title" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Title <span class="text-rose-400">*</span>
+                    ชื่อหน้า <span class="text-rose-400">*</span>
                 </label>
                 <input
                     id="title"
@@ -26,9 +26,9 @@
                 @enderror
             </div>
 
-            <div>
+            <div class="hidden">
                 <label for="slug" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Slug
+                    URL ของหน้า
                 </label>
                 <input
                     id="slug"
@@ -36,7 +36,7 @@
                     name="slug"
                     value="{{ old('slug', $page->slug ?? '') }}"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="เช่น home"
+                    placeholder="เช่น about"
                 >
                 <p class="mt-1.5 text-xs text-slate-500">เว้นว่างได้ ระบบจะสร้างจากชื่อหน้าให้อัตโนมัติ</p>
                 @error('slug')
@@ -46,14 +46,14 @@
 
             <div>
                 <label for="template_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Template
+                    รูปแบบหน้า
                 </label>
                 <select
                     id="template_id"
                     name="template_id"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                 >
-                    <option value="">-- No Template --</option>
+                    <option value="">Page Builder / Default</option>
                     @foreach($templates as $template)
                         <option
                             value="{{ $template->id }}"
@@ -68,7 +68,7 @@
                 @enderror
             </div>
 
-            <div>
+            <div class="hidden">
                 <label for="page_type" class="mb-1.5 block text-sm font-medium text-slate-300">
                     Page Type <span class="text-rose-400">*</span>
                 </label>
@@ -88,7 +88,7 @@
 
             <div>
                 <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Status <span class="text-rose-400">*</span>
+                    สถานะ <span class="text-rose-400">*</span>
                 </label>
                 <select
                     id="status"
@@ -96,12 +96,12 @@
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                     required
                 >
-                    @foreach(['draft', 'published', 'archived'] as $status)
+                    @foreach(['draft' => 'ฉบับร่าง', 'published' => 'เผยแพร่', 'archived' => 'เก็บถาวร'] as $status => $label)
                         <option
                             value="{{ $status }}"
                             {{ old('status', $page->status ?? 'draft') === $status ? 'selected' : '' }}
                         >
-                            {{ ucfirst($status) }}
+                            {{ $label }}
                         </option>
                     @endforeach
                 </select>
@@ -110,7 +110,7 @@
                 @enderror
             </div>
 
-            <div>
+            <div class="hidden">
                 <label for="sort_order" class="mb-1.5 block text-sm font-medium text-slate-300">
                     Sort Order
                 </label>
@@ -139,7 +139,7 @@
                     >
                     <div>
                         <label for="is_homepage" class="text-sm font-medium text-white">
-                            Set as homepage
+                            ตั้งเป็นหน้าแรก
                         </label>
                         <p class="mt-1 text-xs text-slate-400">ถ้าเลือกหน้านี้ หน้า homepage เดิมจะถูกยกเลิก</p>
                     </div>

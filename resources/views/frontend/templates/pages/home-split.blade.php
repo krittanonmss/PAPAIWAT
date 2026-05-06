@@ -5,10 +5,18 @@
 
 @section('content')
     @php
+        $sections = collect($sections ?? []);
         $homeTemples = collect($homeTemples ?? []);
         $homeArticles = collect($homeArticles ?? []);
     @endphp
 
+    @if($sections->isNotEmpty())
+        <main class="bg-slate-950 text-white">
+            @foreach($sections as $section)
+                @include('frontend.templates.sections._renderer', ['section' => $section])
+            @endforeach
+        </main>
+    @else
     <main class="bg-slate-950 text-white">
         <section class="grid min-h-screen lg:grid-cols-2">
             <a href="{{ url('/temple-list') }}" class="group relative flex min-h-[50vh] items-end overflow-hidden border-b border-white/10 bg-slate-900 p-6 lg:min-h-screen lg:border-b-0 lg:border-r">
@@ -76,4 +84,5 @@
             </div>
         </section>
     </main>
+    @endif
 @endsection

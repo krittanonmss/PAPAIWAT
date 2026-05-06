@@ -56,6 +56,24 @@
             method="POST"
             action="{{ route('admin.content.menu-items.store', $menu) }}"
             class="space-y-6"
+            x-data="{
+                type: @js(old('menu_item_type', 'route')),
+                routeName: @js(old('route_name', 'home')),
+                externalUrl: @js(old('external_url', '')),
+                anchor: @js(old('anchor', '')),
+                applyPreset(preset) {
+                    this.type = preset.type;
+                    this.routeName = preset.routeName || '';
+                    this.externalUrl = preset.externalUrl || '';
+                    this.anchor = preset.anchor || '';
+
+                    this.$nextTick(() => {
+                        if (this.$refs.page) this.$refs.page.value = '';
+                        if (this.$refs.content) this.$refs.content.value = '';
+                        if (this.$refs.routeParams) this.$refs.routeParams.value = '';
+                    });
+                }
+            }"
         >
             @csrf
 
@@ -128,13 +146,14 @@
                                             id="menu_item_type"
                                             name="menu_item_type"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                            x-model="type"
                                             required
                                         >
-                                            <option value="route" class="bg-slate-900" @selected(old('menu_item_type', 'route') === 'route')>Route</option>
-                                            <option value="page" class="bg-slate-900" @selected(old('menu_item_type') === 'page')>Page</option>
-                                            <option value="content" class="bg-slate-900" @selected(old('menu_item_type') === 'content')>Content</option>
-                                            <option value="external_url" class="bg-slate-900" @selected(old('menu_item_type') === 'external_url')>External URL</option>
-                                            <option value="anchor" class="bg-slate-900" @selected(old('menu_item_type') === 'anchor')>Anchor</option>
+                                            <option value="route" class="bg-slate-900" @selected(old('menu_item_type', 'route') === 'route')>หน้าในระบบ</option>
+                                            <option value="page" class="bg-slate-900" @selected(old('menu_item_type') === 'page')>เพจที่สร้างไว้</option>
+                                            <option value="content" class="bg-slate-900" @selected(old('menu_item_type') === 'content')>บทความหรือวัด</option>
+                                            <option value="external_url" class="bg-slate-900" @selected(old('menu_item_type') === 'external_url')>ลิงก์หรือ path</option>
+                                            <option value="anchor" class="bg-slate-900" @selected(old('menu_item_type') === 'anchor')>จุดในหน้าเดียวกัน</option>
                                         </select>
                                         @error('menu_item_type')
                                             <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
@@ -162,36 +181,74 @@
 
                             {{-- Section: Link Target --}}
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
-                                <h3 class="text-sm font-semibold text-white">ปลายทางของเมนู</h3>
-
-                                <div class="mt-4 grid gap-6 lg:grid-cols-2">
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
+                                        <h3 class="text-sm font-semibold text-white">ปลายทางของเมนู</h3>
+                                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                                            เลือกจากรายการยอดนิยม หรือเลือกประเภทปลายทางด้านบนแล้วกรอกเฉพาะช่องที่แสดง
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                    <button
+                                        type="button"
+                                        class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
+                                        @click="applyPreset({ type: 'route', routeName: 'home' })"
+                                    >
+                                        <span class="block text-sm font-medium text-white">หน้าแรก</span>
+                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไปหน้าแรกของเว็บไซต์</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
+                                        @click="applyPreset({ type: 'external_url', externalUrl: '/temple-list' })"
+                                    >
+                                        <span class="block text-sm font-medium text-white">รายการวัด</span>
+                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /temple-list</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
+                                        @click="applyPreset({ type: 'external_url', externalUrl: '/article-list' })"
+                                    >
+                                        <span class="block text-sm font-medium text-white">รายการบทความ</span>
+                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /article-list</span>
+                                    </button>
+                                </div>
+
+                                <div class="mt-5 space-y-5">
+                                    <div x-show="type === 'route'" x-cloak>
                                         <label for="route_name" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                            Route Name
+                                            เลือกหน้าในระบบ
                                         </label>
-                                        <input
+                                        <select
                                             id="route_name"
-                                            type="text"
                                             name="route_name"
-                                            value="{{ old('route_name') }}"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                            placeholder="เช่น home, temples.index"
+                                            x-model="routeName"
                                         >
+                                            <option value="home" class="bg-slate-900">หน้าแรก</option>
+                                            @if(old('route_name') && old('route_name') !== 'home')
+                                                <option value="{{ old('route_name') }}" class="bg-slate-900">{{ old('route_name') }}</option>
+                                            @endif
+                                        </select>
                                         @error('route_name')
                                             <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
                                         @enderror
                                     </div>
 
-                                    <div>
+                                    <div x-show="type === 'page'" x-cloak>
                                         <label for="page_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                            Page
+                                            เลือกเพจที่สร้างไว้
                                         </label>
                                         <select
                                             id="page_id"
                                             name="page_id"
+                                            x-ref="page"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                                         >
-                                            <option value="" class="bg-slate-900">ไม่เลือก Page</option>
+                                            <option value="" class="bg-slate-900">เลือกเพจ</option>
                                             @foreach($pages as $page)
                                                 <option value="{{ $page->id }}" class="bg-slate-900" @selected((string) old('page_id') === (string) $page->id)>
                                                     {{ $page->title }}
@@ -203,16 +260,17 @@
                                         @enderror
                                     </div>
 
-                                    <div>
+                                    <div x-show="type === 'content'" x-cloak>
                                         <label for="content_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                            Content
+                                            เลือกบทความหรือวัด
                                         </label>
                                         <select
                                             id="content_id"
                                             name="content_id"
+                                            x-ref="content"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                                         >
-                                            <option value="" class="bg-slate-900">ไม่เลือก Content</option>
+                                            <option value="" class="bg-slate-900">เลือกบทความหรือวัด</option>
                                             @foreach($contents as $content)
                                                 <option value="{{ $content->id }}" class="bg-slate-900" @selected((string) old('content_id') === (string) $content->id)>
                                                     {{ $content->title }}
@@ -224,19 +282,75 @@
                                         @enderror
                                     </div>
 
-                                    <div>
+                                    <div x-show="type === 'external_url'" x-cloak>
                                         <label for="external_url" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                            External URL / Anchor
+                                            ลิงก์หรือ path
                                         </label>
                                         <input
                                             id="external_url"
                                             type="text"
                                             name="external_url"
-                                            value="{{ old('external_url') }}"
+                                            x-model="externalUrl"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                            placeholder="https://example.com หรือ #section"
+                                            placeholder="เช่น /contact หรือ https://example.com"
                                         >
+                                        <p class="mt-1 text-xs text-slate-500">ใช้ / นำหน้าสำหรับหน้าในเว็บนี้ หรือใส่ https:// สำหรับเว็บภายนอก</p>
                                         @error('external_url')
+                                            <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div x-show="type === 'anchor'" x-cloak>
+                                        <label for="anchor" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                            จุดในหน้าเดียวกัน
+                                        </label>
+                                        <input
+                                            id="anchor"
+                                            type="text"
+                                            name="anchor"
+                                            x-model="anchor"
+                                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                            placeholder="เช่น #contact"
+                                        >
+                                        @error('anchor')
+                                            <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <details class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                                        <summary class="cursor-pointer text-sm font-medium text-slate-300">ตั้งค่าขั้นสูง</summary>
+                                        <div class="mt-4">
+                                            <label for="route_params" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                                Route Params (JSON)
+                                            </label>
+                                            <input
+                                                id="route_params"
+                                                type="text"
+                                                name="route_params"
+                                                x-ref="routeParams"
+                                                value="{{ old('route_params') }}"
+                                                class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 font-mono text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                                placeholder='{"slug":"about"}'
+                                            >
+                                            @error('route_params')
+                                                <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </details>
+
+                                    <div>
+                                        <label for="sort_order" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                            ลำดับการแสดงผล
+                                        </label>
+                                        <input
+                                            id="sort_order"
+                                            type="number"
+                                            name="sort_order"
+                                            min="0"
+                                            value="{{ old('sort_order', 0) }}"
+                                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                        >
+                                        @error('sort_order')
                                             <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
                                         @enderror
                                     </div>

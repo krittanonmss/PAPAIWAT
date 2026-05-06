@@ -50,6 +50,10 @@ Route::prefix('articles')->name('content.articles.')->group(function () {
         ->middleware('admin.permission:articles.view')
         ->name('index');
 
+    Route::get('/media-picker/cover', [ArticleController::class, 'coverMediaPicker'])
+        ->middleware('admin.permission:articles.view')
+        ->name('media-picker.cover');
+
     Route::get('/create', [ArticleController::class, 'create'])
         ->middleware('admin.permission:articles.create')
         ->name('create');

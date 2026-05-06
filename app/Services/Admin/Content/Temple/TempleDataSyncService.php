@@ -18,7 +18,7 @@ class TempleDataSyncService
                 'slug' => Str::slug($validated['slug']),
                 'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'description' => $this->sanitizeRichText($validated['description'] ?? null),
                 'status' => $validated['status'],
                 'is_featured' => (bool) ($validated['is_featured'] ?? false),
                 'is_popular' => (bool) ($validated['is_popular'] ?? false),
@@ -35,7 +35,7 @@ class TempleDataSyncService
                 'sect' => $validated['sect'] ?? null,
                 'architecture_style' => $validated['architecture_style'] ?? null,
                 'founded_year' => $validated['founded_year'] ?? null,
-                'history' => $validated['history'] ?? null,
+                'history' => $this->sanitizeRichText($validated['history'] ?? null),
                 'dress_code' => $validated['dress_code'] ?? null,
                 'recommended_visit_start_time' => $validated['recommended_visit_start_time'] ?? null,
                 'recommended_visit_end_time' => $validated['recommended_visit_end_time'] ?? null,   
@@ -57,7 +57,7 @@ class TempleDataSyncService
                 'slug' => Str::slug($validated['slug']),
                 'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'description' => $this->sanitizeRichText($validated['description'] ?? null),
                 'status' => $validated['status'],
                 'is_featured' => (bool) ($validated['is_featured'] ?? false),
                 'is_popular' => (bool) ($validated['is_popular'] ?? false),
@@ -72,7 +72,7 @@ class TempleDataSyncService
                 'sect' => $validated['sect'] ?? null,
                 'architecture_style' => $validated['architecture_style'] ?? null,
                 'founded_year' => $validated['founded_year'] ?? null,
-                'history' => $validated['history'] ?? null,
+                'history' => $this->sanitizeRichText($validated['history'] ?? null),
                 'dress_code' => $validated['dress_code'] ?? null,
                 'recommended_visit_start_time' => $validated['recommended_visit_start_time'] ?? null,
                 'recommended_visit_end_time' => $validated['recommended_visit_end_time'] ?? null,
@@ -93,6 +93,158 @@ class TempleDataSyncService
             $temple->content?->mediaUsages()->delete();
             $temple->content?->delete();
         });
+    }
+
+    private function sanitizeRichText(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || $value === '<p><br></p>') {
+            return null;
+        }
+
+        if ($value === strip_tags($value)) {
+            return $value;
+        }
+
+        if (! class_exists(\DOMDocument::class)) {
+            return strip_tags($value, '<p><br><strong><b><em><i><u><h2><h3><ul><ol><li><blockquote><a>');
+        }
+
+        $allowedTags = [
+            'a' => ['href', 'title', 'target', 'rel'],
+            'blockquote' => ['class'],
+            'br' => [],
+            'code' => ['class'],
+            'div' => ['class'],
+            'em' => [],
+            'h1' => ['class'],
+            'h2' => ['class'],
+            'h3' => ['class'],
+            'i' => [],
+            'li' => ['class'],
+            'ol' => ['class'],
+            'p' => ['class'],
+            'pre' => ['class'],
+            'strong' => [],
+            'b' => [],
+            's' => [],
+            'span' => ['class'],
+            'sub' => [],
+            'sup' => [],
+            'u' => [],
+            'ul' => ['class'],
+        ];
+
+        $document = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $document->loadHTML(
+            '<?xml encoding="UTF-8"><!DOCTYPE html><html><body>' . $value . '</body></html>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+
+        $sanitizeNode = function (\DOMNode $node) use (&$sanitizeNode, $allowedTags): void {
+            if ($node instanceof \DOMComment) {
+                $node->parentNode?->removeChild($node);
+                return;
+            }
+
+            foreach (iterator_to_array($node->childNodes) as $child) {
+                $sanitizeNode($child);
+            }
+
+            if (! $node instanceof \DOMElement || $node->tagName === 'html' || $node->tagName === 'body') {
+                return;
+            }
+
+            $tagName = strtolower($node->tagName);
+
+            if (in_array($tagName, ['script', 'style'], true)) {
+                $node->parentNode?->removeChild($node);
+                return;
+            }
+
+            if (! array_key_exists($tagName, $allowedTags)) {
+                $parent = $node->parentNode;
+
+                if (! $parent) {
+                    return;
+                }
+
+                while ($node->firstChild) {
+                    $parent->insertBefore($node->firstChild, $node);
+                }
+
+                $parent->removeChild($node);
+                return;
+            }
+
+            foreach (iterator_to_array($node->attributes) as $attribute) {
+                $attributeName = strtolower($attribute->name);
+
+                if (! in_array($attributeName, $allowedTags[$tagName], true)) {
+                    $node->removeAttributeNode($attribute);
+                    continue;
+                }
+
+                if ($tagName === 'a' && $attributeName === 'href') {
+                    $href = trim($attribute->value);
+                    $isSafeHref = str_starts_with($href, '/')
+                        || str_starts_with($href, '#')
+                        || preg_match('/^(https?:|mailto:|tel:)/i', $href);
+
+                    if (! $isSafeHref) {
+                        $node->removeAttribute('href');
+                    }
+                }
+
+                if ($attributeName === 'class') {
+                    $classes = collect(preg_split('/\s+/', trim($attribute->value)) ?: [])
+                        ->filter(function (string $class): bool {
+                            return $class === 'ql-code-block'
+                                || in_array($class, [
+                                    'ql-lineheight-tight',
+                                    'ql-lineheight-normal',
+                                    'ql-lineheight-relaxed',
+                                    'ql-lineheight-loose',
+                                ], true)
+                                || preg_match('/^ql-indent-[1-8]$/', $class);
+                        })
+                        ->values()
+                        ->all();
+
+                    if (empty($classes)) {
+                        $node->removeAttribute('class');
+                        continue;
+                    }
+
+                    $node->setAttribute('class', implode(' ', $classes));
+                }
+            }
+
+            if ($tagName === 'a' && $node->hasAttribute('target')) {
+                $node->setAttribute('rel', 'noopener noreferrer');
+            }
+        };
+
+        $body = $document->getElementsByTagName('body')->item(0);
+
+        if (! $body) {
+            return null;
+        }
+
+        $sanitizeNode($body);
+
+        $html = '';
+
+        foreach ($body->childNodes as $childNode) {
+            $html .= $document->saveHTML($childNode);
+        }
+
+        $html = trim($html);
+
+        return $html !== '' ? $html : null;
     }
 
     private function syncAll(Temple $temple, Content $content, array $validated): void
@@ -297,7 +449,7 @@ class TempleDataSyncService
                 return [
                     'temple_id' => $temple->id,
                     'title' => $item['title'],
-                    'description' => $item['description'] ?? null,
+                    'description' => $this->sanitizeRichText($item['description'] ?? null),
                     'sort_order' => (int) ($item['sort_order'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -316,16 +468,18 @@ class TempleDataSyncService
         $temple->visitRules()->delete();
 
         $items = collect($rows)
-            ->filter(fn ($item) => ! empty($item['rule_text']))
             ->map(function ($item) use ($temple) {
+                $ruleText = $this->sanitizeRichText($item['rule_text'] ?? null);
+
                 return [
                     'temple_id' => $temple->id,
-                    'rule_text' => $item['rule_text'],
+                    'rule_text' => $ruleText,
                     'sort_order' => (int) ($item['sort_order'] ?? 0),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             })
+            ->filter(fn ($item) => ! empty($item['rule_text']))
             ->values()
             ->all();
 

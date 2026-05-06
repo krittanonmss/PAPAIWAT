@@ -148,6 +148,7 @@ class ArticleController extends Controller
             'mediaItems',
             'relatedArticles'
         ) + [
+            'coverMediaItems' => $this->coverMediaItems(),
             'detailTemplates' => $this->detailTemplates('article'),
             'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'article']),
         ]);
@@ -272,10 +273,18 @@ class ArticleController extends Controller
             'mediaItems',
             'relatedArticles'
         ) + [
+            'coverMediaItems' => $this->coverMediaItems(),
             'detailTemplates' => $this->detailTemplates('article'),
             'templatePreviewUrl' => $article->content
                 ? route('admin.content.template-preview', ['type' => 'article', 'content' => $article->content])
                 : route('admin.content.template-preview.sample', ['type' => 'article']),
+        ]);
+    }
+
+    public function coverMediaPicker(Request $request): View
+    {
+        return view('admin.content.articles.partials._cover_media_grid', [
+            'mediaItems' => $this->coverMediaItems(),
         ]);
     }
 
@@ -435,11 +444,13 @@ class ArticleController extends Controller
     private function generateUniqueSlug(string $value, ?int $ignoreContentId = null): string
     {
         $baseSlug = Str::slug($value);
-        $slug = $baseSlug !== '' ? $baseSlug : 'article';
+        $baseSlug = $baseSlug !== '' ? $baseSlug : 'article';
+        $slug = $baseSlug;
         $counter = 1;
 
         while (
             Content::query()
+                ->withTrashed()
                 ->where('content_type', 'article')
                 ->where('slug', $slug)
                 ->when($ignoreContentId, function (Builder $query) use ($ignoreContentId) {
@@ -466,5 +477,19 @@ class ArticleController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+    }
+
+    private function coverMediaItems()
+    {
+        return Media::query()
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->orderByDesc('id')
+            ->paginate(
+                perPage: 7,
+                columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
+                pageName: 'article_cover_media_page'
+            )
+            ->withPath(route('admin.content.articles.media-picker.cover'));
     }
 }

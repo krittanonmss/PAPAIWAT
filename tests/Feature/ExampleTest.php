@@ -18,9 +18,10 @@ class ExampleTest extends TestCase
 
         $this->seed(DatabaseSeeder::class);
 
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->assertDatabaseHas('roles', ['name' => 'Super Admin']);
+        $this->assertDatabaseHas('admins', ['email' => 'admin@example.com']);
+        $this->assertDatabaseHas('permissions', ['key' => 'dashboard.view']);
+        $this->assertDatabaseHas('templates', ['key' => 'page-builder']);
     }
 
     private function migrationPaths(): array

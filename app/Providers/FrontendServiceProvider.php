@@ -10,6 +10,9 @@ class FrontendServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        View::composer('frontend.partials.navigation', FrontendMenuComposer::class);
+        View::composer([
+            'frontend.partials.navigation',
+            'frontend.partials.footer',
+        ], FrontendMenuComposer::class);
     }
 }

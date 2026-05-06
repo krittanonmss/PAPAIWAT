@@ -33,15 +33,260 @@
             '_preview_ts' => time(),
         ]))
         : null;
+    $bodyEditorValue = $article->body ?? '';
+
+    if (($article->body_format ?? 'html') === 'markdown' && $bodyEditorValue !== '') {
+        $bodyEditorValue = (string) \Illuminate\Support\Str::markdown($bodyEditorValue);
+    }
+
+    $selectedBodyFormat = old(
+        'body_format',
+        isset($article) && $article?->body_format ? $article->body_format : 'html'
+    );
+    $rawBodyValue = old('body', $article->body ?? '');
 @endphp
 
-<div class="grid gap-6 xl:grid-cols-3">
-    <div class="space-y-6 xl:col-span-2">
+@once
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+    <style>
+        .temple-editor-toolbar.ql-toolbar {
+            border: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            align-items: center;
+            font-family: inherit;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-formats {
+            align-items: center;
+            border-right: 1px solid rgb(255 255 255 / 0.1);
+            display: inline-flex;
+            gap: 0.125rem;
+            margin: 0;
+            padding-right: 0.375rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-formats:last-child {
+            border-right: 0;
+            padding-right: 0;
+        }
+
+        .temple-editor-toolbar.ql-toolbar button {
+            border-radius: 0.5rem;
+            color: rgb(203 213 225);
+            height: 2rem;
+            padding: 0.375rem;
+            width: 2rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar button:hover,
+        .temple-editor-toolbar.ql-toolbar button:focus,
+        .temple-editor-toolbar.ql-toolbar button.ql-active {
+            background: rgb(59 130 246 / 0.14);
+            color: rgb(147 197 253);
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-stroke {
+            stroke: currentColor;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-fill {
+            fill: currentColor;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker {
+            color: rgb(203 213 225);
+            height: 2rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker-label {
+            align-items: center;
+            border: 1px solid rgb(255 255 255 / 0.1);
+            border-radius: 0.5rem;
+            display: flex;
+            min-width: 6.25rem;
+            padding-left: 0.625rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker-label:hover,
+        .temple-editor-toolbar.ql-toolbar .ql-picker-label.ql-active {
+            border-color: rgb(96 165 250 / 0.6);
+            color: rgb(147 197 253);
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker-options {
+            border: 1px solid rgb(255 255 255 / 0.12);
+            border-radius: 0.75rem;
+            background: rgb(15 23 42);
+            box-shadow: 0 20px 40px rgb(2 6 23 / 0.45);
+            color: rgb(226 232 240);
+            margin-top: 0.375rem;
+            padding: 0.375rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker-item {
+            border-radius: 0.5rem;
+            padding: 0.375rem 0.625rem;
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-picker-item:hover,
+        .temple-editor-toolbar.ql-toolbar .ql-picker-item.ql-selected {
+            background: rgb(59 130 246 / 0.16);
+            color: rgb(147 197 253);
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-label::before,
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-item::before {
+            content: 'Paragraph';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-label[data-value="1"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-item[data-value="1"]::before {
+            content: 'Heading 1';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-label[data-value="2"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-item[data-value="2"]::before {
+            content: 'Heading 2';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-label[data-value="3"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-header .ql-picker-item[data-value="3"]::before {
+            content: 'Heading 3';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-label::before,
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-item::before {
+            content: 'Normal';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-label[data-value="tight"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-item[data-value="tight"]::before {
+            content: 'Tight';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-label[data-value="relaxed"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-item[data-value="relaxed"]::before {
+            content: 'Relaxed';
+        }
+
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-label[data-value="loose"]::before,
+        .temple-editor-toolbar.ql-toolbar .ql-lineheight .ql-picker-item[data-value="loose"]::before {
+            content: 'Loose';
+        }
+
+        .temple-rich-editor.ql-container {
+            border: 0;
+            font-family: inherit;
+        }
+
+        .temple-rich-editor .ql-editor {
+            min-height: inherit;
+            padding: 0;
+            color: rgb(241 245 249);
+            font-size: 1rem;
+            line-height: 1.75;
+        }
+
+        .temple-rich-editor .ql-editor.ql-blank::before {
+            color: rgb(100 116 139);
+            font-style: normal;
+            left: 0;
+            right: 0;
+        }
+
+        .temple-rich-editor .ql-editor h1,
+        .temple-rich-editor .ql-editor h2,
+        .temple-rich-editor .ql-editor h3 {
+            margin: 0.875rem 0 0.5rem;
+            color: white;
+            font-weight: 700;
+        }
+
+        .temple-rich-editor .ql-editor h1 {
+            font-size: 1.5rem;
+            line-height: 2rem;
+        }
+
+        .temple-rich-editor .ql-editor h2 {
+            font-size: 1.25rem;
+            line-height: 1.875rem;
+        }
+
+        .temple-rich-editor .ql-editor h3 {
+            font-size: 1rem;
+            line-height: 1.75rem;
+        }
+
+        .temple-rich-editor .ql-editor a {
+            color: rgb(147 197 253);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .temple-rich-editor .ql-editor blockquote {
+            border-left: 3px solid rgb(96 165 250 / 0.6);
+            color: rgb(203 213 225);
+            padding-left: 0.875rem;
+        }
+
+        .temple-rich-editor .ql-editor .ql-code-block {
+            border-radius: 0.75rem;
+            background: rgb(2 6 23 / 0.85);
+            color: rgb(203 213 225);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            padding: 0.125rem 0.75rem;
+        }
+
+        .temple-rich-editor .ql-editor .ql-lineheight-tight {
+            line-height: 1.25;
+        }
+
+        .temple-rich-editor .ql-editor .ql-lineheight-normal {
+            line-height: 1.5;
+        }
+
+        .temple-rich-editor .ql-editor .ql-lineheight-relaxed {
+            line-height: 1.75;
+        }
+
+        .temple-rich-editor .ql-editor .ql-lineheight-loose {
+            line-height: 2;
+        }
+
+        @for ($i = 1; $i <= 8; $i++)
+            .temple-rich-editor .ql-editor .ql-indent-{{ $i }} {
+                padding-left: {{ $i * 1.5 }}rem;
+            }
+        @endfor
+
+        .article-form-ui input[type="text"],
+        .article-form-ui input[type="number"],
+        .article-form-ui input[type="datetime-local"],
+        .article-form-ui input[type="file"],
+        .article-form-ui input[type="url"],
+        .article-form-ui select,
+        .article-form-ui textarea {
+            min-height: 3rem;
+            font-size: 0.95rem;
+        }
+
+        .article-form-ui label {
+            font-size: 0.95rem;
+        }
+    </style>
+@endonce
+
+<div class="article-form-ui space-y-6">
+    <div class="space-y-6">
         {{-- Main Content --}}
         <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-6 py-4">
+            <div id="article-main" class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">ข้อมูลหลักของบทความ</h2>
-                <p class="mt-1 text-xs text-slate-400">กรอกชื่อบทความ slug คำโปรย เนื้อหา และข้อมูลผู้เขียน</p>
+                <p class="mt-1 text-xs text-slate-400">กรอกชื่อบทความ คำโปรย เนื้อหา ผู้เขียน และเวลาการเผยแพร่ในพื้นที่เดียว</p>
             </div>
 
             <div class="grid gap-6 p-6 md:grid-cols-2">
@@ -245,22 +490,66 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="body_format" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        รูปแบบเนื้อหา <span class="text-rose-400">*</span>
-                    </label>
-                    <select
-                        id="body_format"
-                        name="body_format"
-                        class="@error('body_format') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="markdown" @selected(old('body_format', $article->body_format ?? 'markdown') === 'markdown')>Markdown</option>
-                        <option value="html" @selected(old('body_format', $article->body_format ?? 'markdown') === 'html')>HTML</option>
-                        <option value="editorjs" @selected(old('body_format', $article->body_format ?? 'markdown') === 'editorjs')>EditorJS</option>
-                    </select>
-                    @error('body_format')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
+                <div
+                    class="md:col-span-2"
+                    x-data="{ bodyFormat: @js($selectedBodyFormat) }"
+                >
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <label for="body_format" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                รูปแบบเนื้อหา <span class="text-rose-400">*</span>
+                            </label>
+                            <select
+                                id="body_format"
+                                name="body_format"
+                                x-model="bodyFormat"
+                                class="@error('body_format') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                            >
+                                <option value="markdown">Markdown</option>
+                                <option value="html">HTML / Rich text</option>
+                                <option value="editorjs">EditorJS</option>
+                            </select>
+                            @error('body_format')
+                                <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-xs leading-5 text-slate-400">
+                            <span x-show="bodyFormat === 'html'">ใช้ rich text editor และบันทึกเป็น HTML เหมาะกับการจัดหน้าแบบ visual</span>
+                            <span x-show="bodyFormat === 'markdown'">ใช้ Markdown เหมาะกับเนื้อหาที่ต้องการแก้ด้วย syntax ตรง ๆ</span>
+                            <span x-show="bodyFormat === 'editorjs'">ใช้ EditorJS สำหรับเก็บ JSON หรือ block data ตาม format เดิม</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6" x-show="bodyFormat === 'html'">
+                        @include('admin.content.partials._rich_text_editor', [
+                            'name' => 'body',
+                            'id' => 'body',
+                            'label' => 'เนื้อหาบทความ',
+                            'value' => $bodyEditorValue,
+                            'placeholder' => 'เขียนเนื้อหาบทความ จัดหัวข้อ ลิสต์ ลิงก์ และข้อความเน้นได้',
+                            'hint' => 'รองรับหัวข้อ ลิสต์ ลิงก์ quote และ code block',
+                            'minHeight' => '420px',
+                            'maxHeight' => '560px',
+                            'disabledExpression' => "bodyFormat !== 'html'",
+                        ])
+                    </div>
+
+                    <div class="mt-6" x-show="bodyFormat !== 'html'">
+                        <label for="body_raw" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            เนื้อหาบทความ
+                        </label>
+                        <textarea
+                            id="body_raw"
+                            name="body"
+                            :disabled="bodyFormat === 'html'"
+                            class="@error('body') border-rose-400/60 @else border-white/10 @enderror h-[520px] w-full resize-none overflow-y-auto rounded-xl border bg-slate-950/50 px-4 py-3 font-mono text-sm leading-7 text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="เขียนเนื้อหาตามรูปแบบที่เลือก"
+                        >{{ $rawBodyValue }}</textarea>
+                        @error('body')
+                            <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <div>
@@ -297,75 +586,12 @@
                     @enderror
                 </div>
 
-                <div>
-                    <label for="published_at" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        วันที่เผยแพร่
-                    </label>
-                    <input
-                        type="datetime-local"
-                        id="published_at"
-                        name="published_at"
-                        value="{{ old('published_at', isset($content?->published_at) ? $content->published_at->format('Y-m-d\TH:i') : '') }}"
-                        class="@error('published_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                    @error('published_at')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="scheduled_at" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ตั้งเวลาเริ่มแสดง
-                    </label>
-                    <input
-                        type="datetime-local"
-                        id="scheduled_at"
-                        name="scheduled_at"
-                        value="{{ old('scheduled_at', isset($article?->scheduled_at) ? $article->scheduled_at->format('Y-m-d\TH:i') : '') }}"
-                        class="@error('scheduled_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                    @error('scheduled_at')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="expired_at" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ตั้งเวลาหมดอายุ
-                    </label>
-                    <input
-                        type="datetime-local"
-                        id="expired_at"
-                        name="expired_at"
-                        value="{{ old('expired_at', isset($article?->expired_at) ? $article->expired_at->format('Y-m-d\TH:i') : '') }}"
-                        class="@error('expired_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                    @error('expired_at')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="md:col-span-2">
-                    <label for="body" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        เนื้อหาบทความ
-                    </label>
-                    <textarea
-                        id="body"
-                        name="body"
-                        rows="14"
-                        class="@error('body') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 font-mono text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="เขียนเนื้อหาบทความ"
-                    >{{ old('body', $article->body ?? '') }}</textarea>
-                    @error('body')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
-                </div>
             </div>
         </section>
 
         {{-- SEO --}}
         <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-6 py-4">
+            <div id="article-seo" class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">SEO</h2>
                 <p class="mt-1 text-xs text-slate-400">ข้อมูลสำหรับ Search Engine และการแชร์บทความ</p>
             </div>
@@ -424,96 +650,6 @@
     </div>
 
     <div class="space-y-6">
-        {{-- Publishing --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-6 py-4">
-                <h2 class="text-base font-semibold text-white">การเผยแพร่</h2>
-                <p class="mt-1 text-xs text-slate-400">กำหนดสถานะและการแสดงผลของบทความ</p>
-            </div>
-
-            <div class="space-y-5 p-6">
-                <div>
-                    <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        สถานะ <span class="text-rose-400">*</span>
-                    </label>
-                    <select
-                        id="status"
-                        name="status"
-                        class="@error('status') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="draft" @selected(old('status', $content->status ?? 'draft') === 'draft')>ฉบับร่าง</option>
-                        <option value="published" @selected(old('status', $content->status ?? 'draft') === 'published')>เผยแพร่แล้ว</option>
-                        <option value="archived" @selected(old('status', $content->status ?? 'draft') === 'archived')>เก็บถาวร</option>
-                    </select>
-                    @error('status')
-                        <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="space-y-3">
-                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                        <input type="hidden" name="is_featured" value="0">
-                        <input
-                            type="checkbox"
-                            name="is_featured"
-                            value="1"
-                            @checked(old('is_featured', $content->is_featured ?? false))
-                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                        >
-                        <div>
-                            <div class="text-sm font-medium text-slate-200">บทความแนะนำ</div>
-                            <div class="text-xs text-slate-500">ใช้เน้นบทความในส่วนสำคัญของเว็บไซต์</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                        <input type="hidden" name="is_popular" value="0">
-                        <input
-                            type="checkbox"
-                            name="is_popular"
-                            value="1"
-                            @checked(old('is_popular', $content->is_popular ?? false))
-                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                        >
-                        <div>
-                            <div class="text-sm font-medium text-slate-200">บทความยอดนิยม</div>
-                            <div class="text-xs text-slate-500">กำหนดให้บทความนี้อยู่ในกลุ่มยอดนิยม</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                        <input type="hidden" name="allow_comments" value="0">
-                        <input
-                            type="checkbox"
-                            name="allow_comments"
-                            value="1"
-                            @checked(old('allow_comments', $article->allow_comments ?? true))
-                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                        >
-                        <div>
-                            <div class="text-sm font-medium text-slate-200">เปิดความคิดเห็น</div>
-                            <div class="text-xs text-slate-500">อนุญาตให้ผู้ใช้แสดงความคิดเห็นในบทความนี้</div>
-                        </div>
-                    </label>
-
-                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
-                        <input type="hidden" name="show_on_homepage" value="0">
-                        <input
-                            type="checkbox"
-                            name="show_on_homepage"
-                            value="1"
-                            @checked(old('show_on_homepage', $article->show_on_homepage ?? false))
-                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                        >
-                        <div>
-                            <div class="text-sm font-medium text-slate-200">แสดงบนหน้าแรก</div>
-                            <div class="text-xs text-slate-500">นำบทความนี้ไปแสดงใน section ของหน้าแรก</div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-        </section>
-
         {{-- Categories --}}
         <section
             x-data="{
@@ -558,7 +694,7 @@
             }"
             class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
-            <div class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div id="article-categories" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
                     <p class="mt-1 text-xs text-slate-400">
@@ -606,7 +742,7 @@
                     </button>
                 </div>
 
-                <div class="max-h-72 space-y-3 overflow-y-auto pr-1">
+                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                     @foreach ($categories as $category)
                         <label
                             x-show="filteredCategories.some((item) => String(item.id) === '{{ $category->id }}')"
@@ -699,7 +835,7 @@
             }"
             class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
-            <div class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div id="article-tags" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">แท็ก</h2>
                     <p class="mt-1 text-xs text-slate-400">
@@ -747,7 +883,7 @@
                     </button>
                 </div>
 
-                <div class="max-h-72 space-y-3 overflow-y-auto pr-1">
+                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                     @foreach ($tags as $tag)
                         <label
                             x-show="filteredTags.some((item) => String(item.id) === '{{ $tag->id }}')"
@@ -810,160 +946,130 @@
         {{-- Cover Media --}}
         <section
             x-data="{
-                selectedMediaId: '{{ $selectedCoverMediaId }}',
-                search: '',
-                mediaItems: [
-                    @foreach ($mediaItems as $mediaItem)
-                        {
-                            id: '{{ $mediaItem->id }}',
-                            title: @js($mediaItem->title ?: $mediaItem->original_filename),
-                            filename: @js($mediaItem->original_filename),
-                            url: @js(
-                                $mediaItem->path
-                                    ? asset('storage/' . $mediaItem->path)
-                                    : null
-                            ),
-                            mediaType: @js($mediaItem->media_type),
+                mediaSearch: '',
+                selectedCover: @js((string) $selectedCoverMediaId),
+                coverHtml: @js(view('admin.content.articles.partials._cover_media_grid', [
+                    'mediaItems' => $coverMediaItems ?? $mediaItems,
+                ])->render()),
+
+                async loadCoverPage(event) {
+                    const link = event.target.closest('a');
+
+                    if (!link) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    const response = await fetch(link.href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
                         },
-                    @endforeach
-                ],
-                get selectedMedia() {
-                    return this.mediaItems.find((item) => String(item.id) === String(this.selectedMediaId)) || null;
-                },
-                get filteredMediaItems() {
-                    const keyword = this.search.toLowerCase().trim();
-
-                    return this.mediaItems.filter((item) => {
-                        if (item.mediaType !== 'image') {
-                            return false;
-                        }
-
-                        if (!keyword) {
-                            return true;
-                        }
-
-                        return item.title.toLowerCase().includes(keyword)
-                            || item.filename.toLowerCase().includes(keyword)
-                            || String(item.id).includes(keyword);
                     });
+
+                    if (response.ok) {
+                        this.coverHtml = await response.text();
+
+                        this.$nextTick(() => {
+                            window.Alpine.initTree(this.$refs.coverPicker);
+                        });
+                    }
                 },
             }"
             class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
-           <div class="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div id="article-media" class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
                 <div>
                     <h2 class="text-base font-semibold text-white">รูปภาพหน้าปก</h2>
                     <p class="mt-1 text-xs text-slate-400">
-                        เลือกรูปภาพจาก Media Library เพื่อใช้เป็นภาพหน้าปกของบทความ
+                        อัปโหลดรูปใหม่หรือเลือกรูปจาก Media Library เพื่อใช้เป็นภาพหน้าปกของบทความ
                     </p>
                 </div>
 
                 <a
                     href="{{ route('admin.media.index') }}"
                     target="_blank"
-                    class="inline-flex items-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+                    class="shrink-0 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition hover:bg-blue-500/20"
                 >
                     + ไปจัดการมีเดีย
                 </a>
             </div>
 
-            
-
-            <div class="space-y-5 p-6">
-                <input
-                    type="hidden"
-                    id="cover_media_id"
-                    name="cover_media_id"
-                    x-model="selectedMediaId"
-                >
-
-                {{-- Selected Preview --}}
+            <div class="space-y-6 p-6">
+                {{-- Quick Upload --}}
                 <div
-                    x-show="selectedMedia"
-                    class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40"
+                    x-data="quickArticleMediaUploader()"
+                    class="rounded-2xl border border-dashed border-blue-400/30 bg-blue-500/5 p-4"
                 >
-                    <div class="aspect-video bg-slate-950">
-                        <img
-                            :src="selectedMedia?.url"
-                            :alt="selectedMedia?.title || 'รูปภาพหน้าปก'"
-                            class="h-full w-full object-cover"
-                        >
-                    </div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="flex-1">
+                            <label for="article_quick_media_file" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                อัปโหลดรูปหน้าปกใหม่
+                            </label>
 
-                    <div class="flex items-start justify-between gap-3 p-4">
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-white" x-text="selectedMedia?.title"></p>
-                            <p class="mt-1 text-xs text-slate-500">
-                                ID: <span x-text="selectedMedia?.id"></span>
+                            <input
+                                id="article_quick_media_file"
+                                type="file"
+                                accept="image/*"
+                                x-ref="fileInput"
+                                class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white
+                                    file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500
+                                    file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white
+                                    hover:file:bg-blue-600"
+                            >
+
+                            <p x-show="errorMessage" x-text="errorMessage" class="mt-1 text-xs text-rose-400"></p>
+                            <p class="mt-2 text-xs text-slate-500">
+                                รูปจะถูกบันทึกเข้า Media Library แล้ว refresh หน้าเพื่อให้เลือกรูปได้ทันที
                             </p>
                         </div>
 
                         <button
                             type="button"
-                            @click="selectedMediaId = ''"
-                            class="shrink-0 rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300 transition hover:bg-rose-500/20"
+                            @click="upload()"
+                            :disabled="isUploading"
+                            class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            ลบรูป
+                            <span x-show="!isUploading">อัปโหลด</span>
+                            <span x-show="isUploading">กำลังอัปโหลด...</span>
                         </button>
                     </div>
-                </div>
-
-                <div
-                    x-show="!selectedMedia"
-                    class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-8 text-center"
-                >
-                    <p class="text-sm font-medium text-slate-300">ยังไม่ได้เลือกรูปหน้าปก</p>
-                    <p class="mt-1 text-xs text-slate-500">เลือกรูปจากรายการด้านล่าง</p>
                 </div>
 
                 {{-- Search --}}
-                <div>
+                <div class="max-w-md">
                     <label for="cover_media_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ค้นหารูปภาพ
+                        ค้นหารูปจากชื่อ
                     </label>
+
                     <input
                         type="text"
                         id="cover_media_search"
-                        x-model="search"
-                        placeholder="ค้นหาจากชื่อไฟล์ ชื่อรูป หรือ ID"
-                        class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                        x-model="mediaSearch"
+                        placeholder="พิมพ์ชื่อรูป, title หรือชื่อไฟล์..."
+                        class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        ใช้ค้นหาเฉพาะรูปที่แสดงอยู่ในหน้าปัจจุบัน
+                    </p>
                 </div>
 
-                {{-- Media Grid --}}
-                <div class="grid max-h-96 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
-                    <template x-for="mediaItem in filteredMediaItems" :key="mediaItem.id">
-                        <button
-                            type="button"
-                            @click="selectedMediaId = mediaItem.id"
-                            class="group overflow-hidden rounded-xl border text-left transition"
-                            :class="String(selectedMediaId) === String(mediaItem.id)
-                                ? 'border-blue-400/60 bg-blue-500/10 ring-2 ring-blue-500/20'
-                                : 'border-white/10 bg-slate-950/40 hover:border-blue-400/40 hover:bg-white/5'"
-                        >
-                            <div class="aspect-video bg-slate-950">
-                                <img
-                                    :src="mediaItem.url"
-                                    :alt="mediaItem.title || 'media image'"
-                                    class="h-full w-full object-cover transition group-hover:scale-105"
-                                >
-                            </div>
+                <input type="hidden" name="cover_media_id" :value="selectedCover">
 
-                            <div class="p-3">
-                                <p class="truncate text-xs font-medium text-slate-200" x-text="mediaItem.title"></p>
-                                <p class="mt-1 text-[11px] text-slate-500">
-                                    ID: <span x-text="mediaItem.id"></span>
-                                </p>
-                            </div>
-                        </button>
-                    </template>
+                <div class="space-y-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200">รูปหน้าปกบทความ</h3>
+                        <p class="mt-1 text-xs text-slate-500">
+                            เลือกรูปเดียวสำหรับ card, หน้า list และหน้า detail ของบทความ
+                        </p>
+                    </div>
 
                     <div
-                        x-show="filteredMediaItems.length === 0"
-                        class="col-span-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
-                    >
-                        ไม่พบรูปภาพที่ตรงกับคำค้นหา
-                    </div>
+                        x-ref="coverPicker"
+                        x-html="coverHtml"
+                        @click="loadCoverPage($event)"
+                    ></div>
                 </div>
 
                 @error('cover_media_id')
@@ -978,7 +1084,7 @@
                 <h2 class="text-base font-semibold text-white">บทความที่เกี่ยวข้อง</h2>
             </div>
 
-            <div class="max-h-80 space-y-3 overflow-y-auto p-6 pr-3">
+            <div class="max-h-[420px] space-y-3 overflow-y-auto p-6 pr-3">
                 @forelse ($relatedArticles as $relatedArticle)
                     <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
                         <input
@@ -1009,6 +1115,146 @@
                 @enderror
             </div>
         </section>
+
+        {{-- Publishing --}}
+        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+            <div id="article-publishing" class="border-b border-white/10 px-6 py-4">
+                <h2 class="text-base font-semibold text-white">การเผยแพร่</h2>
+                <p class="mt-1 text-xs text-slate-400">กำหนดสถานะ เวลาเผยแพร่ และการแสดงผลของบทความ</p>
+            </div>
+
+            <div class="space-y-6 p-6">
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                        <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            สถานะ <span class="text-rose-400">*</span>
+                        </label>
+                        <select
+                            id="status"
+                            name="status"
+                            class="@error('status') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                            <option value="draft" @selected(old('status', $content->status ?? 'draft') === 'draft')>ฉบับร่าง</option>
+                            <option value="published" @selected(old('status', $content->status ?? 'draft') === 'published')>เผยแพร่แล้ว</option>
+                            <option value="archived" @selected(old('status', $content->status ?? 'draft') === 'archived')>เก็บถาวร</option>
+                        </select>
+                        @error('status')
+                            <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="published_at" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            วันที่เผยแพร่
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="published_at"
+                            name="published_at"
+                            value="{{ old('published_at', isset($content?->published_at) ? $content->published_at->format('Y-m-d\TH:i') : '') }}"
+                            class="@error('published_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                        @error('published_at')
+                            <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="scheduled_at" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            ตั้งเวลาเริ่มแสดง
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="scheduled_at"
+                            name="scheduled_at"
+                            value="{{ old('scheduled_at', isset($article?->scheduled_at) ? $article->scheduled_at->format('Y-m-d\TH:i') : '') }}"
+                            class="@error('scheduled_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                        @error('scheduled_at')
+                            <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="expired_at" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            ตั้งเวลาหมดอายุ
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="expired_at"
+                            name="expired_at"
+                            value="{{ old('expired_at', isset($article?->expired_at) ? $article->expired_at->format('Y-m-d\TH:i') : '') }}"
+                            class="@error('expired_at') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                        @error('expired_at')
+                            <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                        <input type="hidden" name="is_featured" value="0">
+                        <input
+                            type="checkbox"
+                            name="is_featured"
+                            value="1"
+                            @checked(old('is_featured', $content->is_featured ?? false))
+                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
+                        >
+                        <div>
+                            <div class="text-sm font-medium text-slate-200">บทความแนะนำ</div>
+                            <div class="text-xs text-slate-500">ใช้เน้นบทความในส่วนสำคัญของเว็บไซต์</div>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                        <input type="hidden" name="is_popular" value="0">
+                        <input
+                            type="checkbox"
+                            name="is_popular"
+                            value="1"
+                            @checked(old('is_popular', $content->is_popular ?? false))
+                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
+                        >
+                        <div>
+                            <div class="text-sm font-medium text-slate-200">บทความยอดนิยม</div>
+                            <div class="text-xs text-slate-500">กำหนดให้บทความนี้อยู่ในกลุ่มยอดนิยม</div>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                        <input type="hidden" name="allow_comments" value="0">
+                        <input
+                            type="checkbox"
+                            name="allow_comments"
+                            value="1"
+                            @checked(old('allow_comments', $article->allow_comments ?? true))
+                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
+                        >
+                        <div>
+                            <div class="text-sm font-medium text-slate-200">เปิดความคิดเห็น</div>
+                            <div class="text-xs text-slate-500">อนุญาตให้ผู้ใช้แสดงความคิดเห็นในบทความนี้</div>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                        <input type="hidden" name="show_on_homepage" value="0">
+                        <input
+                            type="checkbox"
+                            name="show_on_homepage"
+                            value="1"
+                            @checked(old('show_on_homepage', $article->show_on_homepage ?? false))
+                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
+                        >
+                        <div>
+                            <div class="text-sm font-medium text-slate-200">แสดงบนหน้าแรก</div>
+                            <div class="text-xs text-slate-500">นำบทความนี้ไปแสดงใน section ของหน้าแรก</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </section>
     </div>
 </div>
 
@@ -1017,6 +1263,137 @@
         const storageKey = `papaiwat:article-form-draft:${window.location.pathname}`;
 
         const getForm = () => document.getElementById('article-form');
+
+        window.quickArticleMediaUploader = function () {
+            return {
+                isUploading: false,
+                errorMessage: '',
+
+                async upload() {
+                    this.errorMessage = '';
+
+                    const file = this.$refs.fileInput.files[0];
+
+                    if (!file) {
+                        this.errorMessage = 'กรุณาเลือกรูปก่อนอัปโหลด';
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('_token', '{{ csrf_token() }}');
+                    formData.append('file', file);
+                    formData.append('visibility', 'public');
+
+                    this.isUploading = true;
+
+                    try {
+                        const response = await fetch('{{ route('admin.media.store') }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                        });
+
+                        if (!response.ok) {
+                            this.errorMessage = 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
+                            return;
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        this.errorMessage = 'เกิดข้อผิดพลาดระหว่างอัปโหลด';
+                    } finally {
+                        this.isUploading = false;
+                    }
+                },
+            };
+        };
+
+        const registerArticleRichTextFormats = () => {
+            if (window.articleRichTextFormatsRegistered || !window.Quill) {
+                return;
+            }
+
+            const Parchment = window.Quill.import('parchment');
+            const LineHeight = new Parchment.ClassAttributor('lineheight', 'ql-lineheight', {
+                scope: Parchment.Scope.BLOCK,
+                whitelist: ['tight', 'normal', 'relaxed', 'loose'],
+            });
+
+            window.Quill.register(LineHeight, true);
+            window.articleRichTextFormatsRegistered = true;
+        };
+
+        const initArticleRichEditors = () => {
+            if (!window.Quill) {
+                return;
+            }
+
+            registerArticleRichTextFormats();
+
+            document.querySelectorAll('[data-rich-editor]').forEach((wrapper) => {
+                if (wrapper.dataset.richEditorBound === 'true') {
+                    return;
+                }
+
+                const input = wrapper.querySelector('[data-rich-editor-input]');
+                const editorBody = wrapper.querySelector('[data-editor-body]');
+                const toolbar = wrapper.querySelector('[data-editor-toolbar]');
+                const counter = wrapper.querySelector('[data-editor-count]');
+
+                if (!input || !editorBody || !toolbar) {
+                    return;
+                }
+
+                wrapper.dataset.richEditorBound = 'true';
+
+                const quill = new Quill(editorBody, {
+                    theme: 'snow',
+                    placeholder: wrapper.dataset.placeholder || '',
+                    modules: {
+                        history: {
+                            delay: 1000,
+                            maxStack: 100,
+                            userOnly: true,
+                        },
+                        toolbar,
+                    },
+                    formats: [
+                        'blockquote',
+                        'bold',
+                        'code-block',
+                        'header',
+                        'indent',
+                        'italic',
+                        'lineheight',
+                        'link',
+                        'list',
+                        'script',
+                        'strike',
+                        'underline',
+                    ],
+                });
+
+                quill.root.innerHTML = input.value || '';
+                input._quill = quill;
+
+                const syncValue = () => {
+                    const html = quill.root.innerHTML.trim();
+                    input.value = html === '<p><br></p>' ? '' : html;
+
+                    if (counter) {
+                        counter.textContent = `${Math.max(quill.getLength() - 1, 0).toLocaleString()} ตัวอักษร`;
+                    }
+
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+
+                quill.on('text-change', syncValue);
+                syncValue();
+            });
+        };
 
         const saveArticleDraft = () => {
             const form = getForm();
@@ -1090,13 +1467,20 @@
 
                 if (draft.fields?.[field.name] !== undefined) {
                     field.value = draft.fields[field.name];
+
+                    if (field.matches('[data-rich-editor-input]') && field._quill) {
+                        field._quill.root.innerHTML = field.value || '';
+                    }
+
                     field.dispatchEvent(new Event('input', { bubbles: true }));
                     field.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             });
+
         };
 
         window.addEventListener('load', () => {
+            initArticleRichEditors();
             restoreArticleDraft();
 
             const form = getForm();
@@ -1109,6 +1493,7 @@
             form.addEventListener('change', saveArticleDraft);
 
             form.addEventListener('submit', () => {
+                initArticleRichEditors();
                 localStorage.removeItem(storageKey);
             });
         });

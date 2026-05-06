@@ -1,58 +1,248 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PAPAIWAT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel CMS สำหรับจัดการข้อมูลวัด บทความ Media, Menu และ Page Builder
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+แนะนำให้ใช้ Docker เพราะโปรเจกต์นี้มี migration แยกหลาย folder
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+สำหรับ Docker:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Docker
+- Docker Compose
 
-## Learning Laravel
+สำหรับติดตั้งแบบ local:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3+
+- Composer
+- Node.js 22+
+- MySQL 8+
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Quick Start ด้วย Docker
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+เริ่ม services ทั้งหมด:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+docker compose up -d --build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+ติดตั้ง database schema และ seed ข้อมูลระบบ:
 
-## Contributing
+```bash
+docker compose exec app ./docker/migrate-and-seed.sh
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+เปิดเว็บ:
 
-## Code of Conduct
+```text
+http://localhost:8000
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+เปิด phpMyAdmin:
 
-## Security Vulnerabilities
+```text
+http://localhost:8080
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Default Admin
 
-## License
+Seeder จะสร้าง admin เริ่มต้นให้:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```text
+Email: admin@example.com
+Username: superadmin
+Password: 12345678
+```
+
+สามารถ override ผ่าน environment variables ได้:
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_USERNAME=superadmin
+ADMIN_PASSWORD=12345678
+```
+
+## Docker Services
+
+```text
+app        Laravel app, port 8000
+vite       Vite dev server, port 5173
+queue      Laravel queue listener
+mysql      MySQL 8.4, port 3306
+phpmyadmin phpMyAdmin, port 8080
+```
+
+## Database Credentials ใน Docker
+
+ค่า default ใน `docker-compose.yml`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=papaiwat_db
+DB_USERNAME=papaiwat
+DB_PASSWORD=papaiwat
+DB_ROOT_PASSWORD=root
+```
+
+ถ้ามี `.env` ในเครื่องอยู่แล้ว Docker Compose อาจอ่านค่า `DB_USERNAME` / `DB_PASSWORD` จากไฟล์นั้นด้วย
+
+## Migration
+
+โปรเจกต์นี้ไม่ได้ใช้ migration path เดียว จึงไม่ควรพึ่ง `php artisan migrate` ธรรมดาอย่างเดียว
+
+ใช้คำสั่งนี้ใน Docker:
+
+```bash
+docker compose exec app ./docker/migrate-and-seed.sh
+```
+
+หรือรันทีละ path:
+
+```bash
+docker compose exec app php artisan migrate --path=database/migrations/system
+docker compose exec app php artisan migrate --path=database/migrations/admin
+docker compose exec app php artisan migrate --path=database/migrations/content/categories
+docker compose exec app php artisan migrate --path=database/migrations/content/media
+docker compose exec app php artisan migrate --path=database/migrations/content
+docker compose exec app php artisan migrate --path=database/migrations/content/temple
+docker compose exec app php artisan migrate --path=database/migrations/content/article
+docker compose exec app php artisan migrate --path=database/migrations/content/layout
+docker compose exec app php artisan db:seed
+```
+
+## Fresh Install Database
+
+ถ้าต้องการล้าง DB และลงใหม่ทั้งหมด:
+
+```bash
+docker compose exec app php artisan migrate:fresh \
+  --path=database/migrations/system \
+  --path=database/migrations/admin \
+  --path=database/migrations/content/categories \
+  --path=database/migrations/content/media \
+  --path=database/migrations/content \
+  --path=database/migrations/content/temple \
+  --path=database/migrations/content/article \
+  --path=database/migrations/content/layout \
+  --seed
+```
+
+## Seeder
+
+`DatabaseSeeder` จะ seed เฉพาะข้อมูลระบบที่จำเป็น:
+
+- Roles
+- Permissions
+- Role permissions
+- Default admin
+- Frontend templates
+
+Seeder จะไม่สร้าง page, menu, article, temple หรือ demo content
+
+รัน seeder อย่างเดียว:
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
+## Local Setup แบบไม่ใช้ Docker
+
+ติดตั้ง dependency:
+
+```bash
+composer install
+npm install
+```
+
+เตรียม env:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+ตั้งค่า database ใน `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=papaiwat_db
+DB_USERNAME=your_user
+DB_PASSWORD=your_password
+```
+
+รัน migration ตาม path:
+
+```bash
+php artisan migrate --path=database/migrations/system
+php artisan migrate --path=database/migrations/admin
+php artisan migrate --path=database/migrations/content/categories
+php artisan migrate --path=database/migrations/content/media
+php artisan migrate --path=database/migrations/content
+php artisan migrate --path=database/migrations/content/temple
+php artisan migrate --path=database/migrations/content/article
+php artisan migrate --path=database/migrations/content/layout
+php artisan db:seed
+```
+
+รัน app:
+
+```bash
+php artisan serve
+npm run dev
+```
+
+## Useful Commands
+
+เข้า shell ใน container:
+
+```bash
+docker compose exec app bash
+```
+
+รัน test:
+
+```bash
+docker compose exec app php artisan test
+```
+
+Clear cache:
+
+```bash
+docker compose exec app php artisan optimize:clear
+```
+
+Build frontend assets:
+
+```bash
+docker compose exec app npm run build
+```
+
+ดู logs:
+
+```bash
+docker compose logs -f app
+```
+
+ปิด container:
+
+```bash
+docker compose down
+```
+
+ปิดและลบ database volume:
+
+```bash
+docker compose down -v
+```
+
+## Project Notes
+
+- หน้า Page Builder ใช้ template `frontend.templates.pages.builder`
+- Template list/detail ยังถูก seed ให้พร้อมใช้ แต่ page/content ต้องสร้างเองผ่าน admin
+- Media upload ใช้ disk `public`
+- หลังติดตั้งควรรัน `php artisan storage:link` ซึ่ง Docker entrypoint ทำให้อัตโนมัติแล้ว
+

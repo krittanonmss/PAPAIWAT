@@ -90,32 +90,29 @@
                     @include('admin.content.temples._form')
                 </div>
 
-                {{-- Side Panel --}}
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
-                    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">สถานะการแก้ไข</h3>
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
+                        <h3 class="text-sm font-semibold text-white">ไปยังส่วนที่ต้องแก้</h3>
 
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ข้อมูลปัจจุบัน</p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    แก้ไขข้อมูลเดิมและบันทึกเพื่ออัปเดตหน้าเว็บไซต์
-                                </p>
-                            </div>
+                        <div class="mt-4 space-y-2 text-sm">
+                            <a href="#basic-info" class="block rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-blue-200 hover:bg-blue-500/20">
+                                ข้อมูลหลักและเนื้อหา
+                            </a>
+                            <a href="#temple-details" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                ข้อมูลเฉพาะของวัด
+                            </a>
+                            <a href="#media-section" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                รูปภาพ หมวดหมู่ และที่ตั้ง
+                            </a>
+                            <a href="#temple-publishing" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                การเผยแพร่
+                            </a>
+                        </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">คำแนะนำ</p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    หากยังไม่พร้อมเผยแพร่ ให้ใช้ Draft ก่อน
-                                </p>
-                            </div>
-
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">การลบข้อมูล</p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    การลบไม่สามารถกู้คืนได้ ควรตรวจสอบก่อนดำเนินการ
-                                </p>
-                            </div>
+                        <div class="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
+                            <p class="text-xs leading-5 text-amber-100">
+                                ข้อมูลที่แก้ใน editor จะถูกบันทึกเป็น HTML ที่ผ่านการกรอง tag ตอนบันทึก
+                            </p>
                         </div>
                     </div>
                 </aside>

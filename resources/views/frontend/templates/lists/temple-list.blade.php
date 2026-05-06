@@ -2,6 +2,7 @@
 
 @section('content')
     @php
+        $sections = collect($sections ?? []);
         $items = $items ?? collect();
         $totalItems = method_exists($items, 'total') ? $items->total() : $items->count();
         $activeSearch = request('search');
@@ -19,6 +20,13 @@
             ->whenEmpty(fn () => $items->map(fn ($temple) => $temple->address?->province)->filter()->unique()->values());
     @endphp
 
+    @if($sections->isNotEmpty())
+        <main class="bg-slate-950 text-white">
+            @foreach($sections as $section)
+                @include('frontend.templates.sections._renderer', ['section' => $section])
+            @endforeach
+        </main>
+    @else
     <section class="relative overflow-hidden bg-slate-950 pb-16 text-white">
         {{-- Hero --}}
         <div class="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-indigo-950/70 via-slate-950 to-slate-950">
@@ -241,7 +249,7 @@
                                     </h2>
 
                                     <p class="mt-2 line-clamp-1 text-sm text-slate-400">
-                                        {{ $content?->excerpt ?? $content?->description ?? '-' }}
+                                        {{ $content?->excerpt ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 120) : '-') }}
                                     </p>
                                 </div>
 
@@ -323,7 +331,7 @@
                                     <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
                                         <p class="line-clamp-1 text-sm font-medium text-slate-200">{{ $highlight->title ?? $highlight->name ?? 'ไฮไลต์' }}</p>
                                         @if ($highlight->description ?? null)
-                                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{{ $highlight->description }}</p>
+                                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{{ \Illuminate\Support\Str::limit(trim(strip_tags($highlight->description)), 120) }}</p>
                                         @endif
                                     </div>
                                 @endif
@@ -369,4 +377,5 @@
             @endif
         </div>
     </section>
+    @endif
 @endsection

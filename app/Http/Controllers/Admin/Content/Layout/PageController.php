@@ -243,8 +243,8 @@ class PageController extends Controller
             return $viewPath;
         }
 
-        return view()->exists('frontend.templates.pages.default')
-            ? 'frontend.templates.pages.default'
+        return view()->exists('frontend.templates.pages.builder')
+            ? 'frontend.templates.pages.builder'
             : 'frontend.templates.previews.admin-iframe';
     }
 

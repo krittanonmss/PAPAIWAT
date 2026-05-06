@@ -9,6 +9,7 @@ use App\Models\Content\Layout\MenuItem;
 use App\Models\Content\Layout\Page;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
 
@@ -40,7 +41,11 @@ class MenuItemController extends Controller
     public function store(Request $request, Menu $menu): RedirectResponse
     {
         $validated = $request->validate([
-            'parent_id' => ['nullable', 'integer', 'exists:menu_items,id'],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('menu_items', 'id')->where(fn ($query) => $query->where('menu_id', $menu->id)),
+            ],
             'label' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'menu_item_type' => ['required', 'string', 'in:route,page,content,external_url,anchor'],
@@ -62,13 +67,8 @@ class MenuItemController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
-        $validated['menu_id'] = $menu->id;
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['label']);
-        $validated['route_params'] = $this->decodeJson($validated['route_params'] ?? null);
-        $validated['is_enabled'] = $request->boolean('is_enabled', true);
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated = $this->prepareMenuItemData($validated, $request, $menu);
         $validated['created_by_admin_id'] = auth('admin')->id();
-        $validated['updated_by_admin_id'] = auth('admin')->id();
 
         MenuItem::create($validated);
 
@@ -109,7 +109,11 @@ class MenuItemController extends Controller
         abort_if($menuItem->menu_id !== $menu->id, 404);
 
         $validated = $request->validate([
-            'parent_id' => ['nullable', 'integer', 'exists:menu_items,id'],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('menu_items', 'id')->where(fn ($query) => $query->where('menu_id', $menu->id)),
+            ],
             'label' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'menu_item_type' => ['required', 'string', 'in:route,page,content,external_url,anchor'],
@@ -137,11 +141,7 @@ class MenuItemController extends Controller
                 ->withInput();
         }
 
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['label']);
-        $validated['route_params'] = $this->decodeJson($validated['route_params'] ?? null);
-        $validated['is_enabled'] = $request->boolean('is_enabled', true);
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
-        $validated['updated_by_admin_id'] = auth('admin')->id();
+        $validated = $this->prepareMenuItemData($validated, $request, $menu);
 
         $menuItem->update($validated);
 
@@ -170,5 +170,28 @@ class MenuItemController extends Controller
         $decoded = json_decode($value, true);
 
         return is_array($decoded) ? $decoded : null;
+    }
+
+    private function prepareMenuItemData(array $validated, Request $request, Menu $menu): array
+    {
+        $type = $validated['menu_item_type'];
+
+        if ($type === 'anchor' && empty($validated['anchor'])) {
+            $validated['anchor'] = $validated['external_url'] ?? $validated['url'] ?? null;
+        }
+
+        if ($type === 'external_url' && empty($validated['external_url'])) {
+            $validated['external_url'] = $validated['url'] ?? null;
+        }
+
+        $validated['menu_id'] = $menu->id;
+        $generatedSlug = Str::slug($validated['label']);
+        $validated['slug'] = ($validated['slug'] ?? null) ?: ($generatedSlug !== '' ? $generatedSlug : 'menu-item');
+        $validated['route_params'] = $this->decodeJson($validated['route_params'] ?? null);
+        $validated['is_enabled'] = $request->boolean('is_enabled');
+        $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['updated_by_admin_id'] = auth('admin')->id();
+
+        return $validated;
     }
 }

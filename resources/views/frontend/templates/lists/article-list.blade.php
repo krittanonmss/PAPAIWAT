@@ -5,6 +5,7 @@
 
 @section('content')
 @php
+    $sections = collect($sections ?? []);
     $items = $items ?? $data ?? collect();
     $itemCollection = collect(method_exists($items, 'items') ? $items->items() : $items);
     $totalItems = method_exists($items, 'total') ? $items->total() : $itemCollection->count();
@@ -32,6 +33,13 @@
     $hasActiveFilters = $activeSearch || $activeCategory || $activeTag || $activeAuthor || $activeSort;
 @endphp
 
+@if($sections->isNotEmpty())
+    <main class="bg-slate-950 text-white">
+        @foreach($sections as $section)
+            @include('frontend.templates.sections._renderer', ['section' => $section])
+        @endforeach
+    </main>
+@else
 <div class="bg-slate-950 text-white">
     @if ($showHero)
         <section class="relative overflow-hidden">
@@ -205,4 +213,5 @@
         @endif
     </section>
 </div>
+@endif
 @endsection

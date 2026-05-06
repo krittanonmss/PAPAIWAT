@@ -1,0 +1,126 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        WWWUSER: ${WWWUSER:-1000}
+        WWWGROUP: ${WWWGROUP:-1000}
+    container_name: papaiwat-app
+    working_dir: /var/www/html
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:${APP_PORT:-8000}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-papaiwat_db}
+      DB_USERNAME: ${DB_USERNAME:-papaiwat}
+      DB_PASSWORD: ${DB_PASSWORD:-papaiwat}
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: public
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-superadmin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-12345678}
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - papaiwat
+
+  vite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        WWWUSER: ${WWWUSER:-1000}
+        WWWGROUP: ${WWWGROUP:-1000}
+    container_name: papaiwat-vite
+    working_dir: /var/www/html
+    command: npm run dev -- --host=0.0.0.0
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    environment:
+      VITE_APP_NAME: PAPAIWAT
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - app
+    networks:
+      - papaiwat
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        WWWUSER: ${WWWUSER:-1000}
+        WWWGROUP: ${WWWGROUP:-1000}
+    container_name: papaiwat-queue
+    working_dir: /var/www/html
+    command: php artisan queue:listen --tries=1 --timeout=0
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-papaiwat_db}
+      DB_USERNAME: ${DB_USERNAME:-papaiwat}
+      DB_PASSWORD: ${DB_PASSWORD:-papaiwat}
+      QUEUE_CONNECTION: database
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - papaiwat
+
+  mysql:
+    image: mysql:8.4
+    container_name: papaiwat-mysql
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-papaiwat_db}
+      MYSQL_USER: ${DB_USERNAME:-papaiwat}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-papaiwat}
+    volumes:
+      - papaiwat-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-p${DB_ROOT_PASSWORD:-root}"]
+      retries: 10
+      timeout: 5s
+    networks:
+      - papaiwat
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: papaiwat-phpmyadmin
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - papaiwat
+
+networks:
+  papaiwat:
+    driver: bridge
+
+volumes:
+  papaiwat-mysql:
+    driver: local

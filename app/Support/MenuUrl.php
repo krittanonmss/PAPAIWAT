@@ -32,8 +32,12 @@ class MenuUrl
         $params = [];
 
         if (!empty($item->route_params)) {
-            $decoded = json_decode($item->route_params, true);
-            $params = is_array($decoded) ? $decoded : [];
+            if (is_array($item->route_params)) {
+                $params = $item->route_params;
+            } else {
+                $decoded = json_decode($item->route_params, true);
+                $params = is_array($decoded) ? $decoded : [];
+            }
         }
 
         return route($routeName, $params);
@@ -70,7 +74,19 @@ class MenuUrl
             return '#';
         }
 
-        return url('/content/' . ltrim($content->slug, '/'));
+        if ($content->content_type === 'article') {
+            return route('articles.show', $content->slug);
+        }
+
+        if ($content->content_type === 'temple') {
+            $temple = DB::table('temples')
+                ->where('content_id', $content->id)
+                ->first();
+
+            return $temple ? route('temples.show', $temple->id) : '#';
+        }
+
+        return url('/' . ltrim($content->slug, '/'));
     }
 
     private static function anchorUrl(object $item): string

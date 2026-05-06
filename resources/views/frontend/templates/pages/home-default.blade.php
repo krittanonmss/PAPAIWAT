@@ -5,10 +5,18 @@
 
 @section('content')
     @php
+        $sections = collect($sections ?? []);
         $homeTemples = collect($homeTemples ?? []);
         $homeArticles = collect($homeArticles ?? []);
     @endphp
 
+    @if($sections->isNotEmpty())
+        <main class="bg-slate-950 text-white">
+            @foreach($sections as $section)
+                @include('frontend.templates.sections._renderer', ['section' => $section])
+            @endforeach
+        </main>
+    @else
     <main class="bg-slate-950 text-white">
         <section class="relative min-h-screen overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950/60 to-slate-950"></div>
@@ -39,7 +47,7 @@
                     <h2 class="mt-2 text-3xl font-bold">วัดแนะนำ</h2>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">วัดเด่นและวัดยอดนิยมที่คัดจากฐานข้อมูล</p>
                 </div>
-                <a href="{{ url('/temples') }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">ดูวัดทั้งหมด</a>
+                <a href="{{ url('/temple-list') }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">ดูวัดทั้งหมด</a>
             </div>
 
             @if ($homeTemples->isNotEmpty())
@@ -75,7 +83,7 @@
                                 <div class="space-y-4 p-6">
                                     <div>
                                         <h3 class="line-clamp-2 text-2xl font-medium">{{ $content?->title ?? '-' }}</h3>
-                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $content?->excerpt ?? $content?->description ?? 'ยังไม่มีคำโปรย' }}</p>
+                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $content?->excerpt ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 140) : 'ยังไม่มีคำโปรย') }}</p>
                                     </div>
                                     <div class="flex flex-wrap gap-2 border-t border-white/10 pt-4 text-xs text-slate-400">
                                         <span class="rounded-full bg-slate-950/50 px-3 py-1">{{ $address?->province ?? 'ไม่ระบุจังหวัด' }}</span>
@@ -159,4 +167,5 @@
             @endif
         </section>
     </main>
+    @endif
 @endsection

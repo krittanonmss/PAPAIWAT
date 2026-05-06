@@ -9,10 +9,10 @@
                         Page Section
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">Create Page Section</h1>
+                    <h1 class="text-2xl font-bold text-white">เพิ่ม Block ในหน้า</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        เพิ่ม section ให้หน้า:
+                        เพิ่ม block ให้หน้า:
                         <span class="font-medium text-white">{{ $page->title }}</span>
                     </p>
                 </div>
@@ -75,23 +75,23 @@
 
                         <div class="mt-4 space-y-3">
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ตำแหน่ง Section</p>
+                                <p class="text-sm font-medium text-slate-200">ตำแหน่ง Block</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบ key, type และลำดับการแสดงผลให้ตรงกับโครงสร้างหน้า
+                                    เลือก block และลำดับการแสดงผลให้ตรงกับสิ่งที่ต้องการบนหน้าเว็บ
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">ข้อมูลแสดงผล</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    กรอก title, content หรือ config ให้ครบตามชนิดของ section
+                                    กรอกหัวข้อ รูปภาพ ปุ่ม หรือแหล่งข้อมูลตามชนิด block ที่เลือก
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">สถานะการใช้งาน</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบสถานะก่อนบันทึก เพื่อควบคุมว่า section นี้จะแสดงบนหน้าเว็บหรือไม่
+                                    ตรวจสอบสถานะก่อนบันทึก เพื่อควบคุมว่า block นี้จะแสดงบนหน้าเว็บหรือไม่
                                 </p>
                             </div>
                         </div>
@@ -103,7 +103,7 @@
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">
-                        ตรวจสอบข้อมูล section ก่อนกดบันทึก
+                        ตรวจสอบข้อมูล block ก่อนกดบันทึก
                     </p>
 
                     <div class="flex items-center justify-end gap-3">
@@ -118,7 +118,7 @@
                             type="submit"
                             class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
                         >
-                            สร้าง Section
+                            สร้าง Block
                         </button>
                     </div>
                 </div>

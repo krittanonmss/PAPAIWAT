@@ -28,6 +28,7 @@ Route::prefix('content/pages')->name('content.pages.')->group(function () {
     Route::get('/create', [PageController::class, 'create'])->middleware('admin.permission:pages.create')->name('create');
     Route::post('/preview', [PageController::class, 'previewCreate'])->middleware('admin.permission:pages.create')->name('preview-create');
     Route::post('/', [PageController::class, 'store'])->middleware('admin.permission:pages.create')->name('store');
+    Route::get('/sections/media-picker/images', [PageSectionController::class, 'mediaPicker'])->middleware('admin.permission:pages.view')->name('sections.media-picker');
     Route::post('/{page}/preview', [PageController::class, 'preview'])->middleware('admin.permission:pages.update')->name('preview');
     Route::get('/{page}', [PageController::class, 'show'])->middleware('admin.permission:pages.view')->name('show');
     Route::get('/{page}/edit', [PageController::class, 'edit'])->middleware('admin.permission:pages.update')->name('edit');

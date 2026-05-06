@@ -1,3 +1,7 @@
+@php
+    $frontendFooterMenuItems = collect($frontendFooterMenuItems ?? []);
+@endphp
+
 <footer class="mt-16 border-t border-white/10 bg-white/[0.03] backdrop-blur">
     <div class="mx-auto max-w-7xl px-4 py-10">
         <div class="grid gap-8 md:grid-cols-3">
@@ -11,9 +15,50 @@
             <div>
                 <h4 class="text-sm font-medium text-slate-200">เมนู</h4>
                 <ul class="mt-3 space-y-2 text-sm text-slate-400">
-                    <li><a href="{{ route('home') }}" class="hover:text-white">หน้าแรก</a></li>
-                    <li><a href="{{ url('/temple-list') }}" class="hover:text-white">วัด</a></li>
-                    <li><a href="{{ url('/articles') }}" class="hover:text-white">บทความ</a></li>
+                    @forelse($frontendFooterMenuItems as $item)
+                        @php
+                            $children = collect($item->children ?? []);
+                            $target = $item->target ?: '_self';
+                            $rel = $item->rel ?: ($target === '_blank' ? 'noopener noreferrer' : null);
+                        @endphp
+
+                        <li>
+                            <a
+                                href="{{ $item->url ?? '#' }}"
+                                target="{{ $target }}"
+                                @if ($rel) rel="{{ $rel }}" @endif
+                                class="hover:text-white"
+                            >
+                                {{ $item->label }}
+                            </a>
+
+                            @if($children->isNotEmpty())
+                                <ul class="mt-2 space-y-1 pl-4 text-xs text-slate-500">
+                                    @foreach($children as $child)
+                                        @php
+                                            $childTarget = $child->target ?: '_self';
+                                            $childRel = $child->rel ?: ($childTarget === '_blank' ? 'noopener noreferrer' : null);
+                                        @endphp
+
+                                        <li>
+                                            <a
+                                                href="{{ $child->url ?? '#' }}"
+                                                target="{{ $childTarget }}"
+                                                @if ($childRel) rel="{{ $childRel }}" @endif
+                                                class="hover:text-white"
+                                            >
+                                                {{ $child->label }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </li>
+                    @empty
+                        <li><a href="{{ route('home') }}" class="hover:text-white">หน้าแรก</a></li>
+                        <li><a href="{{ url('/temple-list') }}" class="hover:text-white">วัด</a></li>
+                        <li><a href="{{ url('/article-list') }}" class="hover:text-white">บทความ</a></li>
+                    @endforelse
                 </ul>
             </div>
 

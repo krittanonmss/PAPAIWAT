@@ -5,10 +5,18 @@
 
 @section('content')
     @php
+        $sections = collect($sections ?? []);
         $homeTemples = collect($homeTemples ?? []);
         $homeArticles = collect($homeArticles ?? []);
     @endphp
 
+    @if($sections->isNotEmpty())
+        <main class="bg-slate-950 text-white">
+            @foreach($sections as $section)
+                @include('frontend.templates.sections._renderer', ['section' => $section])
+            @endforeach
+        </main>
+    @else
     <main class="bg-[#f8f3ea] text-slate-900">
         <section class="relative min-h-screen overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-[#fffaf0] via-[#f4ead8] to-[#e8dcc5]"></div>
@@ -49,7 +57,7 @@
                     </p>
                 </div>
 
-                <a href="{{ url('/temples') }}" class="inline-flex items-center justify-center rounded-2xl border border-amber-900/10 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white hover:text-slate-950">
+                <a href="{{ url('/temple-list') }}" class="inline-flex items-center justify-center rounded-2xl border border-amber-900/10 bg-white/70 px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white hover:text-slate-950">
                     ดูวัดทั้งหมด
                 </a>
             </div>
@@ -101,7 +109,7 @@
                                         </h3>
 
                                         <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
-                                            {{ $content?->excerpt ?? $content?->description ?? 'ยังไม่มีคำโปรย' }}
+                                            {{ $content?->excerpt ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 140) : 'ยังไม่มีคำโปรย') }}
                                         </p>
                                     </div>
 
@@ -227,4 +235,5 @@
             @endif
         </section>
     </main>
+    @endif
 @endsection

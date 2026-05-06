@@ -4,24 +4,35 @@
 @section('meta_description', $page->meta_description ?? $page->excerpt ?? 'PAPAIWAT Platform')
 
 @section('content')
-    <section class="mx-auto max-w-5xl px-4 py-16">
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-xl shadow-slate-950/30 backdrop-blur">
-            <h1 class="text-3xl font-bold text-white">
-                {{ $page->title }}
-            </h1>
+    @php
+        $sections = collect($sections ?? []);
+    @endphp
 
-            @if ($page->excerpt)
-                <p class="mt-4 text-slate-400">
-                    {{ $page->excerpt }}
-                </p>
-            @endif
+    @if ($sections->isNotEmpty())
+        <main class="bg-slate-950 text-white">
+            @foreach($sections as $section)
+                @include('frontend.templates.sections._renderer', ['section' => $section])
+            @endforeach
+        </main>
+    @else
+        <section class="mx-auto max-w-5xl px-4 py-16">
+            <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <h1 class="text-3xl font-bold text-white">
+                    {{ $page->title }}
+                </h1>
 
-            @if ($page->description)
-                <div class="mt-8 text-sm leading-7 text-slate-300">
-                    {!! nl2br(e($page->description)) !!}
-                </div>
-            @endif
-        </div>
+                @if ($page->excerpt)
+                    <p class="mt-4 text-slate-400">
+                        {{ $page->excerpt }}
+                    </p>
+                @endif
 
-    </section>
+                @if ($page->description)
+                    <div class="mt-8 text-sm leading-7 text-slate-300">
+                        {!! nl2br(e($page->description)) !!}
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
 @endsection

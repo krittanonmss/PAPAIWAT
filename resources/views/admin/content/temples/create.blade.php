@@ -69,32 +69,29 @@
                     ])
                 </div>
 
-                {{-- Side Panel --}}
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
-                    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">เช็กลิสต์ก่อนบันทึก</h3>
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
+                        <h3 class="text-sm font-semibold text-white">ลำดับการกรอกข้อมูล</h3>
 
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ข้อมูลหลัก</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    กรอกชื่อวัด slug สถานะ และรายละเอียดหลักให้ครบ
-                                </p>
-                            </div>
+                        <div class="mt-4 space-y-2 text-sm">
+                            <a href="#basic-info" class="block rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-blue-200 hover:bg-blue-500/20">
+                                1. ข้อมูลหลักและเนื้อหา
+                            </a>
+                            <a href="#temple-details" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                2. รายละเอียดเฉพาะวัด
+                            </a>
+                            <a href="#media-section" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                3. รูปภาพและที่ตั้ง
+                            </a>
+                            <a href="#temple-publishing" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
+                                4. การเผยแพร่
+                            </a>
+                        </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">หมวดหมู่และรูปภาพ</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    เลือกหมวดหมู่หลัก รูป cover และ gallery สำหรับหน้าแสดงผล
-                                </p>
-                            </div>
-
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">การเผยแพร่</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ใช้ Draft ระหว่างเตรียมข้อมูล และเปลี่ยนเป็น Published เมื่อพร้อม
-                                </p>
-                            </div>
+                        <div class="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
+                            <p class="text-xs leading-5 text-amber-100">
+                                ช่องรายละเอียดและประวัติใช้ editor แล้ว สามารถจัดหัวข้อ ลิสต์ ลิงก์ และข้อความเน้นได้ก่อนบันทึก
+                            </p>
                         </div>
                     </div>
                 </aside>
