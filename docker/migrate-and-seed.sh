@@ -8,5 +8,6 @@ php artisan migrate --path=database/migrations/content/media --force
 php artisan migrate --path=database/migrations/content --force
 php artisan migrate --path=database/migrations/content/temple --force
 php artisan migrate --path=database/migrations/content/article --force
+php artisan migrate --path=database/migrations/content/interactions --force
 php artisan migrate --path=database/migrations/content/layout --force
 php artisan db:seed --force

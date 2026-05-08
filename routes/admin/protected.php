@@ -33,5 +33,6 @@ Route::prefix('admin')
 
         require __DIR__.'/access.php';
         require __DIR__.'/content.php';
+        require __DIR__.'/interactions.php';
         require __DIR__.'/layout.php';
     });

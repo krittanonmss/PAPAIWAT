@@ -86,6 +86,10 @@ class SystemAccessSeeder extends Seeder
                 'templates.update' => 'แก้ไข Template',
                 'templates.delete' => 'ลบ Template',
             ],
+            'interactions' => [
+                'interactions.view' => 'ดูรีวิวและความคิดเห็น',
+                'interactions.manage' => 'อนุมัติหรือจัดการรีวิวและความคิดเห็น',
+            ],
         ];
 
         $permissions = [];
@@ -163,6 +167,7 @@ class SystemAccessSeeder extends Seeder
             'menus.*',
             'pages.*',
             'templates.view',
+            'interactions.*',
         ]));
 
         $roles['editor']->permissions()->sync($this->permissionIds($permissions, [
@@ -182,6 +187,8 @@ class SystemAccessSeeder extends Seeder
             'pages.create',
             'pages.update',
             'templates.view',
+            'interactions.view',
+            'interactions.manage',
         ]));
 
         $roles['viewer']->permissions()->sync($this->permissionIds($permissions, [

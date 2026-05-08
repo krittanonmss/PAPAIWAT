@@ -14,8 +14,9 @@
 
     $averageRating = (float) data_get($stat, 'average_rating', 0);
     $reviewCount = (int) data_get($stat, 'review_count', 0);
-    $favoriteCount = (int) data_get($stat, 'favorite_count', 0);
     $score = (float) data_get($stat, 'score', 0);
+    $approvedReviews = $approvedReviews ?? collect();
+    $visitorPendingReviews = $visitorPendingReviews ?? collect();
 
     $recommendedStart = $temple?->recommended_visit_start_time
         ? \Carbon\Carbon::parse($temple->recommended_visit_start_time)->format('H:i')
@@ -57,6 +58,14 @@
 
     $summary = $content?->excerpt
         ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 180) : null);
+    $favoritePayload = [
+        'type' => 'temple',
+        'id' => $temple?->id,
+        'title' => $content?->title,
+        'url' => route('temples.show', $temple),
+        'excerpt' => $summary,
+        'image' => $coverUrl,
+    ];
 @endphp
 
 @section('title', $content?->meta_title ?? $content?->title ?? 'Temple Detail')
@@ -66,6 +75,14 @@
     @include('frontend.templates.details.partials._rich_content_styles')
 
     <main class="bg-slate-950 text-white">
+        @if (session('success'))
+            <div class="mx-auto max-w-6xl px-4 pt-5">
+                <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                    {{ session('success') }}
+                </div>
+            </div>
+        @endif
+
         <section class="relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/75 to-slate-950"></div>
 
@@ -102,7 +119,7 @@
                             {{ $summary ?? 'ยังไม่มีคำอธิบายสั้น' }}
                         </p>
 
-                        <div class="mt-6 grid gap-3 text-sm text-slate-300 md:grid-cols-4">
+                        <div class="mt-6 grid gap-3 text-sm text-slate-300 md:grid-cols-3">
                             <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                                 <p class="text-xs text-slate-500">ประเภท</p>
                                 <p class="mt-1 font-medium">{{ $temple?->temple_type ?: '-' }}</p>
@@ -115,11 +132,20 @@
                                 <p class="text-xs text-slate-500">จำนวนรีวิว</p>
                                 <p class="mt-1 font-medium">{{ number_format($reviewCount) }}</p>
                             </div>
-                            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                                <p class="text-xs text-slate-500">ถูกใจ</p>
-                                <p class="mt-1 font-medium">{{ number_format($favoriteCount) }}</p>
-                            </div>
                         </div>
+
+                        <button
+                            type="button"
+                            data-local-favorite-toggle
+                            data-favorite='{{ e(json_encode($favoritePayload)) }}'
+                            class="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                        >
+                            <svg data-favorite-icon class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.015-4.5-4.5-4.5-1.74 0-3.25.99-4 2.438A4.49 4.49 0 0 0 8.5 3.75C6.015 3.75 4 5.765 4 8.25c0 7.22 8.5 12 8.5 12s8.5-4.78 8.5-12Z" />
+                            </svg>
+                            <span data-favorite-unsaved>เพิ่มในรายการโปรด</span>
+                            <span data-favorite-saved class="hidden">อยู่ในรายการโปรดแล้ว</span>
+                        </button>
                     </article>
                 </div>
             </div>
@@ -271,6 +297,111 @@
                         </div>
                     </section>
                 @endif
+
+                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                        <div>
+                            <h2 class="text-2xl font-semibold">รีวิวจากผู้เยี่ยมชม</h2>
+                            <p class="mt-1 text-sm text-slate-500">ให้คะแนนประสบการณ์จริงและเล่าข้อมูลที่เป็นประโยชน์กับคนถัดไป</p>
+                        </div>
+                        <div class="text-sm text-slate-400">
+                            {{ number_format($reviewCount) }} รีวิว
+                            @if ($averageRating > 0)
+                                · {{ number_format($averageRating, 1) }} / 5
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        @forelse ($approvedReviews as $review)
+                            <article class="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="font-medium text-white">{{ $review->display_name ?: 'ผู้เยี่ยมชม' }}</p>
+                                    <p class="text-sm font-semibold text-amber-300">{{ number_format($review->rating) }} / 5</p>
+                                </div>
+                                @if ($review->comment)
+                                    <p class="mt-3 text-sm leading-6 text-slate-300">{{ $review->comment }}</p>
+                                @endif
+                                <form method="POST" action="{{ route('reviews.report', $review) }}" class="mt-3 text-right">
+                                    @csrf
+                                    <input type="hidden" name="reason" value="ไม่เหมาะสม">
+                                    <button type="submit" class="text-xs text-slate-500 transition hover:text-red-300">รายงาน</button>
+                                </form>
+                            </article>
+                        @empty
+                            <p class="text-sm text-slate-500">ยังไม่มีรีวิวที่เผยแพร่</p>
+                        @endforelse
+
+                        @foreach ($visitorPendingReviews as $review)
+                            <article class="rounded-2xl border border-yellow-300/20 bg-yellow-500/10 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="font-medium text-yellow-100">{{ $review->display_name ?: 'คุณ' }}</p>
+                                    <span class="rounded-full border border-yellow-300/20 px-2 py-0.5 text-xs text-yellow-200">รอตรวจสอบ</span>
+                                </div>
+                                <p class="mt-2 text-sm font-semibold text-amber-200">{{ number_format($review->rating) }} / 5</p>
+                                @if ($review->comment)
+                                    <p class="mt-3 text-sm leading-6 text-yellow-50/90">{{ $review->comment }}</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+
+                    <form method="POST" action="{{ route('temples.reviews.store', $temple) }}" class="mt-6 space-y-4 rounded-3xl border border-white/10 bg-slate-950/35 p-5" data-review-rating-form>
+                        @csrf
+                        <input type="hidden" name="rating" value="{{ (int) old('rating', 0) }}" required data-review-rating-input>
+
+                        <div>
+                            <p class="text-sm font-semibold text-white">เขียนรีวิว</p>
+                            <p class="mt-1 text-xs text-slate-500">รีวิวจะถูกตรวจสอบก่อนเผยแพร่</p>
+                        </div>
+
+                        <div>
+                            <p class="text-sm font-medium text-slate-300">ให้คะแนน</p>
+                            <div class="mt-3 flex items-center gap-2">
+                                @for ($star = 1; $star <= 5; $star++)
+                                    <button
+                                        type="button"
+                                        data-review-rating-star="{{ $star }}"
+                                        class="inline-flex h-10 w-10 items-center justify-center text-slate-500 transition hover:scale-105 hover:text-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+                                        aria-pressed="false"
+                                        aria-label="{{ $star }} ดาว"
+                                    >
+                                        <svg
+                                            class="h-8 w-8 fill-transparent transition"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            stroke-width="1.6"
+                                        >
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m11.48 3.5 2.52 5.11 5.64.82-4.08 3.98.96 5.62-5.04-2.65-5.04 2.65.96-5.62-4.08-3.98 5.64-.82 2.52-5.11Z" />
+                                        </svg>
+                                    </button>
+                                @endfor
+
+                                <span class="ml-2 text-sm text-slate-400" data-review-rating-label>{{ old('rating') ? old('rating') . ' / 5' : 'ยังไม่ได้ให้คะแนน' }}</span>
+                            </div>
+                            @error('rating')
+                                <p class="mt-2 text-xs text-red-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <input
+                            type="text"
+                            name="display_name"
+                            value="{{ old('display_name') }}"
+                            placeholder="ชื่อที่ต้องการแสดง"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-blue-300 focus:outline-none"
+                        >
+                        <textarea
+                            name="comment"
+                            rows="4"
+                            placeholder="เขียนรีวิว"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-blue-300 focus:outline-none"
+                        >{{ old('comment') }}</textarea>
+                        <button type="submit" class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                            ส่งรีวิว
+                        </button>
+                    </form>
+                </section>
             </div>
 
             <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
@@ -376,4 +507,6 @@
             </aside>
         </section>
     </main>
+    @include('frontend.partials.local_favorites_script')
+    @include('frontend.partials.review_rating_script')
 @endsection

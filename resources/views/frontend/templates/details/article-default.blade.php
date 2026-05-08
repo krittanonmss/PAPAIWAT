@@ -38,6 +38,15 @@
     $publishedAt = $articleContent?->published_at;
     $authorName = $article?->author_name ?: 'PAPAIWAT Editorial';
     $readingTime = $article?->reading_time_minutes;
+    $approvedComments = $approvedComments ?? collect();
+    $favoritePayload = $article ? [
+        'type' => 'article',
+        'id' => $article->id,
+        'title' => $articleContent?->title,
+        'url' => route('articles.show', $articleContent?->slug),
+        'excerpt' => $articleContent?->excerpt ?? $article?->excerpt_en,
+        'image' => $coverUrl,
+    ] : [];
 @endphp
 
 <main class="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-white">
@@ -124,6 +133,12 @@
 
         {{-- Content --}}
         <section class="px-7 py-8 md:px-8 md:py-10">
+            @if (session('success'))
+                <div class="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             @if ($articleContent?->description)
                 <p class="mb-8 text-base leading-8 text-slate-300">
                     {!! nl2br(e($articleContent->description)) !!}
@@ -165,25 +180,20 @@
             @endif
 
             <div class="mt-8 grid gap-3 sm:grid-cols-3">
-                <button
-                    type="button"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
-                >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.015-4.5-4.5-4.5-1.74 0-3.25.99-4 2.438A4.49 4.49 0 0 0 8.5 3.75C6.015 3.75 4 5.765 4 8.25c0 7.22 8.5 12 8.5 12s8.5-4.78 8.5-12Z" />
-                    </svg>
-                    ถูกใจ
-                </button>
-
-                <button
-                    type="button"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
-                >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75h12A1.25 1.25 0 0 1 19.25 5v15.25L12 16.5l-7.25 3.75V5A1.25 1.25 0 0 1 6 3.75Z" />
-                    </svg>
-                    บันทึก
-                </button>
+                @if ($article)
+                    <button
+                        type="button"
+                        data-local-favorite-toggle
+                        data-favorite='{{ e(json_encode($favoritePayload)) }}'
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+                    >
+                        <svg data-favorite-icon class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75h12A1.25 1.25 0 0 1 19.25 5v15.25L12 16.5l-7.25 3.75V5A1.25 1.25 0 0 1 6 3.75Z" />
+                        </svg>
+                        <span data-favorite-unsaved>บันทึก</span>
+                        <span data-favorite-saved class="hidden">บันทึกแล้ว</span>
+                    </button>
+                @endif
 
                 <button
                     type="button"
@@ -195,7 +205,55 @@
                     แชร์
                 </button>
             </div>
+
+            <section class="mt-10 border-t border-white/10 pt-8">
+                <div class="flex items-center justify-between gap-4">
+                    <h2 class="text-xl font-semibold text-white">ความคิดเห็น</h2>
+                    <span class="text-sm text-slate-500">{{ number_format($approvedComments->count()) }} รายการ</span>
+                </div>
+
+                <div class="mt-5 space-y-3">
+                    @forelse ($approvedComments as $comment)
+                        <article class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                            <p class="text-sm font-medium text-white">{{ $comment->display_name ?: 'ผู้เยี่ยมชม' }}</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-300">{{ $comment->body }}</p>
+                            <form method="POST" action="{{ route('comments.report', $comment) }}" class="mt-3 text-right">
+                                @csrf
+                                <input type="hidden" name="reason" value="ไม่เหมาะสม">
+                                <button type="submit" class="text-xs text-slate-500 transition hover:text-red-300">รายงาน</button>
+                            </form>
+                        </article>
+                    @empty
+                        <p class="text-sm text-slate-500">ยังไม่มีความคิดเห็น</p>
+                    @endforelse
+
+                </div>
+
+                @if ($article)
+                    <form method="POST" action="{{ route('articles.comments.store', $article) }}" class="mt-6 space-y-3">
+                        @csrf
+                        <input
+                            type="text"
+                            name="display_name"
+                            value="{{ old('display_name') }}"
+                            placeholder="ชื่อที่ต้องการแสดง"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-blue-300 focus:outline-none"
+                        >
+                        <textarea
+                            name="body"
+                            rows="4"
+                            required
+                            placeholder="เขียนความคิดเห็น"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-blue-300 focus:outline-none"
+                        >{{ old('body') }}</textarea>
+                        <button type="submit" class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500">
+                            ส่งความคิดเห็น
+                        </button>
+                    </form>
+                @endif
+            </section>
         </section>
     </article>
 </main>
+@include('frontend.partials.local_favorites_script')
 @endsection

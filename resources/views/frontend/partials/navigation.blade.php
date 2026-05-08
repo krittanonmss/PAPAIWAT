@@ -51,10 +51,12 @@
                     @endif
                 </li>
             @endforeach
+            <li><a href="{{ route('favorites.index') }}" class="{{ request()->routeIs('favorites.*') ? 'text-white' : 'hover:text-white' }} transition">รายการโปรด</a></li>
         </ul>
     @else
         <ul class="flex items-center gap-5 text-sm text-slate-300">
             <li><a href="{{ route('home') }}" class="hover:text-white">หน้าแรก</a></li>
+            <li><a href="{{ route('favorites.index') }}" class="{{ request()->routeIs('favorites.*') ? 'text-white' : 'hover:text-white' }} transition">รายการโปรด</a></li>
         </ul>
     @endif
 </nav>

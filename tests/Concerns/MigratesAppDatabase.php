@@ -23,6 +23,7 @@ trait MigratesAppDatabase
             'database/migrations/content/layout',
             'database/migrations/content/temple',
             'database/migrations/content/article',
+            'database/migrations/content/interactions',
         ] as $path) {
             $this->artisan('migrate', ['--path' => $path]);
         }

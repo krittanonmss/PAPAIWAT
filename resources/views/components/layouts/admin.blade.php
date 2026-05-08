@@ -120,11 +120,14 @@
             || request()->routeIs('admin.content.pages.*')
             || request()->routeIs('admin.content.templates.*');
 
+        $isInteractionManagementActive = request()->routeIs('admin.interactions.*');
+
         $isContentManagementActive = $isTempleManagementActive
             || $isArticleManagementActive
             || $isCategoryManagementActive
             || $isMediaManagementActive
-            || $isLayoutManagementActive;
+            || $isLayoutManagementActive
+            || $isInteractionManagementActive;
     @endphp
 
     <div x-data="{ sidebarOpen: true }" class="min-h-screen">
@@ -186,7 +189,7 @@
                             >
                                 <div class="flex items-center justify-between">
                                     <span>จัดการเนื้อหา</span>
-                                    <span class="text-xs text-slate-500">5</span>
+                                    <span class="text-xs text-slate-500">6</span>
                                 </div>
                             </summary>
 
@@ -350,6 +353,42 @@
                                                 : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
                                         >
                                             เทมเพลต
+                                        </a>
+                                    </div>
+                                </details>
+
+                                <details
+                                    x-data="{ open: {{ $isInteractionManagementActive ? 'true' : 'false' }} }"
+                                    x-bind:open="open"
+                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
+                                >
+                                    <summary
+                                        @click.prevent="open = !open"
+                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
+                                    >
+                                        <div class="flex items-center justify-between">
+                                            <span>จัดการปฏิสัมพันธ์</span>
+                                            <span class="text-xs text-slate-500">2</span>
+                                        </div>
+                                    </summary>
+
+                                    <div class="mt-1 space-y-1">
+                                        <a
+                                            href="{{ route('admin.interactions.reviews.index') }}"
+                                            class="{{ request()->routeIs('admin.interactions.reviews.*')
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                                        >
+                                            รีวิววัด
+                                        </a>
+
+                                        <a
+                                            href="{{ route('admin.interactions.comments.index') }}"
+                                            class="{{ request()->routeIs('admin.interactions.comments.*')
+                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
+                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                                        >
+                                            ความคิดเห็น
                                         </a>
                                     </div>
                                 </details>

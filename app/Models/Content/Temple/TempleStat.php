@@ -13,6 +13,7 @@ class TempleStat extends Model
 
     protected $fillable = [
         'temple_id',
+        'view_count',
         'review_count',
         'average_rating',
         'favorite_count',
@@ -22,6 +23,7 @@ class TempleStat extends Model
 
     protected $casts = [
         'temple_id' => 'integer',
+        'view_count' => 'integer',
         'review_count' => 'integer',
         'average_rating' => 'decimal:2',
         'favorite_count' => 'integer',

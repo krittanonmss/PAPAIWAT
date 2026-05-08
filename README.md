@@ -108,6 +108,7 @@ docker compose exec app php artisan migrate --path=database/migrations/content/m
 docker compose exec app php artisan migrate --path=database/migrations/content
 docker compose exec app php artisan migrate --path=database/migrations/content/temple
 docker compose exec app php artisan migrate --path=database/migrations/content/article
+docker compose exec app php artisan migrate --path=database/migrations/content/interactions
 docker compose exec app php artisan migrate --path=database/migrations/content/layout
 docker compose exec app php artisan db:seed
 ```
@@ -125,6 +126,7 @@ docker compose exec app php artisan migrate:fresh \
   --path=database/migrations/content \
   --path=database/migrations/content/temple \
   --path=database/migrations/content/article \
+  --path=database/migrations/content/interactions \
   --path=database/migrations/content/layout \
   --seed
 ```
@@ -184,6 +186,7 @@ php artisan migrate --path=database/migrations/content/media
 php artisan migrate --path=database/migrations/content
 php artisan migrate --path=database/migrations/content/temple
 php artisan migrate --path=database/migrations/content/article
+php artisan migrate --path=database/migrations/content/interactions
 php artisan migrate --path=database/migrations/content/layout
 php artisan db:seed
 ```
