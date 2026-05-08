@@ -66,7 +66,7 @@ class UpdateTempleRequest extends FormRequest
             'dress_code' => ['nullable', 'string'],
             'recommended_visit_start_time' => ['nullable', 'date_format:H:i'],
             'recommended_visit_end_time' => ['nullable', 'date_format:H:i', 'after:recommended_visit_start_time'],
-            
+
             // address
             'address.address_line' => ['nullable', 'string'],
             'address.province' => ['nullable', 'string', 'max:100'],
@@ -108,7 +108,8 @@ class UpdateTempleRequest extends FormRequest
 
             // facilities
             'facility_items' => ['nullable', 'array'],
-            'facility_items.*.facility_id' => ['required_with:facility_items', 'integer', 'exists:facilities,id'],
+            'facility_items.*.facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
+            'facility_items.*.facility_name' => ['nullable', 'string', 'max:255'],
             'facility_items.*.value' => ['nullable', 'string', 'max:255'],
             'facility_items.*.note' => ['nullable', 'string', 'max:255'],
             'facility_items.*.sort_order' => ['nullable', 'integer', 'min:0'],

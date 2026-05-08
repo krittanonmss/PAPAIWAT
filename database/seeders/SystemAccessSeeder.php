@@ -209,11 +209,17 @@ class SystemAccessSeeder extends Seeder
 
     private function seedDefaultAdmin(Role $role): void
     {
+        $password = env('ADMIN_PASSWORD');
+
+        if (! $password && app()->isProduction()) {
+            throw new \RuntimeException('ADMIN_PASSWORD is required for seeding the default admin account in production.');
+        }
+
         Admin::updateOrCreate(
             ['email' => env('ADMIN_EMAIL', 'admin@example.com')],
             [
                 'username' => env('ADMIN_USERNAME', 'superadmin'),
-                'password_hash' => Hash::make(env('ADMIN_PASSWORD', '12345678')),
+                'password_hash' => Hash::make($password ?: 'ChangeMe12345'),
                 'role_id' => $role->id,
                 'status' => 'active',
             ]

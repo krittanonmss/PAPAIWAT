@@ -16,8 +16,7 @@ class AdminLoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
-            //'email' => ['required', 'string', 'email:rfc,dns', 'max:255'], user production
-            //'password' => ['required', 'string', 'min:8', 'max:255'],
+            'remember' => ['nullable', 'boolean'],
         ];
     }
 

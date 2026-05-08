@@ -13,8 +13,7 @@ class AdminLoginController extends Controller
 {
     public function __construct(
         protected AdminAuthService $adminAuthService,
-    ) {
-    }
+    ) {}
 
     public function create(): View
     {
@@ -26,6 +25,7 @@ class AdminLoginController extends Controller
         $this->adminAuthService->login(
             email: $request->string('email')->toString(),
             password: $request->string('password')->toString(),
+            remember: $request->boolean('remember'),
             request: $request,
         );
 

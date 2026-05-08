@@ -8,6 +8,7 @@ use App\Models\Admin\Role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -22,9 +23,9 @@ class UserManagementController extends Controller
             $search = $request->string('search')->toString();
 
             $query->where(function ($q) use ($search) {
-                $q->where('username', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('phone', 'like', '%' . $search . '%');
+                $q->where('username', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('phone', 'like', '%'.$search.'%');
             });
         }
 
@@ -54,7 +55,7 @@ class UserManagementController extends Controller
         $validated = $request->validate([
             'username' => ['required', 'string', 'max:255', 'unique:admins,username'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', Password::min(12)->letters()->mixedCase()->numbers(), 'confirmed'],
             'role_id' => ['required', 'exists:roles,id'],
             'status' => ['required', 'in:active,inactive'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -91,9 +92,9 @@ class UserManagementController extends Controller
     public function update(Request $request, Admin $admin): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:255', 'unique:admins,username,' . $admin->id],
-            'email' => ['required', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'username' => ['required', 'string', 'max:255', 'unique:admins,username,'.$admin->id],
+            'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
+            'password' => ['nullable', 'string', Password::min(12)->letters()->mixedCase()->numbers(), 'confirmed'],
             'role_id' => ['required', 'exists:roles,id'],
             'phone' => ['nullable', 'string', 'max:50'],
         ]);

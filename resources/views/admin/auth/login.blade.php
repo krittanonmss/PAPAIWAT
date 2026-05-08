@@ -48,18 +48,26 @@
                 @enderror
             </div>
 
-            <div>
+            <div x-data="{ showPassword: false }">
                 <label for="password" class="mb-1 block text-sm font-medium text-slate-300">รหัสผ่าน</label>
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                    aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
-                    aria-describedby="{{ $errors->has('password') ? 'password-error' : '' }}"
-                    class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
-                >
+                <div class="relative">
+                    <input
+                        id="password"
+                        name="password"
+                        :type="showPassword ? 'text' : 'password'"
+                        autocomplete="current-password"
+                        required
+                        aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
+                        aria-describedby="{{ $errors->has('password') ? 'password-error' : '' }}"
+                        class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-16 text-sm text-white placeholder-slate-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                    >
+                    <button
+                        type="button"
+                        @click="showPassword = !showPassword"
+                        class="absolute inset-y-1 right-1 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+                        x-text="showPassword ? 'ซ่อน' : 'ดู'"
+                    ></button>
+                </div>
                 @error('password')
                     <div id="password-error" class="mt-1 text-sm text-red-400">{{ $message }}</div>
                 @enderror
@@ -74,7 +82,7 @@
                     {{ old('remember') ? 'checked' : '' }}
                     class="h-4 w-4 rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-400"
                 >
-                <label for="remember" class="text-sm text-slate-400">จดจำการเข้าสู่ระบบ</label>
+                <label for="remember" class="text-sm text-slate-400">จดจำการเข้าสู่ระบบบนอุปกรณ์นี้</label>
             </div>
 
             <button

@@ -17,6 +17,16 @@
             : null;
 
         $galleryUsages = $content?->mediaUsages?->where('role_key', 'gallery') ?? collect();
+
+        $renderRichText = function (?string $value) {
+            if (! $value) {
+                return '-';
+            }
+
+            return $value === strip_tags($value)
+                ? nl2br(e($value))
+                : $value;
+        };
     @endphp
 
     <div class="space-y-6 text-white">
@@ -184,14 +194,14 @@
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">รายละเอียด</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $content?->description ? nl2br(e($content->description)) : '-' !!}
+                                {!! $renderRichText($content?->description) !!}
                             </div>
                         </div>
 
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">ประวัติ</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $temple->history ? nl2br(e($temple->history)) : '-' !!}
+                                {!! $renderRichText($temple->history) !!}
                             </div>
                         </div>
                     </div>
@@ -288,7 +298,9 @@
                                 <div class="px-6 py-4">
                                     <p class="text-xs text-slate-500">Order: {{ $highlight->sort_order ?? 0 }}</p>
                                     <p class="mt-1 text-sm font-medium text-white">{{ $highlight->title }}</p>
-                                    <p class="mt-1 text-sm leading-6 text-slate-400">{{ $highlight->description ?: '-' }}</p>
+                                    <div class="mt-1 text-sm leading-6 text-slate-400">
+                                        {!! $renderRichText($highlight->description) !!}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -309,7 +321,9 @@
                                 <li class="flex items-start gap-3 px-6 py-3">
                                     <span class="mt-0.5 shrink-0 text-blue-300">•</span>
                                     <div>
-                                        <p class="text-sm text-slate-300">{{ $rule->rule_text }}</p>
+                                        <div class="text-sm text-slate-300">
+                                            {!! $renderRichText($rule->rule_text) !!}
+                                        </div>
                                         <p class="mt-1 text-xs text-slate-500">Order: {{ $rule->sort_order ?? 0 }}</p>
                                     </div>
                                 </li>

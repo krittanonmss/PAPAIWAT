@@ -105,7 +105,8 @@ class StoreTempleRequest extends FormRequest
 
             // facilities
             'facility_items' => ['nullable', 'array'],
-            'facility_items.*.facility_id' => ['required_with:facility_items', 'integer', 'exists:facilities,id'],
+            'facility_items.*.facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
+            'facility_items.*.facility_name' => ['nullable', 'string', 'max:255'],
             'facility_items.*.value' => ['nullable', 'string', 'max:255'],
             'facility_items.*.note' => ['nullable', 'string', 'max:255'],
             'facility_items.*.sort_order' => ['nullable', 'integer', 'min:0'],

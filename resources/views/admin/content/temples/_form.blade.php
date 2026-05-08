@@ -26,7 +26,16 @@
         : null;
     $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    $jsOpeningHours = $openingHours->map(function ($h) {
+    $oldOpeningHours = old('opening_hours');
+    $jsOpeningHours = $oldOpeningHours !== null ? collect($oldOpeningHours)->map(function ($h) {
+        return [
+            'day_of_week' => isset($h['day_of_week']) ? (int) $h['day_of_week'] : null,
+            'open_time'   => $h['open_time'] ?? '',
+            'close_time'  => $h['close_time'] ?? '',
+            'is_closed'   => (bool) ($h['is_closed'] ?? false),
+            'note'        => $h['note'] ?? '',
+        ];
+    })->filter(fn ($h) => $h['day_of_week'] !== null)->values() : $openingHours->map(function ($h) {
         return [
             'day_of_week' => $h->day_of_week,
             'open_time'   => $h->open_time ? substr($h->open_time, 0, 5) : '',
@@ -36,7 +45,18 @@
         ];
     })->values();
 
-    $jsFees = $fees->map(function ($f) {
+    $oldFees = old('fees');
+    $jsFees = $oldFees !== null ? collect($oldFees)->map(function ($f) {
+        return [
+            'fee_type'   => $f['fee_type'] ?? '',
+            'label'      => $f['label'] ?? '',
+            'amount'     => $f['amount'] ?? '',
+            'currency'   => $f['currency'] ?? 'THB',
+            'note'       => $f['note'] ?? '',
+            'is_active'  => (bool) ($f['is_active'] ?? false),
+            'sort_order' => $f['sort_order'] ?? 0,
+        ];
+    })->values() : $fees->map(function ($f) {
         return [
             'fee_type'   => $f->fee_type,
             'label'      => $f->label,
@@ -47,6 +67,30 @@
             'sort_order' => $f->sort_order ?? 0,
         ];
     })->values();
+
+    $oldFacilityItems = old('facility_items');
+    $jsFacilityItems = $oldFacilityItems !== null ? collect($oldFacilityItems)->map(function ($item) {
+        return [
+            'facility_id' => $item['facility_id'] ?? '',
+            'facility_name' => $item['facility_name'] ?? '',
+            'value' => $item['value'] ?? '',
+            'note' => $item['note'] ?? '',
+            'sort_order' => $item['sort_order'] ?? 0,
+        ];
+    })->values() : $facilityItems->map(function ($item) {
+        return [
+            'facility_id' => $item->facility_id,
+            'facility_name' => '',
+            'value' => $item->value ?? '',
+            'note' => $item->note ?? '',
+            'sort_order' => $item->sort_order ?? 0,
+        ];
+    })->values();
+
+    $jsFacilities = $facilities->map(fn ($facility) => [
+        'id' => $facility->id,
+        'name' => $facility->name,
+    ])->values();
 
     $oldHighlights = old('highlights');
     $jsHighlights = $oldHighlights !== null ? collect($oldHighlights)->map(function ($h) {
@@ -76,7 +120,19 @@
         ];
     })->values();
 
-    $jsTravelInfos = $travelInfos->map(function ($t) {
+    $oldTravelInfos = old('travel_infos');
+    $jsTravelInfos = $oldTravelInfos !== null ? collect($oldTravelInfos)->map(function ($t) {
+        return [
+            'travel_type'      => $t['travel_type'] ?? '',
+            'start_place'      => $t['start_place'] ?? '',
+            'distance_km'      => $t['distance_km'] ?? '',
+            'duration_minutes' => $t['duration_minutes'] ?? '',
+            'cost_estimate'    => $t['cost_estimate'] ?? '',
+            'note'             => $t['note'] ?? '',
+            'is_active'        => (bool) ($t['is_active'] ?? false),
+            'sort_order'       => $t['sort_order'] ?? 0,
+        ];
+    })->values() : $travelInfos->map(function ($t) {
         return [
             'travel_type'      => $t->travel_type,
             'start_place'      => $t->start_place ?? '',
@@ -89,7 +145,17 @@
         ];
     })->values();
 
-    $jsNearbyPlaces = $nearbyPlaces->map(function ($n) {
+    $oldNearbyPlaces = old('nearby_places');
+    $jsNearbyPlaces = $oldNearbyPlaces !== null ? collect($oldNearbyPlaces)->map(function ($n) {
+        return [
+            'nearby_temple_id' => $n['nearby_temple_id'] ?? '',
+            'relation_type'    => $n['relation_type'] ?? '',
+            'distance_km'      => $n['distance_km'] ?? '',
+            'duration_minutes' => $n['duration_minutes'] ?? '',
+            'score'            => $n['score'] ?? '',
+            'sort_order'       => $n['sort_order'] ?? 0,
+        ];
+    })->values() : $nearbyPlaces->map(function ($n) {
         return [
             'nearby_temple_id' => $n->nearby_temple_id,
             'relation_type'    => $n->relation_type ?? '',
@@ -1322,37 +1388,105 @@
     </section>
 
     {{-- Section: Facilities --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-        <div class="border-b border-white/10 px-6 py-4">
-            <h2 class="text-base font-semibold text-white">สิ่งอำนวยความสะดวก</h2>
-            <p class="mt-1 text-xs text-slate-400">สิ่งอำนวยความสะดวกภายในวัด</p>
+    <section
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        x-data="facilitiesManager()"
+    >
+        <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
+            <div>
+                <h2 class="text-base font-semibold text-white">สิ่งอำนวยความสะดวก</h2>
+                <p class="mt-1 text-xs text-slate-400">เพิ่มสิ่งอำนวยความสะดวกของวัดได้จากหน้านี้โดยตรง</p>
+            </div>
+
+            <button
+                type="button"
+                @click="addRow()"
+                class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+            >
+                + เพิ่มสิ่งอำนวยความสะดวก
+            </button>
         </div>
-        <div class="p-6">
-            @if ($facilities->isEmpty())
-                <p class="text-sm text-slate-400">ไม่มีข้อมูล facility</p>
-            @else
-                <div class="space-y-3">
-                    @foreach ($facilities as $fi => $facility)
-                        @php
-                            $existingItem = $facilityItems->firstWhere('facility_id', $facility->id);
-                        @endphp
-                        <div class="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
-                            <input type="hidden" name="facility_items[{{ $fi }}][facility_id]" value="{{ $facility->id }}">
-                            <div class="col-span-12 flex items-center gap-2 pt-1 sm:col-span-4">
-                                <span class="text-sm font-medium text-slate-200">{{ $facility->name }}</span>
-                            </div>
-                            <div class="col-span-12 sm:col-span-4">
-                                <label class="mb-1 block text-xs font-medium text-slate-400">Value</label>
-                                <input type="text" name="facility_items[{{ $fi }}][value]" value="{{ old("facility_items.$fi.value", $existingItem?->value) }}" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="เช่น มี, ฟรี, 10 บาท">
-                            </div>
-                            <div class="col-span-12 sm:col-span-4">
-                                <label class="mb-1 block text-xs font-medium text-slate-400">Note</label>
-                                <input type="text" name="facility_items[{{ $fi }}][note]" value="{{ old("facility_items.$fi.note", $existingItem?->note) }}" class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400" placeholder="หมายเหตุ">
-                            </div>
+
+        <div class="space-y-4 p-6">
+            <template x-for="(row, index) in rows" :key="row._key || index">
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="grid grid-cols-12 items-start gap-3">
+                        <div class="col-span-12 md:col-span-4">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">เลือกจากรายการเดิม</label>
+                            <select
+                                :name="`facility_items[${index}][facility_id]`"
+                                x-model="row.facility_id"
+                                @change="if (row.facility_id) row.facility_name = ''"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+                            >
+                                <option value="">สร้างรายการใหม่</option>
+                                <template x-for="facility in facilities" :key="facility.id">
+                                    <option :value="facility.id" x-text="facility.name"></option>
+                                </template>
+                            </select>
                         </div>
-                    @endforeach
+
+                        <div class="col-span-12 md:col-span-4">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ชื่อรายการใหม่</label>
+                            <input
+                                type="text"
+                                :name="`facility_items[${index}][facility_name]`"
+                                x-model="row.facility_name"
+                                :disabled="Boolean(row.facility_id)"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400 disabled:opacity-50"
+                                placeholder="เช่น ห้องน้ำ, ที่จอดรถ"
+                            >
+                        </div>
+
+                        <div class="col-span-12 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">Value</label>
+                            <input
+                                type="text"
+                                :name="`facility_items[${index}][value]`"
+                                x-model="row.value"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="เช่น มี, ฟรี"
+                            >
+                        </div>
+
+                        <div class="col-span-12 md:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
+                            <input
+                                type="number"
+                                :name="`facility_items[${index}][sort_order]`"
+                                x-model="row.sort_order"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
+                                min="0"
+                            >
+                        </div>
+
+                        <div class="col-span-12">
+                            <label class="mb-1 block text-xs font-medium text-slate-400">หมายเหตุ</label>
+                            <input
+                                type="text"
+                                :name="`facility_items[${index}][note]`"
+                                x-model="row.note"
+                                class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="รายละเอียดเพิ่มเติม"
+                            >
+                        </div>
+
+                        <div class="col-span-12 flex justify-end">
+                            <button
+                                type="button"
+                                @click="removeRow(index)"
+                                class="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-300 hover:bg-rose-500/20"
+                            >
+                                ✕ ลบรายการนี้
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            @endif
+            </template>
+
+            <p x-show="rows.length === 0" class="text-sm text-slate-400">
+                ยังไม่มีข้อมูล — กดเพิ่มสิ่งอำนวยความสะดวกเพื่อเพิ่ม
+            </p>
         </div>
     </section>
 
@@ -1916,6 +2050,8 @@
 </div>
 
 <script>
+    window.templeFormHasServerErrors = @json($errors->any());
+
     window.templeDraft = {
         key: 'papaiwat:temple-form-draft:' + window.location.pathname,
 
@@ -1948,6 +2084,10 @@
     };
 
     window.templeDraftValue = function (name, fallback = '') {
+        if (window.templeFormHasServerErrors) {
+            return fallback;
+        }
+
         const fields = window.templeDraft.get('fields', {});
 
         return Object.prototype.hasOwnProperty.call(fields, name)
@@ -2078,7 +2218,7 @@
         const form = getTempleForm();
         const fields = window.templeDraft.get('fields', {});
 
-        if (!form || !fields) {
+        if (!form || !fields || window.templeFormHasServerErrors) {
             return;
         }
 
@@ -2274,7 +2414,11 @@
             rows: [],
 
             init() {
-                const rows = window.templeDraft.get(prefix, initialRows.length ? initialRows : []);
+                const fallbackRows = initialRows.length ? initialRows : [];
+                const rows = window.templeFormHasServerErrors
+                    ? fallbackRows
+                    : window.templeDraft.get(prefix, fallbackRows);
+
                 this.rows = rows.map((row) => ({
                     _key: row._key || `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                     ...row,
@@ -2309,15 +2453,7 @@
 
             init() {
                 const defaultRows = existing.length
-                    ? existing.map((row) => ({
-                        preset: 'oneday',
-                        day_from: Number(row.day_of_week ?? 0),
-                        day_to: Number(row.day_of_week ?? 0),
-                        open_time: row.open_time || '',
-                        close_time: row.close_time || '',
-                        is_closed: Boolean(row.is_closed),
-                        note: row.note || '',
-                    }))
+                    ? this.compactRows(existing)
                     : [
                         {
                             preset: 'everyday',
@@ -2330,13 +2466,95 @@
                         },
                     ];
 
-                this.rows = window.templeDraft.get('opening_hours_rows', defaultRows);
+                this.rows = window.templeFormHasServerErrors
+                    ? defaultRows
+                    : window.templeDraft.get('opening_hours_rows', defaultRows);
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
                         opening_hours_rows: value,
                     });
                 });
+            },
+
+            compactRows(rows) {
+                const normalizedRows = rows
+                    .map((row) => ({
+                        day: Number(row.day_of_week ?? 0),
+                        open_time: row.open_time || '',
+                        close_time: row.close_time || '',
+                        is_closed: Boolean(row.is_closed),
+                        note: row.note || '',
+                    }))
+                    .filter((row) => row.day >= 0 && row.day <= 6)
+                    .sort((a, b) => a.day - b.day);
+
+                const groupedRows = [];
+
+                normalizedRows.forEach((row) => {
+                    const last = groupedRows[groupedRows.length - 1];
+                    const hasSameValues = last
+                        && last.day_to + 1 === row.day
+                        && last.open_time === row.open_time
+                        && last.close_time === row.close_time
+                        && last.is_closed === row.is_closed
+                        && last.note === row.note;
+
+                    if (hasSameValues) {
+                        last.day_to = row.day;
+                        last.preset = this.detectPreset(last.day_from, last.day_to);
+                        return;
+                    }
+
+                    groupedRows.push({
+                        preset: 'oneday',
+                        day_from: row.day,
+                        day_to: row.day,
+                        open_time: row.open_time,
+                        close_time: row.close_time,
+                        is_closed: row.is_closed,
+                        note: row.note,
+                    });
+                });
+
+                const first = groupedRows[0];
+                const last = groupedRows[groupedRows.length - 1];
+
+                if (
+                    groupedRows.length > 1
+                    && first.day_from === 0
+                    && first.day_to === 0
+                    && last.day_from === 6
+                    && last.day_to === 6
+                    && first.open_time === last.open_time
+                    && first.close_time === last.close_time
+                    && first.is_closed === last.is_closed
+                    && first.note === last.note
+                ) {
+                    last.day_to = 0;
+                    groupedRows.shift();
+                }
+
+                return groupedRows.map((row) => ({
+                    ...row,
+                    preset: this.detectPreset(row.day_from, row.day_to),
+                }));
+            },
+
+            detectPreset(from, to) {
+                if (from === 0 && to === 6) {
+                    return 'everyday';
+                }
+
+                if (from === 1 && to === 5) {
+                    return 'weekdays';
+                }
+
+                if (from === 6 && to === 0) {
+                    return 'weekend';
+                }
+
+                return from === to ? 'oneday' : 'custom';
             },
 
             addRow() {
@@ -2409,21 +2627,21 @@
             },
 
             expandedRows() {
-                const items = [];
+                const itemsByDay = {};
 
                 this.rows.forEach((row) => {
                     this.getDaysInRange(Number(row.day_from), Number(row.day_to)).forEach((day) => {
-                        items.push({
+                        itemsByDay[day] = {
                             day_of_week: day,
                             open_time: row.open_time,
                             close_time: row.close_time,
                             note: row.note,
                             is_closed: row.is_closed,
-                        });
+                        };
                     });
                 });
 
-                return items;
+                return Object.values(itemsByDay).sort((a, b) => a.day_of_week - b.day_of_week);
             },
         };
     }
@@ -2435,7 +2653,10 @@
             rows: [],
 
             init() {
-                this.rows = window.templeDraft.get('fees_rows', existing.length ? existing : []);
+                const fallbackRows = existing.length ? existing : [];
+                this.rows = window.templeFormHasServerErrors
+                    ? fallbackRows
+                    : window.templeDraft.get('fees_rows', fallbackRows);
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
@@ -2462,6 +2683,52 @@
         };
     }
 
+    function facilitiesManager() {
+        const existing = @json($jsFacilityItems);
+        const facilities = @json($jsFacilities);
+
+        return {
+            facilities,
+            rows: [],
+
+            init() {
+                const fallbackRows = existing.length ? existing : [];
+                this.rows = (window.templeFormHasServerErrors
+                    ? fallbackRows
+                    : window.templeDraft.get('facility_items_rows', fallbackRows)
+                ).map((row) => ({
+                    _key: row._key || `facility-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    facility_id: row.facility_id ? String(row.facility_id) : '',
+                    facility_name: row.facility_name || '',
+                    value: row.value || '',
+                    note: row.note || '',
+                    sort_order: row.sort_order ?? 0,
+                }));
+
+                this.$watch('rows', (value) => {
+                    window.templeDraft.write({
+                        facility_items_rows: value,
+                    });
+                });
+            },
+
+            addRow() {
+                this.rows.push({
+                    _key: `facility-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    facility_id: '',
+                    facility_name: '',
+                    value: '',
+                    note: '',
+                    sort_order: this.rows.length,
+                });
+            },
+
+            removeRow(index) {
+                this.rows.splice(index, 1);
+            },
+        };
+    }
+
     function travelInfosManager() {
         const existing = @json($jsTravelInfos);
 
@@ -2469,7 +2736,10 @@
             rows: [],
 
             init() {
-                this.rows = window.templeDraft.get('travel_infos_rows', existing.length ? existing : []);
+                const fallbackRows = existing.length ? existing : [];
+                this.rows = window.templeFormHasServerErrors
+                    ? fallbackRows
+                    : window.templeDraft.get('travel_infos_rows', fallbackRows);
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
@@ -2504,7 +2774,10 @@
             rows: [],
 
             init() {
-                this.rows = window.templeDraft.get('nearby_places_rows', existing.length ? existing : []);
+                const fallbackRows = existing.length ? existing : [];
+                this.rows = window.templeFormHasServerErrors
+                    ? fallbackRows
+                    : window.templeDraft.get('nearby_places_rows', fallbackRows);
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({

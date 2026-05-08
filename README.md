@@ -51,7 +51,7 @@ Seeder จะสร้าง admin เริ่มต้นให้:
 ```text
 Email: admin@example.com
 Username: superadmin
-Password: 12345678
+Password: ChangeMe12345
 ```
 
 สามารถ override ผ่าน environment variables ได้:
@@ -59,7 +59,7 @@ Password: 12345678
 ```env
 ADMIN_EMAIL=admin@example.com
 ADMIN_USERNAME=superadmin
-ADMIN_PASSWORD=12345678
+ADMIN_PASSWORD=ChangeMe12345
 ```
 
 ## Docker Services
@@ -245,4 +245,3 @@ docker compose down -v
 - Template list/detail ยังถูก seed ให้พร้อมใช้ แต่ page/content ต้องสร้างเองผ่าน admin
 - Media upload ใช้ disk `public`
 - หลังติดตั้งควรรัน `php artisan storage:link` ซึ่ง Docker entrypoint ทำให้อัตโนมัติแล้ว
-

@@ -3,6 +3,7 @@
 namespace App\Services\Admin\Content\Temple;
 
 use App\Models\Content\Content;
+use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -38,7 +39,7 @@ class TempleDataSyncService
                 'history' => $this->sanitizeRichText($validated['history'] ?? null),
                 'dress_code' => $validated['dress_code'] ?? null,
                 'recommended_visit_start_time' => $validated['recommended_visit_start_time'] ?? null,
-                'recommended_visit_end_time' => $validated['recommended_visit_end_time'] ?? null,   
+                'recommended_visit_end_time' => $validated['recommended_visit_end_time'] ?? null,
             ]);
 
             $this->syncAll($temple, $content, $validated);
@@ -136,10 +137,10 @@ class TempleDataSyncService
             'ul' => ['class'],
         ];
 
-        $document = new \DOMDocument();
+        $document = new \DOMDocument;
         libxml_use_internal_errors(true);
         $document->loadHTML(
-            '<?xml encoding="UTF-8"><!DOCTYPE html><html><body>' . $value . '</body></html>',
+            '<?xml encoding="UTF-8"><!DOCTYPE html><html><body>'.$value.'</body></html>',
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
         libxml_clear_errors();
@@ -147,6 +148,7 @@ class TempleDataSyncService
         $sanitizeNode = function (\DOMNode $node) use (&$sanitizeNode, $allowedTags): void {
             if ($node instanceof \DOMComment) {
                 $node->parentNode?->removeChild($node);
+
                 return;
             }
 
@@ -162,6 +164,7 @@ class TempleDataSyncService
 
             if (in_array($tagName, ['script', 'style'], true)) {
                 $node->parentNode?->removeChild($node);
+
                 return;
             }
 
@@ -177,6 +180,7 @@ class TempleDataSyncService
                 }
 
                 $parent->removeChild($node);
+
                 return;
             }
 
@@ -185,6 +189,7 @@ class TempleDataSyncService
 
                 if (! in_array($attributeName, $allowedTags[$tagName], true)) {
                     $node->removeAttributeNode($attribute);
+
                     continue;
                 }
 
@@ -216,6 +221,7 @@ class TempleDataSyncService
 
                     if (empty($classes)) {
                         $node->removeAttribute('class');
+
                         continue;
                     }
 
@@ -269,6 +275,7 @@ class TempleDataSyncService
 
         if (! $hasAddressData) {
             $temple->address()?->delete();
+
             return;
         }
 
@@ -297,6 +304,7 @@ class TempleDataSyncService
 
         if ($categoryIds->isEmpty()) {
             $content->categories()->detach();
+
             return;
         }
 
@@ -363,26 +371,39 @@ class TempleDataSyncService
         $temple->openingHours()->delete();
 
         $items = collect($rows)
-            ->filter(fn ($item) => ! empty($item['day_of_week']) || $item['day_of_week'] === 0)
-            ->map(function ($item) use ($temple) {
+            ->filter(fn ($item) => array_key_exists('day_of_week', $item) && $item['day_of_week'] !== '')
+            ->mapWithKeys(function ($item) use ($temple) {
+                $dayOfWeek = (int) $item['day_of_week'];
+
+                if ($dayOfWeek < 0 || $dayOfWeek > 6) {
+                    return [];
+                }
+
                 return [
-                    'temple_id' => $temple->id,
-                    'day_of_week' => (int) $item['day_of_week'],
-                    'open_time' => ! empty($item['open_time']) ? $item['open_time'] . ':00' : null,
-                    'close_time' => ! empty($item['close_time']) ? $item['close_time'] . ':00' : null,
-                    'is_closed' => (bool) ($item['is_closed'] ?? false),
-                    'note' => $item['note'] ?? null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    $dayOfWeek => [
+                        'temple_id' => $temple->id,
+                        'day_of_week' => $dayOfWeek,
+                        'open_time' => ! empty($item['open_time']) ? $this->normalizeTime($item['open_time']) : null,
+                        'close_time' => ! empty($item['close_time']) ? $this->normalizeTime($item['close_time']) : null,
+                        'is_closed' => (bool) ($item['is_closed'] ?? false),
+                        'note' => $item['note'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
                 ];
             })
-            ->sortBy('day_of_week')
+            ->sortKeys()
             ->values()
             ->all();
 
         if (! empty($items)) {
             $temple->openingHours()->createMany($items);
         }
+    }
+
+    private function normalizeTime(string $time): string
+    {
+        return strlen($time) === 5 ? $time.':00' : $time;
     }
 
     private function syncFees(Temple $temple, array $rows): void
@@ -418,12 +439,16 @@ class TempleDataSyncService
         $temple->facilityItems()->delete();
 
         $items = collect($rows)
-            ->filter(fn ($item) => ! empty($item['facility_id']))
-            ->unique('facility_id')
             ->map(function ($item) use ($temple) {
+                $facilityId = $this->resolveFacilityId($item);
+
+                if (! $facilityId) {
+                    return null;
+                }
+
                 return [
                     'temple_id' => $temple->id,
-                    'facility_id' => (int) $item['facility_id'],
+                    'facility_id' => $facilityId,
                     'value' => $item['value'] ?? null,
                     'note' => $item['note'] ?? null,
                     'sort_order' => (int) ($item['sort_order'] ?? 0),
@@ -431,12 +456,60 @@ class TempleDataSyncService
                     'updated_at' => now(),
                 ];
             })
+            ->filter()
+            ->unique('facility_id')
             ->values()
             ->all();
 
         if (! empty($items)) {
             $temple->facilityItems()->createMany($items);
         }
+    }
+
+    private function resolveFacilityId(array $item): ?int
+    {
+        if (! empty($item['facility_id'])) {
+            return (int) $item['facility_id'];
+        }
+
+        $name = trim((string) ($item['facility_name'] ?? ''));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $existingFacility = Facility::query()
+            ->where('type_key', 'temple')
+            ->whereRaw('LOWER(name) = ?', [Str::lower($name)])
+            ->first();
+
+        if ($existingFacility) {
+            return $existingFacility->id;
+        }
+
+        $slug = $this->uniqueFacilitySlug($name);
+
+        return Facility::query()->create([
+            'name' => $name,
+            'slug' => $slug,
+            'type_key' => 'temple',
+            'sort_order' => (int) ($item['sort_order'] ?? 0),
+            'status' => 'active',
+        ])->id;
+    }
+
+    private function uniqueFacilitySlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'facility-'.Str::lower(Str::random(8));
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (Facility::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function syncHighlights(Temple $temple, array $rows): void

@@ -116,16 +116,24 @@
                 {{-- Password --}}
                 <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
                     <h2 class="text-base font-semibold text-white">ตั้งรหัสผ่าน</h2>
-                    <p class="mt-1 text-sm text-slate-400">กำหนดรหัสผ่านสำหรับบัญชีผู้ดูแลระบบ</p>
+                    <p class="mt-1 text-sm text-slate-400">อย่างน้อย 12 ตัวอักษร มีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ และตัวเลข</p>
 
-                    <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2" x-data="{ showPassword: false }">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-slate-400">รหัสผ่าน</label>
-                            <input
-                                type="password"
-                                name="password"
-                                class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            >
+                            <div class="relative">
+                                <input
+                                    :type="showPassword ? 'text' : 'password'"
+                                    name="password"
+                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 pr-16 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                <button
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute inset-y-1 right-1 rounded-xl border border-white/10 px-3 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+                                    x-text="showPassword ? 'ซ่อน' : 'ดู'"
+                                ></button>
+                            </div>
                             @error('password')
                                 <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                             @enderror
@@ -133,11 +141,19 @@
 
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-slate-400">ยืนยันรหัสผ่าน</label>
-                            <input
-                                type="password"
-                                name="password_confirmation"
-                                class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            >
+                            <div class="relative">
+                                <input
+                                    :type="showPassword ? 'text' : 'password'"
+                                    name="password_confirmation"
+                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 pr-16 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                <button
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute inset-y-1 right-1 rounded-xl border border-white/10 px-3 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+                                    x-text="showPassword ? 'ซ่อน' : 'ดู'"
+                                ></button>
+                            </div>
                         </div>
                     </div>
                 </div>
