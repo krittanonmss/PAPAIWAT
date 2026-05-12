@@ -6,6 +6,7 @@
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <label
             class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]"
+            :class="selectedImage === '' ? 'border-blue-300 bg-blue-500/10 ring-4 ring-blue-500/25' : ''"
             x-show="!mediaSearch"
         >
             <input
@@ -25,7 +26,8 @@
                 <p class="mt-0.5 text-xs text-slate-500">ใช้เฉพาะข้อความของ block</p>
             </div>
 
-            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
+            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 shadow-[inset_0_0_0_2px_rgba(15,23,42,0.85)] peer-checked:block"></div>
+            <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/30 peer-checked:block">เลือกแล้ว</div>
         </label>
 
         @foreach ($mediaItems as $media)
@@ -42,6 +44,7 @@
 
             <label
                 class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]"
+                :class="selectedImage === '{{ $media->id }}' ? 'border-blue-300 bg-blue-500/10 ring-4 ring-blue-500/25' : ''"
                 data-media-card
                 data-search-text="{{ $searchText }}"
                 x-show="!mediaSearch || $el.dataset.searchText.includes(mediaSearch.toLowerCase().trim())"
@@ -69,7 +72,8 @@
                     <p class="mt-0.5 text-xs text-slate-500">#{{ $media->id }} · {{ $media->media_type }}</p>
                 </div>
 
-                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
+                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 shadow-[inset_0_0_0_2px_rgba(15,23,42,0.85)] peer-checked:block"></div>
+                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/30 peer-checked:block">เลือกแล้ว</div>
             </label>
         @endforeach
     </div>

@@ -12,6 +12,7 @@ class MenuUrl
         $type = $item->menu_item_type ?? $item->type ?? 'external_url';
 
         return match ($type) {
+            'heading' => '#',
             'route' => self::routeUrl($item),
             'page' => self::pageUrl($item),
             'content' => self::contentUrl($item),

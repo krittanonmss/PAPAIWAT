@@ -56,6 +56,6 @@ class PublicCommentController extends Controller
             $visitorService->hashNullable($request->userAgent())
         );
 
-        return back()->with('success', 'ส่งความคิดเห็นแล้ว');
+        return back()->with('success', 'ความคิดเห็นของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');
     }
 }

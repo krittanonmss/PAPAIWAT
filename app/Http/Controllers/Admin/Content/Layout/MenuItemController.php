@@ -48,7 +48,7 @@ class MenuItemController extends Controller
             ],
             'label' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
-            'menu_item_type' => ['required', 'string', 'in:route,page,content,external_url,anchor'],
+            'menu_item_type' => ['required', 'string', 'in:heading,route,page,content,external_url,anchor'],
             'route_name' => ['nullable', 'string', 'max:255'],
             'route_params' => ['nullable', 'json'],
             'page_id' => ['nullable', 'integer', 'exists:pages,id'],
@@ -116,7 +116,7 @@ class MenuItemController extends Controller
             ],
             'label' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
-            'menu_item_type' => ['required', 'string', 'in:route,page,content,external_url,anchor'],
+            'menu_item_type' => ['required', 'string', 'in:heading,route,page,content,external_url,anchor'],
             'route_name' => ['nullable', 'string', 'max:255'],
             'route_params' => ['nullable', 'json'],
             'page_id' => ['nullable', 'integer', 'exists:pages,id'],
@@ -175,6 +175,17 @@ class MenuItemController extends Controller
     private function prepareMenuItemData(array $validated, Request $request, Menu $menu): array
     {
         $type = $validated['menu_item_type'];
+
+        if ($type === 'heading') {
+            $validated['route_name'] = null;
+            $validated['route_params'] = null;
+            $validated['page_id'] = null;
+            $validated['content_id'] = null;
+            $validated['url'] = null;
+            $validated['external_url'] = null;
+            $validated['anchor'] = null;
+            $validated['target'] = '_self';
+        }
 
         if ($type === 'anchor' && empty($validated['anchor'])) {
             $validated['anchor'] = $validated['external_url'] ?? $validated['url'] ?? null;

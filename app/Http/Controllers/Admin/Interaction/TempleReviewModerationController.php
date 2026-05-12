@@ -51,19 +51,4 @@ class TempleReviewModerationController extends Controller
         return back()->with('success', 'ลบรีวิวแล้ว');
     }
 
-    public function banVisitor(TempleReview $review, PublicInteractionService $interactionService): RedirectResponse
-    {
-        if ($review->visitor) {
-            $interactionService->banVisitor($review->visitor, 'Banned from review moderation');
-        }
-
-        return back()->with('success', 'ban visitor แล้ว');
-    }
-
-    public function banIp(TempleReview $review, PublicInteractionService $interactionService): RedirectResponse
-    {
-        $interactionService->banIpHash($review->ip_hash, 'Banned from review moderation');
-
-        return back()->with('success', 'ban IP แล้ว');
-    }
 }

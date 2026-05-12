@@ -48,7 +48,10 @@
                     </p>
                 </div>
 
-                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-emerald-400 peer-checked:block"></div>
+                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-emerald-300 bg-emerald-500/10 ring-4 ring-emerald-400/30 peer-checked:block"></div>
+                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-emerald-950/40 peer-checked:block">
+                    เลือกแล้ว
+                </div>
             </label>
         @endforeach
     </div>

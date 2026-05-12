@@ -35,10 +35,24 @@ class PublicInteractionFeatureTest extends TestCase
         $this->get(route('favorites.index'))
             ->assertOk()
             ->assertSee('รายการโปรดของฉัน')
-            ->assertSee('ระบบไม่ส่งข้อมูลรายการโปรดไปเก็บที่ server');
+            ->assertSee('โดยไม่เก็บว่าใครเป็นคนบันทึก');
     }
 
-    public function test_normal_temple_review_is_approved_immediately_and_updates_rating(): void
+    public function test_temple_detail_renders_parseable_favorite_payload_and_count(): void
+    {
+        $temple = $this->createPublishedTemple();
+
+        $this->get(route('temples.show', $temple))
+            ->assertOk()
+            ->assertSee('data-local-favorite-toggle', false)
+            ->assertSee('data-favorite=\'{"type":"temple","id":'.$temple->id, false)
+            ->assertSee('data-favorite-count="temple:'.$temple->id.'"', false)
+            ->assertSee('คนกด')
+            ->assertDontSee('&quot;type&quot;', false)
+            ->assertDontSee('&amp;quot;type&amp;quot;', false);
+    }
+
+    public function test_temple_review_waits_for_admin_approval_before_updating_rating(): void
     {
         $temple = $this->createPublishedTemple();
 
@@ -46,16 +60,17 @@ class PublicInteractionFeatureTest extends TestCase
             'rating' => 5,
             'display_name' => 'Visitor',
             'comment' => 'ดีมาก',
-        ])->assertRedirect();
+        ])->assertRedirect()
+            ->assertSessionHas('success', 'รีวิวของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');
 
         $review = TempleReview::query()->firstOrFail();
 
-        $this->assertSame('approved', $review->status);
-        $this->assertNotNull($review->approved_at);
+        $this->assertSame('pending', $review->status);
+        $this->assertNull($review->approved_at);
         $this->assertDatabaseHas('temple_stats', [
             'temple_id' => $temple->id,
-            'review_count' => 1,
-            'average_rating' => 5,
+            'review_count' => 0,
+            'average_rating' => 0,
         ]);
     }
 
@@ -80,16 +95,16 @@ class PublicInteractionFeatureTest extends TestCase
             'temple_id' => $temple->id,
             'rating' => 5,
             'comment' => 'ดีมาก',
-            'status' => 'approved',
+            'status' => 'pending',
         ]);
         $this->assertDatabaseHas('temple_stats', [
             'temple_id' => $temple->id,
-            'review_count' => 1,
-            'average_rating' => 5,
+            'review_count' => 0,
+            'average_rating' => 0,
         ]);
     }
 
-    public function test_suspicious_review_goes_pending_until_admin_approves_it(): void
+    public function test_review_goes_pending_until_admin_approves_it(): void
     {
         $temple = $this->createPublishedTemple();
 
@@ -121,19 +136,20 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
-    public function test_public_comment_is_approved_immediately_and_admin_can_reject_it(): void
+    public function test_public_comment_waits_for_admin_approval_and_admin_can_reject_it(): void
     {
         $article = $this->createPublishedArticle();
 
         $this->post(route('articles.comments.store', $article), [
             'display_name' => 'Reader',
             'body' => 'มีประโยชน์',
-        ])->assertRedirect();
+        ])->assertRedirect()
+            ->assertSessionHas('success', 'ความคิดเห็นของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');
 
         $comment = PublicComment::query()->firstOrFail();
 
-        $this->assertSame('approved', $comment->status);
-        $this->assertNotNull($comment->approved_at);
+        $this->assertSame('pending', $comment->status);
+        $this->assertNull($comment->approved_at);
 
         $this->withoutMiddleware(AdminAuthenticate::class);
         $this->actingAs(Admin::query()->where('email', 'admin@example.com')->firstOrFail(), 'admin');
@@ -149,7 +165,7 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
-    public function test_suspicious_comment_goes_pending_and_reports_can_auto_hide_content(): void
+    public function test_comment_goes_pending_and_reports_can_auto_hide_content(): void
     {
         $article = $this->createPublishedArticle();
 
@@ -181,7 +197,7 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
-    public function test_detail_pages_show_comments_immediately(): void
+    public function test_detail_pages_show_pending_comment_only_to_same_visitor_and_approved_comments_publicly(): void
     {
         $article = $this->createPublishedArticle();
 

@@ -1,8 +1,15 @@
 @php
     $content = $section->content_data ?? [];
     $settings = $section->settings_data ?? [];
+    $imageData = $section->image_data ?? [];
     $imageUrl = $section->image_url ?? null;
     $imageFirst = ($settings['layout'] ?? 'image_right') === 'image_left';
+    $imageOpacity = max(10, min(100, (int) ($settings['image_opacity'] ?? 100))) / 100;
+    $imageFit = ($settings['image_fit'] ?? 'contain') === 'cover' ? 'cover' : 'contain';
+    $rawImagePosition = $settings['image_position'] ?? 'center';
+    $imagePosition = in_array($rawImagePosition, ['center', 'top', 'bottom', 'left', 'right'], true)
+        ? $rawImagePosition
+        : 'center';
 @endphp
 
 <section class="bg-slate-950 px-4 py-16">
@@ -29,7 +36,14 @@
         <div class="{{ $imageFirst ? 'lg:order-1' : '' }}">
             <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30">
                 @if($imageUrl)
-                    <img src="{{ $imageUrl }}" alt="{{ $content['title'] ?? 'Section image' }}" class="aspect-[4/3] w-full object-cover">
+                    <img
+                        src="{{ $imageUrl }}"
+                        @if(!empty($imageData['srcset'])) srcset="{{ $imageData['srcset'] }}" @endif
+                        @if(!empty($imageData['sizes'])) sizes="{{ $imageData['sizes'] }}" @endif
+                        alt="{{ $content['title'] ?? 'Section image' }}"
+                        class="aspect-[4/3] w-full {{ $imageFit === 'cover' ? 'object-cover' : 'object-contain' }}"
+                        style="opacity: {{ $imageOpacity }}; object-position: {{ $imagePosition }};"
+                    >
                 @else
                     <div class="flex aspect-[4/3] items-center justify-center text-sm text-slate-500">No image</div>
                 @endif

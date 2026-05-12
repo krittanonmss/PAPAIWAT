@@ -123,6 +123,30 @@ class TempleManagementFeatureTest extends TestCase
         $this->assertSoftDeleted('contents', ['id' => $temple->content_id]);
     }
 
+    public function test_temple_index_shows_five_items_per_page(): void
+    {
+        foreach (range(1, 6) as $index) {
+            $content = Content::query()->create([
+                'content_type' => 'temple',
+                'title' => 'วัด '.$index,
+                'slug' => 'temple-'.$index,
+                'status' => 'published',
+            ]);
+
+            Temple::query()->create([
+                'content_id' => $content->id,
+            ]);
+        }
+
+        $this->get(route('admin.temples.index'))
+            ->assertOk()
+            ->assertViewHas('temples', function ($temples) {
+                return $temples->perPage() === 5
+                    && $temples->count() === 5
+                    && $temples->lastPage() === 2;
+            });
+    }
+
     private function templePayload(array $overrides = []): array
     {
         return array_replace([

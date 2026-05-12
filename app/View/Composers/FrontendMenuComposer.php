@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Support\MenuUrl;
+use App\Support\FooterSettings;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,7 @@ class FrontendMenuComposer
         $view->with([
             'frontendMenuItems' => $this->getMenuItems('header', true),
             'frontendFooterMenuItems' => $this->getMenuItems('footer'),
+            'frontendFooterSettings' => FooterSettings::get(),
         ]);
     }
 

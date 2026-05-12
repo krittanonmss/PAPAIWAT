@@ -31,10 +31,16 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-5 py-3 text-sm text-rose-300">
+                {{ session('error') }}
+            </div>
+        @endif
+
         {{-- Filter --}}
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <form method="GET" action="{{ route('admin.categories.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                <div class="lg:col-span-5">
+                <div class="lg:col-span-3">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาหมวดหมู่</label>
                     <input
                         type="text"
@@ -45,7 +51,7 @@
                     >
                 </div>
 
-                <div class="lg:col-span-3">
+                <div class="lg:col-span-2">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">ประเภท</label>
                     <select
                         name="type_key"
@@ -55,6 +61,22 @@
                         @foreach ($types as $type)
                             <option class="bg-slate-900" value="{{ $type }}" @selected(request('type_key') === $type)>
                                 {{ ucfirst($type) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่แม่</label>
+                    <select
+                        name="parent_id"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ทั้งหมด</option>
+                        <option value="root" class="bg-slate-900" @selected(request('parent_id') === 'root')>Root เท่านั้น</option>
+                        @foreach ($parents as $parent)
+                            <option value="{{ $parent->id }}" class="bg-slate-900" @selected((string) request('parent_id') === (string) $parent->id)>
+                                {{ $parent->name }} ({{ $parent->type_key }})
                             </option>
                         @endforeach
                     </select>
@@ -72,7 +94,7 @@
                     </select>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
+                <div class="grid grid-cols-2 gap-2 lg:col-span-3 lg:self-end">
                     <button
                         type="submit"
                         class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
@@ -108,6 +130,7 @@
                             <th class="px-4 py-3 text-left">ชื่อ</th>
                             <th class="px-4 py-3 text-left">ประเภท</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่แม่</th>
+                            <th class="px-4 py-3 text-left">ชั้น</th>
                             <th class="px-4 py-3 text-left">สถานะ</th>
                             <th class="px-4 py-3 text-left">ลำดับ</th>
                             <th class="px-4 py-3 text-left">แนะนำ</th>
@@ -139,6 +162,12 @@
 
                                 <td class="px-4 py-3 text-slate-300">
                                     {{ $category->parent?->name ?? '-' }}
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                                        Level {{ $category->level }}
+                                    </span>
                                 </td>
 
                                 <td class="px-4 py-3">
@@ -195,7 +224,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-5 py-10 text-center">
+                                <td colspan="8" class="px-5 py-10 text-center">
                                     <p class="text-base font-medium text-slate-300">ไม่พบข้อมูลหมวดหมู่</p>
                                     <p class="mt-1 text-sm text-slate-500">
                                         ลองเปลี่ยนเงื่อนไขการค้นหา หรือสร้างหมวดหมู่ใหม่

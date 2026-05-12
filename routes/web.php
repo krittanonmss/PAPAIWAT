@@ -5,12 +5,21 @@ use App\Http\Controllers\Frontend\FrontendPageController;
 use App\Http\Controllers\Frontend\FrontendTempleController;
 use App\Http\Controllers\Frontend\FavoriteListController;
 use App\Http\Controllers\Frontend\InteractionReportController;
+use App\Http\Controllers\Frontend\PublicInteractionCounterController;
 use App\Http\Controllers\Frontend\PublicCommentController;
 use App\Http\Controllers\Frontend\TempleReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontendPageController::class, 'home'])->name('home');
+Route::get('/search', [FrontendPageController::class, 'search'])->name('search');
 Route::get('/favorites', FavoriteListController::class)->name('favorites.index');
+Route::post('/favorites/items', [FavoriteListController::class, 'items'])->name('favorites.items');
+
+Route::post('/interactions/favorite', [PublicInteractionCounterController::class, 'favorite'])
+    ->name('interactions.favorite');
+
+Route::post('/interactions/share', [PublicInteractionCounterController::class, 'share'])
+    ->name('interactions.share');
 
 /*
 |--------------------------------------------------------------------------

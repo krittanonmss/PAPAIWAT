@@ -48,6 +48,7 @@ class ContentViewTrackingService
                 'review_count' => 0,
                 'average_rating' => 0,
                 'favorite_count' => 0,
+                'share_count' => 0,
                 'score' => 0,
                 'updated_at' => now(),
             ]

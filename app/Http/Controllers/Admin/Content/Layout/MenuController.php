@@ -49,10 +49,10 @@ class MenuController extends Controller
             Menu::query()->update(['is_default' => false]);
         }
 
-        $menu = Menu::create($validated);
+        Menu::create($validated);
 
         return redirect()
-            ->route('admin.content.menus.show', $menu)
+            ->route('admin.content.menus.index')
             ->with('success', 'สร้างเมนูเรียบร้อยแล้ว');
     }
 

@@ -77,16 +77,6 @@
                                             @method('DELETE')
                                             <button class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">ลบ</button>
                                         </form>
-                                        <form method="POST" action="{{ route('admin.interactions.reviews.ban-visitor', $review) }}" onsubmit="return confirm('ban visitor นี้หรือไม่?');">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button class="rounded-xl border border-red-400/30 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10">Ban user</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('admin.interactions.reviews.ban-ip', $review) }}" onsubmit="return confirm('ban IP นี้หรือไม่?');">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button class="rounded-xl border border-red-400/30 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/10">Ban IP</button>
-                                        </form>
                                     </div>
                                 </td>
                             </tr>

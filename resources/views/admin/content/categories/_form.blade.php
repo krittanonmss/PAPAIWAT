@@ -1,5 +1,6 @@
 @php
     $category = $category ?? null;
+    $selectedType = old('type_key', $category?->type_key);
 @endphp
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -25,9 +26,10 @@
                         @foreach ($parents as $parent)
                             <option
                                 value="{{ $parent->id }}"
+                                data-type-key="{{ $parent->type_key }}"
                                 @selected(old('parent_id', $category?->parent_id) == $parent->id)
                             >
-                                {{ $parent->name }} ({{ $parent->type_key }})
+                                {{ str_repeat('— ', (int) $parent->level) }}{{ $parent->name }} ({{ $parent->type_key }})
                             </option>
                         @endforeach
                     </select>
@@ -100,7 +102,7 @@
                         @foreach ($types as $type)
                             <option
                                 value="{{ $type }}"
-                                @selected(old('type_key', $category?->type_key) === $type)
+                                @selected($selectedType === $type)
                             >
                                 {{ ucfirst($type) }}
                             </option>
@@ -239,22 +241,57 @@
 </div>
 
 <script>
-    const nameInput = document.getElementById('name');
-    const slugPreview = document.getElementById('slug_preview');
+    (() => {
+        const nameInput = document.getElementById('name');
+        const slugPreview = document.getElementById('slug_preview');
+        const typeSelect = document.getElementById('type_key');
+        const parentSelect = document.getElementById('parent_id');
 
-    function makeSlug(value) {
-        return value
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-    }
+        if (!nameInput || !slugPreview || !typeSelect || !parentSelect) {
+            return;
+        }
 
-    function updateSlug() {
-        slugPreview.value = makeSlug(nameInput.value);
-    }
+        const makeSlug = (value) => {
+            const slug = value
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
 
-    nameInput.addEventListener('input', updateSlug);
-    updateSlug();
+            return slug || 'category-auto-generated';
+        };
+
+        const updateSlug = () => {
+            slugPreview.value = makeSlug(nameInput.value);
+        };
+
+        const updateParentOptions = () => {
+            const selectedType = typeSelect.value;
+
+            Array.from(parentSelect.options).forEach((option) => {
+                if (!option.value) {
+                    option.hidden = false;
+                    return;
+                }
+
+                option.hidden = Boolean(selectedType) && option.dataset.typeKey !== selectedType;
+            });
+
+            const selectedOption = parentSelect.selectedOptions[0];
+
+            if (selectedOption?.hidden) {
+                parentSelect.value = '';
+                parentSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+
+        nameInput.addEventListener('input', updateSlug);
+        typeSelect.addEventListener('change', updateParentOptions);
+
+        updateSlug();
+        updateParentOptions();
+    })();
 </script>

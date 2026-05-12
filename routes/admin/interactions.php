@@ -21,14 +21,6 @@ Route::prefix('interactions')->name('interactions.')->group(function () {
         ->middleware('admin.permission:interactions.manage')
         ->name('reviews.destroy');
 
-    Route::patch('/reviews/{review}/ban-visitor', [TempleReviewModerationController::class, 'banVisitor'])
-        ->middleware('admin.permission:interactions.manage')
-        ->name('reviews.ban-visitor');
-
-    Route::patch('/reviews/{review}/ban-ip', [TempleReviewModerationController::class, 'banIp'])
-        ->middleware('admin.permission:interactions.manage')
-        ->name('reviews.ban-ip');
-
     Route::get('/comments', [PublicCommentModerationController::class, 'index'])
         ->middleware('admin.permission:interactions.view')
         ->name('comments.index');
@@ -45,11 +37,4 @@ Route::prefix('interactions')->name('interactions.')->group(function () {
         ->middleware('admin.permission:interactions.manage')
         ->name('comments.destroy');
 
-    Route::patch('/comments/{comment}/ban-visitor', [PublicCommentModerationController::class, 'banVisitor'])
-        ->middleware('admin.permission:interactions.manage')
-        ->name('comments.ban-visitor');
-
-    Route::patch('/comments/{comment}/ban-ip', [PublicCommentModerationController::class, 'banIp'])
-        ->middleware('admin.permission:interactions.manage')
-        ->name('comments.ban-ip');
 });

@@ -17,6 +17,7 @@ class TempleStat extends Model
         'review_count',
         'average_rating',
         'favorite_count',
+        'share_count',
         'score',
         'updated_at',
     ];
@@ -27,6 +28,7 @@ class TempleStat extends Model
         'review_count' => 'integer',
         'average_rating' => 'decimal:2',
         'favorite_count' => 'integer',
+        'share_count' => 'integer',
         'score' => 'decimal:2',
         'updated_at' => 'datetime',
     ];

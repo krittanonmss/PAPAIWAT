@@ -80,7 +80,7 @@ class TempleController extends Controller
             $query->latest('id');
         }
 
-        $temples = $query->paginate(15)->withQueryString();
+        $temples = $query->paginate(5)->withQueryString();
 
         $categories = Category::query()
             ->where('type_key', 'temple')

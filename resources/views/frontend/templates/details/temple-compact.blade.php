@@ -9,6 +9,8 @@
     $coverUsage = $content?->mediaUsages?->firstWhere('role_key', 'cover');
     $coverPath = $coverUsage?->media?->path;
     $coverUrl = $coverPath ? (filter_var($coverPath, FILTER_VALIDATE_URL) ? $coverPath : \Illuminate\Support\Facades\Storage::url($coverPath)) : null;
+    $favoriteCount = (int) data_get($stat, 'favorite_count', 0);
+    $shareCount = (int) data_get($stat, 'share_count', 0);
 
     $renderRichText = function (?string $value) {
         if (! $value) {
@@ -22,6 +24,14 @@
 
     $summary = $content?->excerpt
         ?: ($content?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($content->description)), 180) : null);
+    $favoritePayload = $temple?->id ? [
+        'type' => 'temple',
+        'id' => $temple->id,
+        'title' => $content?->title,
+        'url' => route('temples.show', $temple),
+        'excerpt' => $summary,
+        'image' => $coverUrl,
+    ] : [];
 @endphp
 
 @section('title', $content?->meta_title ?? $content?->title ?? 'Temple Detail')
@@ -64,6 +74,43 @@
                                 <dd class="mt-1 font-semibold">{{ data_get($stat, 'score') ? number_format((float) data_get($stat, 'score'), 0) : '-' }}</dd>
                             </div>
                         </dl>
+
+                        <div class="grid gap-2">
+                            @if ($temple?->id)
+                                <button
+                                    type="button"
+                                    data-local-favorite-toggle
+                                    data-favorite='@json($favoritePayload)'
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+                                >
+                                    <svg data-favorite-icon class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.015-4.5-4.5-4.5-1.74 0-3.25.99-4 2.438A4.49 4.49 0 0 0 8.5 3.75C6.015 3.75 4 5.765 4 8.25c0 7.22 8.5 12 8.5 12s8.5-4.78 8.5-12Z" />
+                                    </svg>
+                                    <span data-favorite-unsaved>เพิ่มในรายการโปรด</span>
+                                    <span data-favorite-saved class="hidden">อยู่ในรายการโปรดแล้ว</span>
+                                    <span class="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold" data-favorite-count="temple:{{ $temple->id }}">{{ number_format($favoriteCount) }}</span>
+                                    <span class="text-xs opacity-80">คนกด</span>
+                                </button>
+                            @endif
+
+                            <button
+                                type="button"
+                                data-share-button
+                                data-share-type="temple"
+                                data-share-id="{{ $temple?->id }}"
+                                data-share-title="{{ $content?->title ?? 'PAPAIWAT' }}"
+                                data-share-text="{{ $summary ?? $content?->title ?? 'PAPAIWAT' }}"
+                                data-share-url="{{ url()->current() }}"
+                                data-share-default-label="แชร์"
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                            >
+                                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 12 16.5 6.75M7.5 12l9 5.25M7.5 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm13.5-6.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm0 13.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                                </svg>
+                                <span data-share-label>แชร์</span>
+                                <span class="text-xs opacity-75" data-share-count="temple:{{ $temple?->id }}">{{ number_format($shareCount) }}</span>
+                            </button>
+                        </div>
 
                         @if ($address?->google_maps_url)
                             <a
@@ -136,4 +183,6 @@
             </article>
         </section>
     </main>
+    @include('frontend.partials.local_favorites_script')
+    @include('frontend.partials.share_script')
 @endsection

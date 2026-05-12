@@ -92,7 +92,7 @@ class ArticleController extends Controller
 
         $articles = $query
             ->latest('id')
-            ->paginate(10)
+            ->paginate(5)
             ->withQueryString();
 
         $categories = Category::query()

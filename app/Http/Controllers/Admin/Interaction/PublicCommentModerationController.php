@@ -46,19 +46,4 @@ class PublicCommentModerationController extends Controller
         return back()->with('success', 'ลบความคิดเห็นแล้ว');
     }
 
-    public function banVisitor(PublicComment $comment, PublicInteractionService $interactionService): RedirectResponse
-    {
-        if ($comment->visitor) {
-            $interactionService->banVisitor($comment->visitor, 'Banned from comment moderation');
-        }
-
-        return back()->with('success', 'ban visitor แล้ว');
-    }
-
-    public function banIp(PublicComment $comment, PublicInteractionService $interactionService): RedirectResponse
-    {
-        $interactionService->banIpHash($comment->ip_hash, 'Banned from comment moderation');
-
-        return back()->with('success', 'ban IP แล้ว');
-    }
 }

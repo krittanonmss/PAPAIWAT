@@ -947,10 +947,14 @@
         <section
             x-data="{
                 mediaSearch: '',
-                selectedCover: @js((string) $selectedCoverMediaId),
+                selectedCover: window.articleDraftValue('cover_media_id', @js((string) $selectedCoverMediaId)),
                 coverHtml: @js(view('admin.content.articles.partials._cover_media_grid', [
                     'mediaItems' => $coverMediaItems ?? $mediaItems,
                 ])->render()),
+
+                init() {
+                    this.$watch('selectedCover', () => this.$nextTick(() => window.saveArticleDraft?.()));
+                },
 
                 async loadCoverPage(event) {
                     const link = event.target.closest('a');
@@ -1261,8 +1265,30 @@
 <script>
     (() => {
         const storageKey = `papaiwat:article-form-draft:${window.location.pathname}`;
+        const hasServerErrors = @json($errors->any());
+        const draftStorage = window.sessionStorage;
 
         const getForm = () => document.getElementById('article-form');
+
+        const readArticleDraft = () => {
+            try {
+                return JSON.parse(draftStorage.getItem(storageKey)) || {};
+            } catch {
+                return {};
+            }
+        };
+
+        window.articleDraftValue = function (name, fallback = '') {
+            if (hasServerErrors) {
+                return fallback;
+            }
+
+            const fields = readArticleDraft().fields || {};
+
+            return Object.prototype.hasOwnProperty.call(fields, name)
+                ? fields[name]
+                : fallback;
+        };
 
         window.quickArticleMediaUploader = function () {
             return {
@@ -1339,8 +1365,11 @@
 
                 const input = wrapper.querySelector('[data-rich-editor-input]');
                 const editorBody = wrapper.querySelector('[data-editor-body]');
+                const sourceEditor = wrapper.querySelector('[data-editor-source]');
+                const sourceToggle = wrapper.querySelector('[data-editor-source-toggle]');
                 const toolbar = wrapper.querySelector('[data-editor-toolbar]');
                 const counter = wrapper.querySelector('[data-editor-count]');
+                const modeLabel = wrapper.querySelector('[data-editor-mode-label]');
 
                 if (!input || !editorBody || !toolbar) {
                     return;
@@ -1377,21 +1406,70 @@
 
                 quill.root.innerHTML = input.value || '';
                 input._quill = quill;
+                if (sourceEditor) {
+                    sourceEditor.value = input.value || '';
+                }
+
+                const dispatchValueChange = () => {
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+
+                const updateCounter = () => {
+                    if (counter) {
+                        counter.textContent = `${Math.max(quill.getLength() - 1, 0).toLocaleString()} ตัวอักษร`;
+                    }
+                };
 
                 const syncValue = () => {
                     const html = quill.root.innerHTML.trim();
                     input.value = html === '<p><br></p>' ? '' : html;
 
-                    if (counter) {
-                        counter.textContent = `${Math.max(quill.getLength() - 1, 0).toLocaleString()} ตัวอักษร`;
+                    if (sourceEditor && sourceEditor.classList.contains('hidden')) {
+                        sourceEditor.value = input.value;
                     }
 
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    updateCounter();
+                    dispatchValueChange();
                 };
 
                 quill.on('text-change', syncValue);
-                syncValue();
+                updateCounter();
+
+                if (sourceEditor) {
+                    sourceEditor.addEventListener('input', () => {
+                        input.value = sourceEditor.value.trim();
+                        dispatchValueChange();
+                    });
+                }
+
+                if (sourceToggle && sourceEditor) {
+                    sourceToggle.addEventListener('click', () => {
+                        const sourceIsHidden = sourceEditor.classList.contains('hidden');
+
+                        if (sourceIsHidden) {
+                            sourceEditor.value = input.value;
+                            editorBody.classList.add('hidden');
+                            sourceEditor.classList.remove('hidden');
+                            sourceToggle.classList.add('text-blue-300');
+                            if (modeLabel) {
+                                modeLabel.textContent = 'HTML source';
+                            }
+                            return;
+                        }
+
+                        input.value = sourceEditor.value.trim();
+                        quill.root.innerHTML = input.value || '';
+                        sourceEditor.classList.add('hidden');
+                        editorBody.classList.remove('hidden');
+                        sourceToggle.classList.remove('text-blue-300');
+                        if (modeLabel) {
+                            modeLabel.textContent = 'Rich text';
+                        }
+                        updateCounter();
+                        dispatchValueChange();
+                    });
+                }
             });
         };
 
@@ -1425,8 +1503,10 @@
                 draft.fields[field.name] = field.value;
             });
 
-            localStorage.setItem(storageKey, JSON.stringify(draft));
+            draftStorage.setItem(storageKey, JSON.stringify(draft));
         };
+
+        window.saveArticleDraft = saveArticleDraft;
 
         const restoreArticleDraft = () => {
             const form = getForm();
@@ -1435,7 +1515,11 @@
                 return;
             }
 
-            const rawDraft = localStorage.getItem(storageKey);
+            if (hasServerErrors) {
+                return;
+            }
+
+            const rawDraft = draftStorage.getItem(storageKey);
 
             if (!rawDraft) {
                 return;
@@ -1470,6 +1554,13 @@
 
                     if (field.matches('[data-rich-editor-input]') && field._quill) {
                         field._quill.root.innerHTML = field.value || '';
+                        const sourceEditor = field
+                            .closest('[data-rich-editor]')
+                            ?.querySelector('[data-editor-source]');
+
+                        if (sourceEditor) {
+                            sourceEditor.value = field.value || '';
+                        }
                     }
 
                     field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1494,7 +1585,7 @@
 
             form.addEventListener('submit', () => {
                 initArticleRichEditors();
-                localStorage.removeItem(storageKey);
+                draftStorage.removeItem(storageKey);
             });
         });
     })();

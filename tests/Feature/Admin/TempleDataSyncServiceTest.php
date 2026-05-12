@@ -84,9 +84,50 @@ class TempleDataSyncServiceTest extends TestCase
         $hours = $temple->openingHours()->get();
 
         $this->assertSame([0, 1, 2, 3, 4, 5, 6], $hours->pluck('day_of_week')->all());
-        $this->assertSame('09:00:00', $hours->firstWhere('day_of_week', 0)->open_time->format('H:i:s'));
+        $this->assertSame('09:00:00', $hours->firstWhere('day_of_week', 0)->open_time);
         $this->assertSame('ข้อมูลล่าสุด', $hours->firstWhere('day_of_week', 0)->note);
         $this->assertSame(7, $hours->count());
+    }
+
+    public function test_sync_opening_hours_defaults_blank_times_to_eight_to_four(): void
+    {
+        $this->actingAsDefaultAdmin();
+
+        $temple = app(TempleDataSyncService::class)->create([
+            'title' => 'วัดทดสอบเวลาเริ่มต้น',
+            'slug' => 'default-opening-hours-temple',
+            'status' => 'draft',
+            'opening_hours' => [
+                [
+                    'day_of_week' => 1,
+                    'open_time' => '',
+                    'close_time' => '',
+                    'is_closed' => false,
+                ],
+            ],
+        ]);
+
+        $hour = $temple->openingHours()->firstOrFail();
+
+        $this->assertSame('08:00:00', $hour->open_time);
+        $this->assertSame('16:00:00', $hour->close_time);
+    }
+
+    public function test_sync_opening_hours_creates_default_week_when_not_provided(): void
+    {
+        $this->actingAsDefaultAdmin();
+
+        $temple = app(TempleDataSyncService::class)->create([
+            'title' => 'วัดทดสอบไม่มีเวลา',
+            'slug' => 'missing-opening-hours-temple',
+            'status' => 'draft',
+        ]);
+
+        $hours = $temple->openingHours()->get();
+
+        $this->assertSame(7, $hours->count());
+        $this->assertTrue($hours->every(fn ($hour) => $hour->open_time === '08:00:00'));
+        $this->assertTrue($hours->every(fn ($hour) => $hour->close_time === '16:00:00'));
     }
 
     private function actingAsDefaultAdmin(): void

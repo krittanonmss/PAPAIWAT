@@ -26,8 +26,8 @@ class Temple extends Model
 
     protected $casts = [
         'content_id' => 'integer',
-        'recommended_visit_start_time' => 'datetime:H:i',
-        'recommended_visit_end_time' => 'datetime:H:i',
+        'recommended_visit_start_time' => 'string',
+        'recommended_visit_end_time' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

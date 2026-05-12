@@ -34,11 +34,15 @@
 
     $bodyFormat = $article?->body_format ?? 'markdown';
     $body = $article?->body ?? '';
+    $safeHtmlBody = $bodyFormat === 'html' ? \App\Support\SafeRichText::clean($body) : null;
 
     $publishedAt = $articleContent?->published_at;
     $authorName = $article?->author_name ?: 'PAPAIWAT Editorial';
     $readingTime = $article?->reading_time_minutes;
+    $favoriteCount = (int) data_get($article?->stat, 'bookmark_count', 0);
+    $shareCount = (int) data_get($article?->stat, 'share_count', 0);
     $approvedComments = $approvedComments ?? collect();
+    $visitorPendingComments = $visitorPendingComments ?? collect();
     $favoritePayload = $article ? [
         'type' => 'article',
         'id' => $article->id,
@@ -160,7 +164,7 @@
                     @if ($bodyFormat === 'markdown')
                         {!! \Illuminate\Support\Str::markdown($body) !!}
                     @elseif ($bodyFormat === 'html')
-                        {!! $body !!}
+                        {!! $safeHtmlBody !!}
                     @else
                         {!! nl2br(e($body)) !!}
                     @endif
@@ -179,30 +183,39 @@
                 </div>
             @endif
 
-            <div class="mt-8 grid gap-3 sm:grid-cols-3">
+            <div class="mt-8 grid gap-3 sm:grid-cols-2">
                 @if ($article)
                     <button
                         type="button"
                         data-local-favorite-toggle
-                        data-favorite='{{ e(json_encode($favoritePayload)) }}'
+                        data-favorite='@json($favoritePayload)'
                         class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
                     >
                         <svg data-favorite-icon class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75h12A1.25 1.25 0 0 1 19.25 5v15.25L12 16.5l-7.25 3.75V5A1.25 1.25 0 0 1 6 3.75Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.015-4.5-4.5-4.5-1.74 0-3.25.99-4 2.438A4.49 4.49 0 0 0 8.5 3.75C6.015 3.75 4 5.765 4 8.25c0 7.22 8.5 12 8.5 12s8.5-4.78 8.5-12Z" />
                         </svg>
-                        <span data-favorite-unsaved>บันทึก</span>
-                        <span data-favorite-saved class="hidden">บันทึกแล้ว</span>
+                        <span data-favorite-unsaved>เพิ่มในรายการโปรด</span>
+                        <span data-favorite-saved class="hidden">อยู่ในรายการโปรดแล้ว</span>
+                        <span class="text-xs opacity-75" data-favorite-count="article:{{ $article->id }}">{{ number_format($favoriteCount) }}</span>
                     </button>
                 @endif
 
                 <button
                     type="button"
+                    data-share-button
+                    data-share-type="article"
+                    data-share-id="{{ $article?->id }}"
+                    data-share-title="{{ $articleContent?->title ?? 'PAPAIWAT' }}"
+                    data-share-text="{{ $articleContent?->excerpt ?? $article?->excerpt_en ?? $articleContent?->title ?? 'PAPAIWAT' }}"
+                    data-share-url="{{ url()->current() }}"
+                    data-share-default-label="แชร์"
                     class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
                 >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 12 16.5 6.75M7.5 12l9 5.25M7.5 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm13.5-6.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm0 13.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                     </svg>
-                    แชร์
+                    <span data-share-label>แชร์</span>
+                    <span class="text-xs opacity-75" data-share-count="article:{{ $article?->id }}">{{ number_format($shareCount) }}</span>
                 </button>
             </div>
 
@@ -227,6 +240,15 @@
                         <p class="text-sm text-slate-500">ยังไม่มีความคิดเห็น</p>
                     @endforelse
 
+                    @foreach ($visitorPendingComments as $comment)
+                        <article class="rounded-2xl border border-yellow-300/20 bg-yellow-500/10 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-medium text-yellow-100">{{ $comment->display_name ?: 'คุณ' }}</p>
+                                <span class="rounded-full border border-yellow-300/20 px-2 py-0.5 text-xs text-yellow-200">รอตรวจสอบ</span>
+                            </div>
+                            <p class="mt-2 text-sm leading-6 text-yellow-50/90">{{ $comment->body }}</p>
+                        </article>
+                    @endforeach
                 </div>
 
                 @if ($article)
@@ -256,4 +278,5 @@
     </article>
 </main>
 @include('frontend.partials.local_favorites_script')
+@include('frontend.partials.share_script')
 @endsection

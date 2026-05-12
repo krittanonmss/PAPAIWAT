@@ -22,7 +22,10 @@ class CategoryController extends Controller
     {
         $query = Category::query()
             ->with(['parent'])
-            ->latest('id');
+            ->orderBy('type_key')
+            ->orderBy('level')
+            ->orderBy('sort_order')
+            ->orderBy('name');
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -87,10 +90,14 @@ class CategoryController extends Controller
             $parent = Category::query()->find($validated['parent_id']);
         }
 
-        $category = Category::query()->create([
+        Category::query()->create([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            'slug' => $this->makeUniqueSlug(
+                $validated['name'],
+                $validated['parent_id'] ?? null,
+                $validated['type_key']
+            ),
             'description' => $validated['description'] ?? null,
             'type_key' => $validated['type_key'],
             'level' => $parent ? ($parent->level + 1) : 0,
@@ -104,14 +111,18 @@ class CategoryController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.categories.edit', $category)
+            ->route('admin.categories.index')
             ->with('success', 'สร้างหมวดหมู่เรียบร้อยแล้ว');
     }
 
     public function edit(Category $category): View
     {
+        $excludedParentIds = $this->descendantIds($category)
+            ->push($category->id)
+            ->all();
+
         $parents = Category::query()
-            ->where('id', '!=', $category->id)
+            ->whereNotIn('id', $excludedParentIds)
             ->orderBy('name')
             ->get(['id', 'name', 'type_key', 'level']);
 
@@ -136,7 +147,12 @@ class CategoryController extends Controller
         $category->update([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            'slug' => $this->makeUniqueSlug(
+                $validated['name'],
+                $validated['parent_id'] ?? null,
+                $validated['type_key'],
+                $category
+            ),
             'description' => $validated['description'] ?? null,
             'type_key' => $validated['type_key'],
             'level' => $parent ? ($parent->level + 1) : 0,
@@ -166,5 +182,58 @@ class CategoryController extends Controller
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'ลบหมวดหมู่เรียบร้อยแล้ว');
+    }
+
+    private function makeUniqueSlug(
+        string $name,
+        ?int $parentId,
+        string $typeKey,
+        ?Category $ignoreCategory = null
+    ): string {
+        $baseSlug = Str::slug($name);
+
+        if ($baseSlug === '') {
+            $baseSlug = 'category-'.substr(sha1($typeKey.'|'.($parentId ?? 'root').'|'.$name), 0, 10);
+        }
+
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while ($this->categorySlugExists($slug, $parentId, $typeKey, $ignoreCategory)) {
+            $slug = $baseSlug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    private function categorySlugExists(
+        string $slug,
+        ?int $parentId,
+        string $typeKey,
+        ?Category $ignoreCategory = null
+    ): bool {
+        return Category::withTrashed()
+            ->where('type_key', $typeKey)
+            ->where('slug', $slug)
+            ->when(
+                $parentId === null,
+                fn ($query) => $query->whereNull('parent_id'),
+                fn ($query) => $query->where('parent_id', $parentId)
+            )
+            ->when($ignoreCategory, fn ($query) => $query->whereKeyNot($ignoreCategory->getKey()))
+            ->exists();
+    }
+
+    private function descendantIds(Category $category)
+    {
+        $ids = collect();
+
+        foreach ($category->children()->get(['id']) as $child) {
+            $ids->push($child->id);
+            $ids = $ids->merge($this->descendantIds($child));
+        }
+
+        return $ids;
     }
 }

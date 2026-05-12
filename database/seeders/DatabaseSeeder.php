@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SystemAccessSeeder::class,
             SystemTemplateSeeder::class,
+            DraftTempleAndDhammaSeeder::class,
+            DraftCategorySeeder::class,
         ]);
     }
 }

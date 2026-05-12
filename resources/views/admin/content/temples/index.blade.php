@@ -133,6 +133,7 @@
                             <th class="px-4 py-3 text-left">ข้อมูลวัด</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่หลัก</th>
                             <th class="px-4 py-3 text-left">สถานะ</th>
+                            <th class="px-4 py-3 text-left">สถิติ</th>
                             <th class="px-4 py-3 text-left">แนะนำ</th>
                             <th class="px-4 py-3 text-left">เผยแพร่เมื่อ</th>
                             <th class="px-4 py-3 text-right">จัดการ</th>
@@ -145,6 +146,13 @@
                                 $content = $temple->content;
                                 $primaryCategory = $content?->categories?->firstWhere('pivot.is_primary', true);
                                 $coverMedia = $content?->mediaUsages?->firstWhere('role_key', 'cover')?->media;
+                                $stat = $temple->stat;
+                                $viewCount = (int) data_get($stat, 'view_count', 0);
+                                $reviewCount = (int) data_get($stat, 'review_count', 0);
+                                $averageRating = (float) data_get($stat, 'average_rating', 0);
+                                $favoriteCount = (int) data_get($stat, 'favorite_count', 0);
+                                $shareCount = (int) data_get($stat, 'share_count', 0);
+                                $score = (float) data_get($stat, 'score', 0);
                             @endphp
 
                             <tr class="align-top transition hover:bg-white/[0.06]">
@@ -215,6 +223,16 @@
                                     @endif
                                 </td>
 
+                                <td class="px-4 py-3 text-slate-400">
+                                    <div class="grid gap-1 text-xs">
+                                        <div>เข้าชม: {{ number_format($viewCount) }}</div>
+                                        <div>รีวิว: {{ number_format($reviewCount) }} ({{ $averageRating > 0 ? number_format($averageRating, 1) : '-' }})</div>
+                                        <div>Fav: {{ number_format($favoriteCount) }}</div>
+                                        <div>แชร์: {{ number_format($shareCount) }}</div>
+                                        <div>Score: {{ number_format($score, 2) }}</div>
+                                    </div>
+                                </td>
+
                                 <td class="px-4 py-3">
                                     @if ($content?->is_featured)
                                         <span class="inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
@@ -263,7 +281,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-10 text-center">
+                                <td colspan="7" class="px-5 py-10 text-center">
                                     <p class="text-base font-medium text-slate-300">ยังไม่มีข้อมูลวัด</p>
                                     <p class="mt-1 text-sm text-slate-500">
                                         เริ่มเพิ่มข้อมูลวัดแรกเพื่อใช้แสดงผลบนหน้าเว็บไซต์

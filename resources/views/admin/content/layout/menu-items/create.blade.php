@@ -57,7 +57,7 @@
             action="{{ route('admin.content.menu-items.store', $menu) }}"
             class="space-y-6"
             x-data="{
-                type: @js(old('menu_item_type', 'route')),
+                type: @js(old('menu_item_type', $menu->location_key === 'footer' ? 'heading' : 'route')),
                 routeName: @js(old('route_name', 'home')),
                 externalUrl: @js(old('external_url', '')),
                 anchor: @js(old('anchor', '')),
@@ -87,6 +87,11 @@
                             {{-- Section: Basic --}}
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
                                 <h3 class="text-sm font-semibold text-white">ข้อมูลเมนูย่อย</h3>
+                                @if($menu->location_key === 'footer')
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">
+                                        สำหรับ Footer ให้ใช้ประเภท “หัวข้อกลุ่ม” เมื่อต้องการสร้างชื่อคอลัมน์ และสร้างรายการย่อยใต้หัวข้อนั้นเป็นลิงก์จริง
+                                    </p>
+                                @endif
 
                                 <div class="mt-4 grid gap-6 lg:grid-cols-2">
                                     <div>
@@ -149,7 +154,8 @@
                                             x-model="type"
                                             required
                                         >
-                                            <option value="route" class="bg-slate-900" @selected(old('menu_item_type', 'route') === 'route')>หน้าในระบบ</option>
+                                            <option value="heading" class="bg-slate-900" @selected(old('menu_item_type', $menu->location_key === 'footer' ? 'heading' : 'route') === 'heading')>หัวข้อกลุ่ม ไม่เป็นลิงก์</option>
+                                            <option value="route" class="bg-slate-900" @selected(old('menu_item_type', $menu->location_key === 'footer' ? 'heading' : 'route') === 'route')>หน้าในระบบ</option>
                                             <option value="page" class="bg-slate-900" @selected(old('menu_item_type') === 'page')>เพจที่สร้างไว้</option>
                                             <option value="content" class="bg-slate-900" @selected(old('menu_item_type') === 'content')>บทความหรือวัด</option>
                                             <option value="external_url" class="bg-slate-900" @selected(old('menu_item_type') === 'external_url')>ลิงก์หรือ path</option>
@@ -160,7 +166,7 @@
                                         @enderror
                                     </div>
 
-                                    <div>
+                                    <div x-show="type !== 'heading'" x-cloak>
                                         <label for="target" class="mb-1.5 block text-sm font-medium text-slate-300">
                                             วิธีเปิดลิงก์
                                         </label>
@@ -180,7 +186,7 @@
                             </div>
 
                             {{-- Section: Link Target --}}
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+                            <div x-show="type !== 'heading'" x-cloak class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
                                         <h3 class="text-sm font-semibold text-white">ปลายทางของเมนู</h3>

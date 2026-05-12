@@ -47,10 +47,10 @@ class TemplateController extends Controller
             Template::query()->update(['is_default' => false]);
         }
 
-        $template = Template::create($validated);
+        Template::create($validated);
 
         return redirect()
-            ->route('admin.content.templates.show', $template)
+            ->route('admin.content.templates.index')
             ->with('success', 'สร้าง Template เรียบร้อยแล้ว');
     }
 

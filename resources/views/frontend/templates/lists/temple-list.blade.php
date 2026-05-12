@@ -186,10 +186,10 @@
                             $favoriteCount = data_get($stat, 'favorite_count', 0);
                             $score = data_get($stat, 'score', 0);
                             $openTime = $openingHour?->open_time
-                                ? \Carbon\Carbon::parse($openingHour->open_time)->format('H:i')
+                                ? substr((string) $openingHour->open_time, 0, 5)
                                 : null;
                             $closeTime = $openingHour?->close_time
-                                ? \Carbon\Carbon::parse($openingHour->close_time)->format('H:i')
+                                ? substr((string) $openingHour->close_time, 0, 5)
                                 : null;
                             $feeText = $fee
                                 ? ($fee->amount !== null
@@ -197,10 +197,10 @@
                                     : 'ฟรี')
                                 : null;
                             $recommendedStart = $temple->recommended_visit_start_time
-                                ? \Carbon\Carbon::parse($temple->recommended_visit_start_time)->format('H:i')
+                                ? substr((string) $temple->recommended_visit_start_time, 0, 5)
                                 : null;
                             $recommendedEnd = $temple->recommended_visit_end_time
-                                ? \Carbon\Carbon::parse($temple->recommended_visit_end_time)->format('H:i')
+                                ? substr((string) $temple->recommended_visit_end_time, 0, 5)
                                 : null;
                             $detailHref = route('temples.show', $temple);
                         @endphp

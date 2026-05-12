@@ -38,8 +38,8 @@
     })->filter(fn ($h) => $h['day_of_week'] !== null)->values() : $openingHours->map(function ($h) {
         return [
             'day_of_week' => $h->day_of_week,
-            'open_time'   => $h->open_time ? substr($h->open_time, 0, 5) : '',
-            'close_time'  => $h->close_time ? substr($h->close_time, 0, 5) : '',
+            'open_time'   => $h->open_time ? substr((string) $h->open_time, 0, 5) : '',
+            'close_time'  => $h->close_time ? substr((string) $h->close_time, 0, 5) : '',
             'is_closed'   => (bool) $h->is_closed,
             'note'        => $h->note ?? '',
         ];
@@ -734,7 +734,7 @@
                             type="time"
                             id="recommended_visit_start_time"
                             name="recommended_visit_start_time"
-                            value="{{ old('recommended_visit_start_time', $temple?->recommended_visit_start_time ? \Carbon\Carbon::parse($temple->recommended_visit_start_time)->format('H:i') : '') }}"
+                            value="{{ old('recommended_visit_start_time', $temple?->recommended_visit_start_time ? substr((string) $temple->recommended_visit_start_time, 0, 5) : '') }}"
                             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         >
                     </div>
@@ -747,7 +747,7 @@
                             type="time"
                             id="recommended_visit_end_time"
                             name="recommended_visit_end_time"
-                            value="{{ old('recommended_visit_end_time', $temple?->recommended_visit_end_time ? \Carbon\Carbon::parse($temple->recommended_visit_end_time)->format('H:i') : '') }}"
+                            value="{{ old('recommended_visit_end_time', $temple?->recommended_visit_end_time ? substr((string) $temple->recommended_visit_end_time, 0, 5) : '') }}"
                             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         >
                     </div>
@@ -878,8 +878,8 @@
         id="media-section"
         x-data="{
             mediaSearch: '',
-            selectedCover: @js((string) old('cover_media_id', $coverMedia?->media_id ?? '')),
-            selectedGallery: @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds))),
+            selectedCover: window.templeDraftValue('cover_media_id', @js((string) old('cover_media_id', $coverMedia?->media_id ?? ''))),
+            selectedGallery: window.templeDraftValue('gallery_media_ids[]', @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds)))),
 
             coverHtml: @js(view('admin.content.temples.partials._cover_media_grid', [
                 'mediaItems' => $coverMediaItems ?? $mediaItems,
@@ -888,6 +888,11 @@
             galleryHtml: @js(view('admin.content.temples.partials._gallery_media_grid', [
                 'mediaItems' => $galleryMediaItems ?? $mediaItems,
             ])->render()),
+
+            init() {
+                this.$watch('selectedCover', () => this.$nextTick(() => saveTempleDraft()));
+                this.$watch('selectedGallery', () => this.$nextTick(() => saveTempleDraft()));
+            },
 
             toggleGallery(id) {
                 id = String(id);
@@ -2054,17 +2059,18 @@
 
     window.templeDraft = {
         key: 'papaiwat:temple-form-draft:' + window.location.pathname,
+        storage: window.sessionStorage,
 
         read() {
             try {
-                return JSON.parse(localStorage.getItem(this.key)) || {};
+                return JSON.parse(this.storage.getItem(this.key)) || {};
             } catch (error) {
                 return {};
             }
         },
 
         write(payload) {
-            localStorage.setItem(this.key, JSON.stringify({
+            this.storage.setItem(this.key, JSON.stringify({
                 ...this.read(),
                 ...payload,
             }));
@@ -2079,7 +2085,7 @@
         },
 
         clear() {
-            localStorage.removeItem(this.key);
+            this.storage.removeItem(this.key);
         },
     };
 
@@ -2175,7 +2181,10 @@
         }
 
         form.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
-            if (field.type === 'hidden' && ! field.matches('[data-rich-editor-input]')) {
+            if (field.type === 'hidden'
+                && ! field.matches('[data-rich-editor-input]')
+                && ! ['cover_media_id', 'gallery_media_ids[]'].includes(field.name)
+            ) {
                 return;
             }
 
@@ -2247,6 +2256,13 @@
 
                 if (field.matches('[data-rich-editor-input]') && field._quill) {
                     field._quill.root.innerHTML = value ?? '';
+                    const sourceEditor = field
+                        .closest('[data-rich-editor]')
+                        ?.querySelector('[data-editor-source]');
+
+                    if (sourceEditor) {
+                        sourceEditor.value = value ?? '';
+                    }
                 }
             });
         });
@@ -2278,6 +2294,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initTempleRichEditors();
+        restoreTempleFields();
         bindTempleDraftEvents();
     });
 
@@ -2306,8 +2323,11 @@
 
             const input = wrapper.querySelector('[data-rich-editor-input]');
             const editorBody = wrapper.querySelector('[data-editor-body]');
+            const sourceEditor = wrapper.querySelector('[data-editor-source]');
+            const sourceToggle = wrapper.querySelector('[data-editor-source-toggle]');
             const toolbar = wrapper.querySelector('[data-editor-toolbar]');
             const counter = wrapper.querySelector('[data-editor-count]');
+            const modeLabel = wrapper.querySelector('[data-editor-mode-label]');
 
             if (! input || ! editorBody || ! toolbar) {
                 return;
@@ -2344,19 +2364,68 @@
 
             quill.root.innerHTML = input.value || '';
             input._quill = quill;
+            if (sourceEditor) {
+                sourceEditor.value = input.value || '';
+            }
 
-            const syncValue = () => {
-                const html = quill.root.innerHTML.trim();
-                input.value = html === '<p><br></p>' ? '' : html;
-                if (counter) {
-                    counter.textContent = `${Math.max(quill.getLength() - 1, 0).toLocaleString()} ตัวอักษร`;
-                }
+            const dispatchValueChange = () => {
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             };
 
+            const updateCounter = () => {
+                if (counter) {
+                    counter.textContent = `${Math.max(quill.getLength() - 1, 0).toLocaleString()} ตัวอักษร`;
+                }
+            };
+
+            const syncValue = () => {
+                const html = quill.root.innerHTML.trim();
+                input.value = html === '<p><br></p>' ? '' : html;
+                if (sourceEditor && sourceEditor.classList.contains('hidden')) {
+                    sourceEditor.value = input.value;
+                }
+                updateCounter();
+                dispatchValueChange();
+            };
+
             quill.on('text-change', syncValue);
-            syncValue();
+            updateCounter();
+
+            if (sourceEditor) {
+                sourceEditor.addEventListener('input', () => {
+                    input.value = sourceEditor.value.trim();
+                    dispatchValueChange();
+                });
+            }
+
+            if (sourceToggle && sourceEditor) {
+                sourceToggle.addEventListener('click', () => {
+                    const sourceIsHidden = sourceEditor.classList.contains('hidden');
+
+                    if (sourceIsHidden) {
+                        sourceEditor.value = input.value;
+                        editorBody.classList.add('hidden');
+                        sourceEditor.classList.remove('hidden');
+                        sourceToggle.classList.add('text-blue-300');
+                        if (modeLabel) {
+                            modeLabel.textContent = 'HTML source';
+                        }
+                        return;
+                    }
+
+                    input.value = sourceEditor.value.trim();
+                    quill.root.innerHTML = input.value || '';
+                    sourceEditor.classList.add('hidden');
+                    editorBody.classList.remove('hidden');
+                    sourceToggle.classList.remove('text-blue-300');
+                    if (modeLabel) {
+                        modeLabel.textContent = 'Rich text';
+                    }
+                    updateCounter();
+                    dispatchValueChange();
+                });
+            }
         });
     }
 
@@ -2460,7 +2529,7 @@
                             day_from: 0,
                             day_to: 6,
                             open_time: '08:00',
-                            close_time: '17:00',
+                            close_time: '16:00',
                             note: '',
                             is_closed: false,
                         },
@@ -2563,7 +2632,7 @@
                     day_from: 1,
                     day_to: 5,
                     open_time: '08:00',
-                    close_time: '17:00',
+                    close_time: '16:00',
                     note: '',
                     is_closed: false,
                 });

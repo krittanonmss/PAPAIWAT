@@ -22,8 +22,8 @@ class TempleOpeningHour extends Model
         'temple_id' => 'integer',
         'day_of_week' => 'integer',
         'is_closed' => 'boolean',
-        'open_time' => 'datetime:H:i:s',
-        'close_time' => 'datetime:H:i:s',
+        'open_time' => 'string',
+        'close_time' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

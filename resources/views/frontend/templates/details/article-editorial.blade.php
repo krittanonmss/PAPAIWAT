@@ -8,6 +8,17 @@
     $tags = ($article && $article->relationLoaded('tags')) ? $article->tags : collect();
     $body = $article?->body ?? '';
     $bodyFormat = $article?->body_format ?? 'markdown';
+    $safeHtmlBody = $bodyFormat === 'html' ? \App\Support\SafeRichText::clean($body) : null;
+    $favoriteCount = (int) data_get($article?->stat, 'bookmark_count', 0);
+    $shareCount = (int) data_get($article?->stat, 'share_count', 0);
+    $favoritePayload = $article ? [
+        'type' => 'article',
+        'id' => $article->id,
+        'title' => $articleContent?->title,
+        'url' => route('articles.show', $articleContent?->slug),
+        'excerpt' => $articleContent?->excerpt ?? $article?->excerpt_en,
+        'image' => null,
+    ] : [];
 @endphp
 
 @section('title', $articleContent?->meta_title ?? $articleContent?->title ?? 'Article Detail')
@@ -50,6 +61,42 @@
                             </div>
                         @endif
                     </dl>
+
+                    <div class="mt-6 grid gap-2">
+                        @if ($article)
+                            <button
+                                type="button"
+                                data-local-favorite-toggle
+                                data-favorite='@json($favoritePayload)'
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                            >
+                                <svg data-favorite-icon class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.015-4.5-4.5-4.5-1.74 0-3.25.99-4 2.438A4.49 4.49 0 0 0 8.5 3.75C6.015 3.75 4 5.765 4 8.25c0 7.22 8.5 12 8.5 12s8.5-4.78 8.5-12Z" />
+                                </svg>
+                                <span data-favorite-unsaved>เพิ่มในรายการโปรด</span>
+                                <span data-favorite-saved class="hidden">อยู่ในรายการโปรดแล้ว</span>
+                                <span class="text-xs opacity-75" data-favorite-count="article:{{ $article->id }}">{{ number_format($favoriteCount) }}</span>
+                            </button>
+                        @endif
+
+                        <button
+                            type="button"
+                            data-share-button
+                            data-share-type="article"
+                            data-share-id="{{ $article?->id }}"
+                            data-share-title="{{ $articleContent?->title ?? 'PAPAIWAT' }}"
+                            data-share-text="{{ $articleContent?->excerpt ?? $article?->excerpt_en ?? $articleContent?->title ?? 'PAPAIWAT' }}"
+                            data-share-url="{{ url()->current() }}"
+                            data-share-default-label="แชร์"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 12 16.5 6.75M7.5 12l9 5.25M7.5 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm13.5-6.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm0 13.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                            </svg>
+                            <span data-share-label>แชร์</span>
+                            <span class="text-xs opacity-75" data-share-count="article:{{ $article?->id }}">{{ number_format($shareCount) }}</span>
+                        </button>
+                    </div>
                 </aside>
             </div>
         </section>
@@ -76,7 +123,7 @@
                     @if ($bodyFormat === 'markdown')
                         {!! \Illuminate\Support\Str::markdown($body) !!}
                     @elseif ($bodyFormat === 'html')
-                        {!! $body !!}
+                        {!! $safeHtmlBody !!}
                     @else
                         {!! nl2br(e($body)) !!}
                     @endif
@@ -94,4 +141,6 @@
             @endif
         </section>
     </main>
+    @include('frontend.partials.local_favorites_script')
+    @include('frontend.partials.share_script')
 @endsection

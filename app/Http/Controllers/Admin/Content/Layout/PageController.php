@@ -80,10 +80,10 @@ class PageController extends Controller
             Page::query()->update(['is_homepage' => false]);
         }
 
-        $page = Page::create($validated);
+        Page::create($validated);
 
         return redirect()
-            ->route('admin.content.pages.show', $page)
+            ->route('admin.content.pages.index')
             ->with('success', 'สร้างหน้าเว็บเรียบร้อยแล้ว');
     }
 

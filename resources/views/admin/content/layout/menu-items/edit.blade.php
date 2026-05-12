@@ -71,6 +71,7 @@
                         <select name="menu_item_type"
                             x-model="type"
                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                            <option value="heading">หัวข้อกลุ่ม ไม่เป็นลิงก์</option>
                             <option value="route">หน้าในระบบ</option>
                             <option value="page">เพจที่สร้างไว้</option>
                             <option value="content">บทความหรือวัด</option>
@@ -79,7 +80,7 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div x-show="type !== 'heading'" x-cloak>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">วิธีเปิดลิงก์</label>
                         <select name="target"
                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
@@ -89,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+                <div x-show="type !== 'heading'" x-cloak class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h3 class="text-sm font-semibold text-white">ปลายทางของเมนู</h3>

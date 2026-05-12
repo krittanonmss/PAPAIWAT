@@ -15,6 +15,7 @@ use App\Models\Content\Temple\Temple;
 use App\Models\Content\Temple\TempleAddress;
 use App\Models\Content\Temple\TempleStat;
 use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -46,6 +47,67 @@ class FrontendPageController extends Controller
             ->firstOrFail();
 
         return $this->renderPage($page);
+    }
+
+    public function search(Request $request): View
+    {
+        $queryText = trim((string) $request->query('q', $request->query('search', '')));
+
+        $results = Content::query()
+            ->whereIn('content_type', ['temple', 'article'])
+            ->where('status', 'published')
+            ->with([
+                'categories',
+                'mediaUsages.media',
+                'article.tags',
+                'article.stat',
+                'temple.address',
+                'temple.stat',
+            ])
+            ->when($queryText !== '', function ($query) use ($queryText) {
+                $query->where(function ($query) use ($queryText) {
+                    $like = '%' . $queryText . '%';
+
+                    $query->where('title', 'like', $like)
+                        ->orWhere('slug', 'like', $like)
+                        ->orWhere('excerpt', 'like', $like)
+                        ->orWhere('description', 'like', $like)
+                        ->orWhereHas('article', function ($query) use ($like) {
+                            $query->where('title_en', 'like', $like)
+                                ->orWhere('excerpt_en', 'like', $like)
+                                ->orWhere('body', 'like', $like)
+                                ->orWhere('author_name', 'like', $like)
+                                ->orWhere('seo_keywords', 'like', $like);
+                        })
+                        ->orWhereHas('article.tags', function ($query) use ($like) {
+                            $query->where('name', 'like', $like)
+                                ->orWhere('slug', 'like', $like);
+                        })
+                        ->orWhereHas('temple', function ($query) use ($like) {
+                            $query->where('temple_type', 'like', $like)
+                                ->orWhere('sect', 'like', $like)
+                                ->orWhere('architecture_style', 'like', $like)
+                                ->orWhere('history', 'like', $like)
+                                ->orWhereHas('address', function ($query) use ($like) {
+                                    $query->where('address_line', 'like', $like)
+                                        ->orWhere('province', 'like', $like)
+                                        ->orWhere('district', 'like', $like)
+                                        ->orWhere('subdistrict', 'like', $like);
+                                })
+                                ->orWhereHas('highlights', function ($query) use ($like) {
+                                    $query->where('title', 'like', $like)
+                                        ->orWhere('description', 'like', $like);
+                                });
+                        });
+                });
+            })
+            ->when($queryText === '', fn ($query) => $query->whereRaw('1 = 0'))
+            ->latest('published_at')
+            ->latest('id')
+            ->paginate(16)
+            ->withQueryString();
+
+        return view('frontend.search.index', compact('queryText', 'results'));
     }
 
     private function renderPage(Page $page): View
@@ -99,7 +161,15 @@ class FrontendPageController extends Controller
             ->map(function (PageSection $section) {
                 $section->content_data = $section->content ?? [];
                 $section->settings_data = $section->settings ?? [];
-                $section->image_url = $this->resolveSectionImageUrl($section->content_data);
+                $section->image_data = $this->resolveSectionImageData($section->content_data, $section->component_key);
+                $section->image_url = $section->image_data['url'] ?? null;
+                $section->all_button_url = $this->resolveSectionPageUrl($section->content_data);
+                $section->bento_items = $section->component_key === 'travel_discovery_bento'
+                    ? $this->getBentoContentItems($section->content_data, $section->settings_data)
+                    : collect();
+                $section->summary_stats = $section->component_key === 'travel_discovery_bento'
+                    ? $this->getSummaryStats()
+                    : [];
                 $section->items = match ($section->component_key) {
                     'article_grid' => $this->getArticleListData($section->settings_data),
                     'temple_grid' => $this->getTempleListData($section->settings_data),
@@ -118,20 +188,203 @@ class FrontendPageController extends Controller
             ->values();
     }
 
-    private function resolveSectionImageUrl(array $content): ?string
+    private function resolveSectionImageData(array $content, string $componentKey): array
     {
         if (! empty($content['image_media_id'])) {
-            $media = Media::query()->find((int) $content['image_media_id']);
+            $media = Media::query()
+                ->with(['variants' => fn ($query) => $query->where('processing_status', 'completed')])
+                ->find((int) $content['image_media_id']);
             $path = $media?->path;
 
             if ($path) {
-                return filter_var($path, FILTER_VALIDATE_URL)
+                $originalUrl = filter_var($path, FILTER_VALIDATE_URL)
                     ? $path
                     : Storage::url($path);
+
+                $sources = collect();
+                $originalWidth = (int) ($media->width ?? 0);
+
+                if ($media->relationLoaded('variants')) {
+                    $sources = $media->variants
+                        ->filter(fn ($variant) => $variant->path && (int) ($variant->width ?? 0) > 0)
+                        ->filter(fn ($variant) => $originalWidth <= 0 || (int) $variant->width <= $originalWidth)
+                        ->map(fn ($variant) => [
+                            'url' => filter_var($variant->path, FILTER_VALIDATE_URL)
+                                ? $variant->path
+                                : Storage::url($variant->path),
+                            'width' => (int) $variant->width,
+                        ]);
+                }
+
+                if ($originalWidth > 0) {
+                    $sources->push([
+                        'url' => $originalUrl,
+                        'width' => $originalWidth,
+                    ]);
+                }
+
+                $srcset = $sources
+                    ->unique('width')
+                    ->sortBy('width')
+                    ->map(fn ($source) => $source['url'] . ' ' . $source['width'] . 'w')
+                    ->implode(', ');
+
+                return [
+                    'url' => $originalUrl,
+                    'srcset' => $srcset !== '' ? $srcset : null,
+                    'sizes' => $componentKey === 'hero'
+                        ? '100vw'
+                        : '(min-width: 1024px) 50vw, 100vw',
+                ];
             }
         }
 
-        return $content['image_url'] ?? null;
+        return [
+            'url' => $content['image_url'] ?? null,
+            'srcset' => null,
+            'sizes' => null,
+        ];
+    }
+
+    private function resolveSectionPageUrl(array $content): ?string
+    {
+        if (! empty($content['all_button_page_id'])) {
+            $page = Page::query()->find((int) $content['all_button_page_id']);
+
+            if ($page) {
+                return $page->is_homepage
+                    ? route('home')
+                    : route('pages.show', $page->slug);
+            }
+        }
+
+        return $content['all_button_url'] ?? null;
+    }
+
+    private function getBentoContentItems(array $content, array $settings): Collection
+    {
+        $slots = collect($content['bento_slots'] ?? [])
+            ->map(fn ($slot) => [
+                'content_id' => (int) ($slot['content_id'] ?? 0),
+                'size' => in_array(($slot['size'] ?? 'small'), ['large', 'wide', 'tall', 'small'], true) ? $slot['size'] : 'small',
+            ])
+            ->filter(fn ($slot) => $slot['content_id'] > 0)
+            ->unique('content_id')
+            ->take(9)
+            ->values();
+
+        if ($slots->isEmpty()) {
+            $layoutSizes = $this->bentoLayoutSizes($settings['bento_layout'] ?? 'mosaic_5');
+            $slots = collect($content['bento_content_ids'] ?? [])
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn ($id) => $id > 0)
+                ->unique()
+                ->take(9)
+                ->values()
+                ->map(fn ($id, $index) => [
+                    'content_id' => $id,
+                    'size' => $layoutSizes[$index] ?? 'small',
+                ]);
+        }
+
+        if ($slots->isEmpty()) {
+            return collect();
+        }
+
+        $contents = Content::query()
+            ->whereIn('id', $slots->pluck('content_id'))
+            ->whereIn('content_type', ['temple', 'article'])
+            ->where('status', 'published')
+            ->with([
+                'categories',
+                'mediaUsages.media',
+                'article',
+                'temple.address',
+            ])
+            ->get()
+            ->keyBy('id');
+
+        return $slots
+            ->map(function (array $slot) use ($contents) {
+                $id = $slot['content_id'];
+                $content = $contents->get($id);
+
+                if (! $content) {
+                    return null;
+                }
+
+                $mediaUsages = $content->relationLoaded('mediaUsages') ? $content->mediaUsages : collect();
+                $cover = $mediaUsages->firstWhere('role_key', 'cover');
+                $coverMedia = ($cover && $cover->relationLoaded('media')) ? $cover->media : null;
+                $path = $coverMedia?->path;
+                $imageUrl = $path
+                    ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : Storage::url($path))
+                    : null;
+
+                $category = $content->relationLoaded('categories') ? $content->categories->first() : null;
+                $temple = $content->relationLoaded('temple') ? $content->temple : null;
+                $label = $category?->name
+                    ?: ($content->content_type === 'temple' ? ($temple?->address?->province ?: 'วัด') : 'บทความ');
+
+                return [
+                    'title' => $content->title,
+                    'description' => $content->excerpt ?: str($content->description ?? '')->stripTags()->limit(140)->toString(),
+                    'label' => $label,
+                    'url' => $this->contentPublicUrl($content),
+                    'image' => $imageUrl,
+                    'size' => $slot['size'],
+                    'kicker' => $content->content_type === 'temple' ? 'Temple' : 'Article',
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function bentoLayoutSizes(string $layout): array
+    {
+        return match ($layout) {
+            'feature_3' => ['large', 'wide', 'wide'],
+            'balanced_4' => ['large', 'small', 'small', 'wide'],
+            'editorial_6' => ['large', 'small', 'small', 'wide', 'small', 'small'],
+            'compact_7' => ['wide', 'small', 'small', 'tall', 'small', 'small', 'wide'],
+            'full_9' => ['large', 'small', 'small', 'wide', 'small', 'tall', 'small', 'small', 'wide'],
+            default => ['large', 'small', 'small', 'wide', 'small'],
+        };
+    }
+
+    private function contentPublicUrl(Content $content): string
+    {
+        if ($content->content_type === 'temple' && $content->relationLoaded('temple') && $content->temple) {
+            return route('temples.show', $content->temple);
+        }
+
+        if ($content->content_type === 'article' && $content->slug) {
+            return route('articles.show', $content->slug);
+        }
+
+        return '#';
+    }
+
+    private function getSummaryStats(): array
+    {
+        $templeCount = Temple::query()
+            ->whereHas('content', fn ($query) => $query->where('status', 'published'))
+            ->count();
+
+        $articleCount = Content::query()
+            ->where('content_type', 'article')
+            ->where('status', 'published')
+            ->count();
+
+        $totalViews = (int) TempleStat::query()->sum('view_count')
+            + (int) ArticleStat::query()->sum('view_count');
+
+        return [
+            'temples' => $templeCount,
+            'articles' => $articleCount,
+            'views' => $totalViews,
+        ];
     }
 
     private function getTempleListData(array $settings, bool $paginate = false)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Content\Layout;
 
 use App\Http\Controllers\Controller;
+use App\Models\Content\Content;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
@@ -17,8 +18,10 @@ class PageSectionController extends Controller
     public function create(Page $page): View
     {
         $sectionMediaItems = $this->sectionMediaItems();
+        $linkPages = $this->linkPages();
+        $bentoContents = $this->bentoContents();
 
-        return view('admin.content.layout.page-sections.create', compact('page', 'sectionMediaItems'));
+        return view('admin.content.layout.page-sections.create', compact('page', 'sectionMediaItems', 'linkPages', 'bentoContents'));
     }
 
     public function mediaPicker(Request $request): View|Response
@@ -43,7 +46,7 @@ class PageSectionController extends Controller
 
         $validated['page_id'] = $page->id;
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
-        $validated['content'] = $this->decodeJson($validated['content'] ?? null);
+        $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . now()->format('His'));
         $validated['section_key'] = $validated['section_key'] ?: ($generatedKey ?: $validated['component_key'] . '-' . now()->format('His'));
@@ -62,8 +65,10 @@ class PageSectionController extends Controller
         abort_if($section->page_id !== $page->id, 404);
 
         $sectionMediaItems = $this->sectionMediaItems();
+        $linkPages = $this->linkPages();
+        $bentoContents = $this->bentoContents();
 
-        return view('admin.content.layout.page-sections.edit', compact('page', 'section', 'sectionMediaItems'));
+        return view('admin.content.layout.page-sections.edit', compact('page', 'section', 'sectionMediaItems', 'linkPages', 'bentoContents'));
     }
 
     public function update(Request $request, Page $page, PageSection $section): RedirectResponse
@@ -82,7 +87,7 @@ class PageSectionController extends Controller
         ]);
 
         $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
-        $validated['content'] = $this->decodeJson($validated['content'] ?? null);
+        $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . $section->id);
         $validated['section_key'] = $validated['section_key'] ?: ($section->section_key ?: ($generatedKey ?: $validated['component_key'] . '-' . $section->id));
@@ -118,6 +123,62 @@ class PageSectionController extends Controller
         return is_array($decoded) ? $decoded : null;
     }
 
+    private function prepareSectionContent(?string $value): ?array
+    {
+        $content = $this->decodeJson($value);
+
+        if (! is_array($content)) {
+            return null;
+        }
+
+        if (array_key_exists('all_button_enabled', $content)) {
+            $content['all_button_enabled'] = (bool) $content['all_button_enabled'];
+        }
+
+        if (! empty($content['all_button_page_id'])) {
+            $pageId = (int) $content['all_button_page_id'];
+            $content['all_button_page_id'] = Page::query()->whereKey($pageId)->exists()
+                ? (string) $pageId
+                : '';
+        }
+
+        $content['all_button_url'] = '';
+
+        if (array_key_exists('bento_slots', $content)) {
+            $slots = collect($content['bento_slots'])
+                ->map(fn ($slot) => [
+                    'content_id' => (int) ($slot['content_id'] ?? 0),
+                    'size' => in_array(($slot['size'] ?? 'small'), ['large', 'wide', 'tall', 'small'], true) ? $slot['size'] : 'small',
+                ])
+                ->filter(fn ($slot) => $slot['content_id'] > 0)
+                ->unique('content_id')
+                ->take(9)
+                ->values();
+
+            $existingIds = Content::query()
+                ->whereIn('id', $slots->pluck('content_id'))
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+
+            $content['bento_slots'] = $slots
+                ->map(fn ($slot) => [
+                    'content_id' => (string) $slot['content_id'],
+                    'size' => $slot['size'],
+                ])
+                ->filter(fn ($slot) => in_array($slot['content_id'], $existingIds, true))
+                ->values()
+                ->all();
+
+            $content['bento_content_ids'] = collect($content['bento_slots'])
+                ->pluck('content_id')
+                ->values()
+                ->all();
+        }
+
+        return $content;
+    }
+
     private function defaultSectionName(string $componentKey): string
     {
         return match ($componentKey) {
@@ -127,6 +188,7 @@ class PageSectionController extends Controller
             'cta' => 'Call to Action',
             'article_grid' => 'รายการบทความ',
             'temple_grid' => 'รายการวัด',
+            'travel_discovery_bento' => 'Travel Discovery Bento',
             'article_list_full' => 'หน้ารวมบทความ',
             'temple_list_full' => 'หน้ารวมวัด',
             'gallery' => 'แกลเลอรี',
@@ -149,5 +211,23 @@ class PageSectionController extends Controller
                 pageName: 'section_media_page'
             )
             ->withPath(route('admin.content.pages.sections.media-picker'));
+    }
+
+    private function linkPages()
+    {
+        return Page::query()
+            ->orderByDesc('is_homepage')
+            ->orderBy('title')
+            ->get(['id', 'title', 'slug', 'status', 'is_homepage']);
+    }
+
+    private function bentoContents()
+    {
+        return Content::query()
+            ->whereIn('content_type', ['temple', 'article'])
+            ->where('status', 'published')
+            ->orderBy('content_type')
+            ->orderBy('title')
+            ->get(['id', 'content_type', 'title', 'excerpt', 'slug']);
     }
 }

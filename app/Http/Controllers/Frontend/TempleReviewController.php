@@ -27,7 +27,7 @@ class TempleReviewController extends Controller
 
         $visitor = $visitorService->resolve($request);
 
-        $review = $interactionService->submitTempleReview(
+        $interactionService->submitTempleReview(
             $temple,
             $visitor,
             $validated,
@@ -35,10 +35,6 @@ class TempleReviewController extends Controller
             $visitorService->hashNullable($request->userAgent())
         );
 
-        $message = $review->status === 'approved'
-            ? 'ส่งรีวิวแล้ว'
-            : 'ส่งรีวิวแล้ว รอผู้ดูแลตรวจสอบก่อนเผยแพร่';
-
-        return back()->with('success', $message);
+        return back()->with('success', 'รีวิวของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');
     }
 }

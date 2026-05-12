@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin\Content\Category;
 
+use App\Models\Content\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreCategoryRequest extends FormRequest
 {
@@ -23,6 +25,25 @@ class StoreCategoryRequest extends FormRequest
             'is_featured' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $parentId = $this->integer('parent_id') ?: null;
+
+                if (! $parentId) {
+                    return;
+                }
+
+                $parent = Category::query()->find($parentId);
+
+                if ($parent && $parent->type_key !== $this->input('type_key')) {
+                    $validator->errors()->add('parent_id', 'หมวดหมู่แม่ต้องเป็นประเภทเดียวกัน');
+                }
+            },
         ];
     }
 }

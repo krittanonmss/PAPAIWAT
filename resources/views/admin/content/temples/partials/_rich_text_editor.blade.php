@@ -70,6 +70,10 @@
                 <button type="button" class="ql-script" value="super" title="Superscript"></button>
                 <button type="button" class="ql-clean" title="Clear formatting"></button>
             </span>
+
+            <span class="ql-formats">
+                <button type="button" data-editor-source-toggle class="px-2 text-xs font-semibold text-slate-300" title="Edit HTML source">HTML</button>
+            </span>
         </div>
 
         <div
@@ -78,8 +82,15 @@
             style="min-height: {{ $minHeight }}"
         ></div>
 
+        <textarea
+            data-editor-source
+            class="hidden w-full resize-none overflow-y-auto border-0 bg-slate-950 px-5 py-4 font-mono text-sm leading-7 text-slate-100 outline-none"
+            spellcheck="false"
+            style="min-height: {{ $minHeight }}"
+        >{{ old($name, $value) }}</textarea>
+
         <div class="flex items-center justify-between gap-3 border-t border-white/10 bg-slate-950/50 px-4 py-2 text-xs text-slate-500">
-            <span>Rich text</span>
+            <span data-editor-mode-label>Rich text</span>
             <span data-editor-count>0 ตัวอักษร</span>
         </div>
     </div>

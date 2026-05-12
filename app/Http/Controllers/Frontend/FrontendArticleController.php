@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Content\Content;
 use App\Models\Interaction\PublicComment;
 use App\Services\Frontend\ContentViewTrackingService;
+use App\Services\Interaction\AnonymousVisitorService;
 use App\Support\ContentTemplateResolver;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FrontendArticleController extends Controller
 {
     public function show(
+        Request $request,
         string $slug,
         ContentTemplateResolver $templateResolver,
-        ContentViewTrackingService $viewTrackingService
+        ContentViewTrackingService $viewTrackingService,
+        AnonymousVisitorService $visitorService
     ): View
     {
         $articleContent = Content::query()
@@ -52,6 +56,16 @@ class FrontendArticleController extends Controller
                 ->oldest()
                 ->get()
             : collect();
+        $visitor = $visitorService->findExisting($request);
+        $visitorPendingComments = $article && $visitor
+            ? PublicComment::query()
+                ->where('anonymous_visitor_id', $visitor->id)
+                ->where('commentable_type', $article::class)
+                ->where('commentable_id', $article->id)
+                ->where('status', 'pending')
+                ->oldest()
+                ->get()
+            : collect();
 
         $viewData = [
             'content' => $articleContent,
@@ -59,6 +73,7 @@ class FrontendArticleController extends Controller
             'article' => $article,
             'relatedArticles' => $article?->relatedArticles ?? collect(),
             'approvedComments' => $approvedComments,
+            'visitorPendingComments' => $visitorPendingComments,
             'page' => null,
         ];
 

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Content\Layout\MenuItemController;
 use App\Http\Controllers\Admin\Content\Layout\PageController;
 use App\Http\Controllers\Admin\Content\Layout\PageSectionController;
 use App\Http\Controllers\Admin\Content\Layout\TemplateController;
+use App\Http\Controllers\Admin\Content\Layout\FooterSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('content/menus')->name('content.menus.')->group(function () {
@@ -22,6 +23,14 @@ Route::prefix('content/menus')->name('content.menus.')->group(function () {
     Route::put('/{menu}/items/{menuItem}', [MenuItemController::class, 'update'])->middleware('admin.permission:menus.update')->name('items.update');
     Route::delete('/{menu}/items/{menuItem}', [MenuItemController::class, 'destroy'])->middleware('admin.permission:menus.delete')->name('items.destroy');
 });
+
+Route::get('content/footer', [FooterSettingsController::class, 'edit'])
+    ->middleware('admin.permission:menus.view')
+    ->name('content.footer.edit');
+
+Route::put('content/footer', [FooterSettingsController::class, 'update'])
+    ->middleware('admin.permission:menus.update')
+    ->name('content.footer.update');
 
 Route::prefix('content/pages')->name('content.pages.')->group(function () {
     Route::get('/', [PageController::class, 'index'])->middleware('admin.permission:pages.view')->name('index');

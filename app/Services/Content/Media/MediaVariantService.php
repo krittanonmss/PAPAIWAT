@@ -50,6 +50,10 @@ class MediaVariantService
             return;
         }
 
+        if ($targetWidth > $sourceWidth) {
+            return;
+        }
+
         $targetHeight = (int) round(($targetWidth / $sourceWidth) * $sourceHeight);
 
         $sourceImage = $this->makeSourceImage($sourcePath, $media->mime_type);

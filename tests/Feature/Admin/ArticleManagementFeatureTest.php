@@ -162,6 +162,31 @@ class ArticleManagementFeatureTest extends TestCase
         $this->assertSoftDeleted('contents', ['id' => $article->content_id]);
     }
 
+    public function test_article_index_shows_five_items_per_page(): void
+    {
+        foreach (range(1, 6) as $index) {
+            $content = Content::query()->create([
+                'content_type' => 'article',
+                'title' => 'บทความ '.$index,
+                'slug' => 'article-'.$index,
+                'status' => 'published',
+            ]);
+
+            Article::query()->create([
+                'content_id' => $content->id,
+                'body_format' => 'markdown',
+            ]);
+        }
+
+        $this->get(route('admin.content.articles.index'))
+            ->assertOk()
+            ->assertViewHas('articles', function ($articles) {
+                return $articles->perPage() === 5
+                    && $articles->count() === 5
+                    && $articles->lastPage() === 2;
+            });
+    }
+
     private function createCategory(string $typeKey, string $name): Category
     {
         return Category::query()->create([

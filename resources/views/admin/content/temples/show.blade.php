@@ -5,8 +5,8 @@
         $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         $recommendedVisitTime = $temple->recommended_visit_start_time
-            ? \Carbon\Carbon::parse($temple->recommended_visit_start_time)->format('H:i')
-                . ($temple->recommended_visit_end_time ? ' - ' . \Carbon\Carbon::parse($temple->recommended_visit_end_time)->format('H:i') : '')
+            ? substr((string) $temple->recommended_visit_start_time, 0, 5)
+                . ($temple->recommended_visit_end_time ? ' - ' . substr((string) $temple->recommended_visit_end_time, 0, 5) : '')
             : null;
 
         $coverUsage = $content?->mediaUsages?->firstWhere('role_key', 'cover');
@@ -228,9 +228,9 @@
                                             </span>
                                         @else
                                             <span class="text-sm text-slate-300">
-                                                {{ $hour->open_time ? substr($hour->open_time, 0, 5) : '--:--' }}
+                                                {{ $hour->open_time ? substr((string) $hour->open_time, 0, 5) : '--:--' }}
                                                 -
-                                                {{ $hour->close_time ? substr($hour->close_time, 0, 5) : '--:--' }}
+                                                {{ $hour->close_time ? substr((string) $hour->close_time, 0, 5) : '--:--' }}
                                             </span>
                                         @endif
 

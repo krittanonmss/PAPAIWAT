@@ -48,13 +48,13 @@
                 @enderror
             </div>
 
-            <div x-data="{ showPassword: false }">
+            <div>
                 <label for="password" class="mb-1 block text-sm font-medium text-slate-300">รหัสผ่าน</label>
                 <div class="relative">
                     <input
                         id="password"
                         name="password"
-                        :type="showPassword ? 'text' : 'password'"
+                        type="password"
                         autocomplete="current-password"
                         required
                         aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
@@ -63,10 +63,12 @@
                     >
                     <button
                         type="button"
-                        @click="showPassword = !showPassword"
+                        data-password-toggle
+                        aria-controls="password"
+                        aria-pressed="false"
+                        aria-label="แสดงรหัสผ่าน"
                         class="absolute inset-y-1 right-1 rounded-lg border border-white/10 px-3 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-                        x-text="showPassword ? 'ซ่อน' : 'ดู'"
-                    ></button>
+                    >ดู</button>
                 </div>
                 @error('password')
                     <div id="password-error" class="mt-1 text-sm text-red-400">{{ $message }}</div>
@@ -97,4 +99,16 @@
             เฉพาะผู้ดูแลระบบที่ได้รับอนุญาตเท่านั้น
         </p>
     </div>
+
+    <script>
+        document.querySelector('[data-password-toggle]')?.addEventListener('click', function () {
+            const passwordInput = document.getElementById(this.getAttribute('aria-controls'));
+            const isVisible = passwordInput.type === 'text';
+
+            passwordInput.type = isVisible ? 'password' : 'text';
+            this.textContent = isVisible ? 'ดู' : 'ซ่อน';
+            this.setAttribute('aria-pressed', String(! isVisible));
+            this.setAttribute('aria-label', isVisible ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน');
+        });
+    </script>
 </x-layouts.admin-guest>

@@ -10,6 +10,9 @@ use Illuminate\Support\Str;
 
 class TempleDataSyncService
 {
+    private const DEFAULT_OPEN_TIME = '08:00';
+    private const DEFAULT_CLOSE_TIME = '16:00';
+
     public function create(array $validated): Temple
     {
         return DB::transaction(function () use ($validated) {
@@ -370,6 +373,12 @@ class TempleDataSyncService
     {
         $temple->openingHours()->delete();
 
+        if (empty($rows)) {
+            $rows = collect(range(0, 6))
+                ->map(fn (int $dayOfWeek) => ['day_of_week' => $dayOfWeek])
+                ->all();
+        }
+
         $items = collect($rows)
             ->filter(fn ($item) => array_key_exists('day_of_week', $item) && $item['day_of_week'] !== '')
             ->mapWithKeys(function ($item) use ($temple) {
@@ -379,13 +388,15 @@ class TempleDataSyncService
                     return [];
                 }
 
+                $isClosed = (bool) ($item['is_closed'] ?? false);
+
                 return [
                     $dayOfWeek => [
                         'temple_id' => $temple->id,
                         'day_of_week' => $dayOfWeek,
-                        'open_time' => ! empty($item['open_time']) ? $this->normalizeTime($item['open_time']) : null,
-                        'close_time' => ! empty($item['close_time']) ? $this->normalizeTime($item['close_time']) : null,
-                        'is_closed' => (bool) ($item['is_closed'] ?? false),
+                        'open_time' => $isClosed ? null : $this->normalizeTime(($item['open_time'] ?? '') ?: self::DEFAULT_OPEN_TIME),
+                        'close_time' => $isClosed ? null : $this->normalizeTime(($item['close_time'] ?? '') ?: self::DEFAULT_CLOSE_TIME),
+                        'is_closed' => $isClosed,
                         'note' => $item['note'] ?? null,
                         'created_at' => now(),
                         'updated_at' => now(),

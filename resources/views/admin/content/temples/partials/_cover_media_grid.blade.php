@@ -22,7 +22,10 @@
                 <p class="mt-0.5 text-xs text-slate-500">ใช้ค่าเริ่มต้นของระบบ</p>
             </div>
 
-            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
+            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 bg-blue-500/10 ring-4 ring-blue-400/30 peer-checked:block"></div>
+            <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 peer-checked:block">
+                เลือกแล้ว
+            </div>
         </label>
 
         @foreach ($mediaItems as $media)
@@ -69,7 +72,10 @@
                     </p>
                 </div>
 
-                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-2 border-blue-400 peer-checked:block"></div>
+                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 bg-blue-500/10 ring-4 ring-blue-400/30 peer-checked:block"></div>
+                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 peer-checked:block">
+                    เลือกแล้ว
+                </div>
             </label>
         @endforeach
     </div>

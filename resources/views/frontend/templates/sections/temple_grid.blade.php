@@ -1,6 +1,9 @@
 @php
     $content = $section->content_data ?? [];
     $items = collect($section->items ?? []);
+    $showAllButton = (bool) ($content['all_button_enabled'] ?? true);
+    $allButtonLabel = trim((string) ($content['all_button_label'] ?? '')) ?: 'ดูทั้งหมด';
+    $allButtonUrl = trim((string) ($section->all_button_url ?? '')) ?: url('/temple-list');
 @endphp
 
 <section class="bg-slate-950 px-4 py-16">
@@ -15,7 +18,9 @@
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{{ $content['subtitle'] }}</p>
                 @endif
             </div>
-            <a href="{{ url('/temple-list') }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">ดูทั้งหมด</a>
+            @if($showAllButton)
+                <a href="{{ $allButtonUrl }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">{{ $allButtonLabel }}</a>
+            @endif
         </div>
 
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
