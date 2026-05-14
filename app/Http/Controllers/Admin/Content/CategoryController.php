@@ -165,7 +165,7 @@ class CategoryController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.categories.edit', $category)
+            ->route('admin.categories.index')
             ->with('success', 'อัปเดตหมวดหมู่เรียบร้อยแล้ว');
     }
 

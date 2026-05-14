@@ -18,12 +18,42 @@
             --admin-border: rgba(255, 255, 255, 0.10);
             --admin-muted: #94a3b8;
             --admin-blue: #60a5fa;
+            --admin-scale: 80%;
+        }
+
+        html {
+            font-size: var(--admin-scale);
         }
 
         body {
+            font-weight: 300;
             background:
                 radial-gradient(circle at top right, rgba(30, 64, 175, 0.18), transparent 28rem),
                 linear-gradient(180deg, #020617 0%, #0f172a 100%);
+        }
+
+        .font-medium {
+            font-weight: 400 !important;
+        }
+
+        .font-semibold {
+            font-weight: 500 !important;
+        }
+
+        .font-bold {
+            font-weight: 600 !important;
+        }
+
+        .text-slate-400,
+        .text-gray-400,
+        .text-zinc-400 {
+            color: rgb(203 213 225) !important;
+        }
+
+        .text-slate-500,
+        .text-gray-500,
+        .text-zinc-500 {
+            color: rgb(148 163 184) !important;
         }
 
         .admin-content {

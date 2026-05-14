@@ -59,45 +59,7 @@
         >
             @csrf
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-
-                {{-- Main Form --}}
-                <div class="space-y-6">
-                    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        @include('admin.content.layout.page-sections._form')
-                    </div>
-                </div>
-
-                {{-- Side Panel --}}
-                <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
-                    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">เช็กลิสต์ก่อนบันทึก</h3>
-
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ตำแหน่ง Block</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    เลือก block และลำดับการแสดงผลให้ตรงกับสิ่งที่ต้องการบนหน้าเว็บ
-                                </p>
-                            </div>
-
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ข้อมูลแสดงผล</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    กรอกหัวข้อ รูปภาพ ปุ่ม หรือแหล่งข้อมูลตามชนิด block ที่เลือก
-                                </p>
-                            </div>
-
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">สถานะการใช้งาน</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบสถานะก่อนบันทึก เพื่อควบคุมว่า block นี้จะแสดงบนหน้าเว็บหรือไม่
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-            </div>
+            @include('admin.content.layout.page-sections._form')
 
             {{-- Sticky Action Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">

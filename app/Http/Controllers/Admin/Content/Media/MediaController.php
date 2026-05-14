@@ -10,6 +10,7 @@ use App\Models\Content\Media\MediaFolder;
 use App\Services\Content\Media\MediaVariantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -125,124 +126,56 @@ class MediaController extends Controller
     public function store(StoreMediaRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $uploadedFile = $request->file('file');
+        $uploadedFiles = $this->uploadedFiles($request);
 
-        $disk = 'public';
-        $folderPath = 'media/uploads/' . now()->format('Y/m');
-        $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: '');
-        $filename = Str::uuid()->toString() . ($extension ? '.' . $extension : '');
-        $storedPath = $uploadedFile->storeAs($folderPath, $filename, $disk);
+        foreach ($uploadedFiles as $uploadedFile) {
+            $media = $this->storeUploadedMedia($uploadedFile, [
+                'media_folder_id' => $validated['media_folder_id'] ?? null,
+                'title' => count($uploadedFiles) === 1 ? ($validated['title'] ?? null) : null,
+                'alt_text' => count($uploadedFiles) === 1 ? ($validated['alt_text'] ?? null) : null,
+                'caption' => count($uploadedFiles) === 1 ? ($validated['caption'] ?? null) : null,
+                'description' => count($uploadedFiles) === 1 ? ($validated['description'] ?? null) : null,
+                'visibility' => $validated['visibility'] ?? 'public',
+            ]);
 
-        $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
-        $mediaType = $this->resolveMediaType($mimeType);
-        $fileSize = $uploadedFile->getSize() ?: 0;
-
-        $width = null;
-        $height = null;
-
-        if ($mediaType === 'image') {
-            $absolutePath = Storage::disk($disk)->path($storedPath);
-            $imageSize = @getimagesize($absolutePath);
-
-            if ($imageSize !== false) {
-                $width = isset($imageSize[0]) ? (int) $imageSize[0] : null;
-                $height = isset($imageSize[1]) ? (int) $imageSize[1] : null;
-            }
+            app(MediaVariantService::class)->generate($media);
         }
-
-        $media = Media::query()->create([
-            'media_folder_id' => $validated['media_folder_id'] ?? null,
-            'sort_order' => 0,
-            'disk' => $disk,
-            'directory' => dirname($storedPath) === '.' ? null : dirname($storedPath),
-            'filename' => basename($storedPath),
-            'path' => $storedPath,
-            'original_filename' => $uploadedFile->getClientOriginalName(),
-            'extension' => $extension ?: null,
-            'mime_type' => $mimeType,
-            'media_type' => $mediaType,
-            'file_size' => $fileSize,
-            'width' => $width,
-            'height' => $height,
-            'duration_seconds' => null,
-            'title' => $validated['title'] ?? null,
-            'alt_text' => $validated['alt_text'] ?? null,
-            'caption' => $validated['caption'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'checksum' => hash_file('sha256', $uploadedFile->getRealPath()),
-            'visibility' => $validated['visibility'] ?? 'public',
-            'upload_status' => 'completed',
-            'uploaded_by_admin_id' => auth('admin')->id(),
-            'uploaded_at' => now(),
-        ]);
-
-        app(MediaVariantService::class)->generate($media);
 
         return redirect()
             ->route('admin.media.index', [
                 'media_folder_id' => $validated['media_folder_id'] ?? null,
             ])
-            ->with('success', 'อัปโหลดไฟล์สำเร็จ');
+            ->with('success', count($uploadedFiles) > 1
+                ? 'อัปโหลดไฟล์สำเร็จ ' . count($uploadedFiles) . ' ไฟล์'
+                : 'อัปโหลดไฟล์สำเร็จ');
     }
 
     public function quickUpload(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'image', 'max:10240'],
+            'file' => ['nullable', 'image', 'max:5120'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['image', 'max:5120'],
         ]);
 
-        $uploadedFile = $validated['file'];
+        $uploadedFiles = $this->uploadedFiles($request);
 
-        $disk = 'public';
-        $folderPath = 'media/uploads/' . now()->format('Y/m');
-        $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: '');
-        $filename = Str::uuid()->toString() . ($extension ? '.' . $extension : '');
-        $storedPath = $uploadedFile->storeAs($folderPath, $filename, $disk);
-
-        $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
-        $mediaType = $this->resolveMediaType($mimeType);
-        $fileSize = $uploadedFile->getSize() ?: 0;
-
-        $width = null;
-        $height = null;
-
-        $absolutePath = Storage::disk($disk)->path($storedPath);
-        $imageSize = @getimagesize($absolutePath);
-
-        if ($imageSize !== false) {
-            $width = isset($imageSize[0]) ? (int) $imageSize[0] : null;
-            $height = isset($imageSize[1]) ? (int) $imageSize[1] : null;
+        if (count($uploadedFiles) === 0) {
+            return back()->withErrors(['file' => 'กรุณาเลือกรูปก่อนอัปโหลด']);
         }
 
-        $media = Media::query()->create([
-            'media_folder_id' => null,
-            'sort_order' => 0,
-            'disk' => $disk,
-            'directory' => dirname($storedPath) === '.' ? null : dirname($storedPath),
-            'filename' => basename($storedPath),
-            'path' => $storedPath,
-            'original_filename' => $uploadedFile->getClientOriginalName(),
-            'extension' => $extension ?: null,
-            'mime_type' => $mimeType,
-            'media_type' => $mediaType,
-            'file_size' => $fileSize,
-            'width' => $width,
-            'height' => $height,
-            'duration_seconds' => null,
-            'title' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
-            'alt_text' => null,
-            'caption' => null,
-            'description' => null,
-            'checksum' => hash_file('sha256', $uploadedFile->getRealPath()),
-            'visibility' => 'public',
-            'upload_status' => 'completed',
-            'uploaded_by_admin_id' => auth('admin')->id(),
-            'uploaded_at' => now(),
-        ]);
+        foreach ($uploadedFiles as $uploadedFile) {
+            $media = $this->storeUploadedMedia($uploadedFile, [
+                'title' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
+                'visibility' => 'public',
+            ]);
 
-        app(MediaVariantService::class)->generate($media);
+            app(MediaVariantService::class)->generate($media);
+        }
 
-        return back()->with('success', 'อัปโหลดรูปใหม่สำเร็จ');
+        return back()->with('success', count($uploadedFiles) > 1
+            ? 'อัปโหลดรูปใหม่สำเร็จ ' . count($uploadedFiles) . ' รูป'
+            : 'อัปโหลดรูปใหม่สำเร็จ');
     }
 
     public function edit(Media $media): View
@@ -337,7 +270,11 @@ class MediaController extends Controller
             app(MediaVariantService::class)->generate($media->fresh());
         }
 
-        return back()->with('success', 'อัปเดตข้อมูลสื่อสำเร็จ');
+        return redirect()
+            ->route('admin.media.index', [
+                'media_folder_id' => $validated['media_folder_id'] ?? null,
+            ])
+            ->with('success', 'อัปเดตข้อมูลสื่อสำเร็จ');
     }
 
     public function destroy(Media $media): RedirectResponse
@@ -402,5 +339,73 @@ class MediaController extends Controller
         }
 
         return 'other';
+    }
+
+    /**
+     * @return array<int, UploadedFile>
+     */
+    private function uploadedFiles(Request $request): array
+    {
+        if ($request->hasFile('files')) {
+            return array_values(array_filter($request->file('files')));
+        }
+
+        if ($request->hasFile('file')) {
+            return [$request->file('file')];
+        }
+
+        return [];
+    }
+
+    private function storeUploadedMedia(UploadedFile $uploadedFile, array $metadata = []): Media
+    {
+        $disk = 'public';
+        $folderPath = 'media/uploads/' . now()->format('Y/m');
+        $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: '');
+        $filename = Str::uuid()->toString() . ($extension ? '.' . $extension : '');
+        $storedPath = $uploadedFile->storeAs($folderPath, $filename, $disk);
+
+        $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
+        $mediaType = $this->resolveMediaType($mimeType);
+        $fileSize = $uploadedFile->getSize() ?: 0;
+
+        $width = null;
+        $height = null;
+
+        if ($mediaType === 'image') {
+            $absolutePath = Storage::disk($disk)->path($storedPath);
+            $imageSize = @getimagesize($absolutePath);
+
+            if ($imageSize !== false) {
+                $width = isset($imageSize[0]) ? (int) $imageSize[0] : null;
+                $height = isset($imageSize[1]) ? (int) $imageSize[1] : null;
+            }
+        }
+
+        return Media::query()->create([
+            'media_folder_id' => $metadata['media_folder_id'] ?? null,
+            'sort_order' => 0,
+            'disk' => $disk,
+            'directory' => dirname($storedPath) === '.' ? null : dirname($storedPath),
+            'filename' => basename($storedPath),
+            'path' => $storedPath,
+            'original_filename' => $uploadedFile->getClientOriginalName(),
+            'extension' => $extension ?: null,
+            'mime_type' => $mimeType,
+            'media_type' => $mediaType,
+            'file_size' => $fileSize,
+            'width' => $width,
+            'height' => $height,
+            'duration_seconds' => null,
+            'title' => $metadata['title'] ?? null,
+            'alt_text' => $metadata['alt_text'] ?? null,
+            'caption' => $metadata['caption'] ?? null,
+            'description' => $metadata['description'] ?? null,
+            'checksum' => hash_file('sha256', $uploadedFile->getRealPath()),
+            'visibility' => $metadata['visibility'] ?? 'public',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => auth('admin')->id(),
+            'uploaded_at' => now(),
+        ]);
     }
 }

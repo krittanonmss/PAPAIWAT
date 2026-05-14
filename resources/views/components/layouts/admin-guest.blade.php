@@ -6,6 +6,43 @@
     <title>{{ $title ?? 'Admin Login' }}</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --admin-scale: 80%;
+        }
+
+        html {
+            font-size: var(--admin-scale);
+        }
+
+        body {
+            font-weight: 300;
+        }
+
+        .font-medium {
+            font-weight: 400 !important;
+        }
+
+        .font-semibold {
+            font-weight: 500 !important;
+        }
+
+        .font-bold {
+            font-weight: 600 !important;
+        }
+
+        .text-slate-400,
+        .text-gray-400,
+        .text-zinc-400 {
+            color: rgb(203 213 225) !important;
+        }
+
+        .text-slate-500,
+        .text-gray-500,
+        .text-zinc-500 {
+            color: rgb(148 163 184) !important;
+        }
+    </style>
 </head>
 <body class="m-0 bg-[#0f1b2e] font-sans text-white antialiased">
     <main class="relative flex min-h-screen items-center justify-center overflow-hidden p-6">

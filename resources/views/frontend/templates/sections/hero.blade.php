@@ -3,7 +3,16 @@
     $settings = $section->settings_data ?? [];
     $imageData = $section->image_data ?? [];
     $imageUrl = $section->image_url ?? null;
-    $background = $settings['background'] ?? 'dark';
+    $isBanner = ($section->component_key ?? 'hero') === 'banner';
+    $bannerHeight = (int) ($settings['banner_height'] ?? 540);
+    $bannerHeight = in_array($bannerHeight, [540, 720], true) ? $bannerHeight : 540;
+    $sectionSizeClass = $isBanner ? 'min-h-[260px]' : 'aspect-[16/9] min-h-[420px]';
+    $sectionSizeStyle = $isBanner
+        ? 'aspect-ratio: 1920 / ' . $bannerHeight . ';'
+        : '';
+    $contentPaddingClass = $isBanner ? 'px-4 py-12 md:py-16' : 'px-4 py-16 md:py-20';
+    $contentMaxWidthClass = $isBanner ? 'max-w-4xl' : 'max-w-3xl';
+    $headingClass = $isBanner ? 'mt-3 text-3xl font-bold leading-tight text-white md:text-5xl' : 'mt-4 text-4xl font-bold leading-tight text-white md:text-6xl';
     $imageOpacityPercent = max(10, min(100, (int) ($settings['image_opacity'] ?? 100)));
     $imageOpacity = $imageOpacityPercent / 100;
     $imageFit = ($settings['image_fit'] ?? 'contain') === 'cover' ? 'cover' : 'contain';
@@ -12,14 +21,17 @@
         ? $rawImagePosition
         : 'center';
     $showSearchBox = (bool) ($settings['show_search_box'] ?? false);
-    $sectionClass = match ($background) {
-        'soft' => 'bg-slate-900',
-        'plain' => 'bg-slate-950',
-        default => 'bg-slate-950',
-    };
+    $showSummaryStats = (bool) ($settings['show_summary_stats'] ?? false);
+    $summaryStats = $section->summary_stats ?? [];
+    $showPrimaryButton = (bool) ($content['primary_enabled'] ?? true);
+    $showSecondaryButton = (bool) ($content['secondary_enabled'] ?? true);
+    $searchPlaceholder = trim((string) ($content['search_placeholder'] ?? '')) ?: 'พิมพ์สิ่งที่อยากค้นหา...';
+    $searchButtonLabel = trim((string) ($content['search_button_label'] ?? '')) ?: 'ค้นหา';
+    $templeStatLabel = trim((string) ($content['temple_stat_label'] ?? '')) ?: 'วัดทั้งหมด';
+    $articleStatLabel = trim((string) ($content['article_stat_label'] ?? '')) ?: 'บทความทั้งหมด';
+    $viewStatLabel = trim((string) ($content['view_stat_label'] ?? '')) ?: 'ยอดผู้เข้าชม';
 @endphp
-
-<section class="{{ $sectionClass }} relative overflow-hidden">
+<section class="relative overflow-hidden {{ $sectionSizeClass }}" style="{{ $sectionSizeStyle }} @include('frontend.templates.sections._background')">
     @if($imageUrl)
         <div class="absolute inset-0 bg-slate-950"></div>
         <img
@@ -37,20 +49,20 @@
         <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950/45 to-slate-950"></div>
     @endif
 
-    <div class="relative mx-auto flex min-h-[580px] max-w-6xl items-center px-4 py-20 text-center md:min-h-[820px] xl:min-h-[900px]">
-        <div class="mx-auto max-w-3xl">
+    <div class="relative mx-auto flex h-full max-w-7xl items-center {{ $contentPaddingClass }} text-center">
+        <div class="mx-auto {{ $contentMaxWidthClass }}">
             @if(!empty($content['eyebrow']))
                 <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
             @endif
-            <h1 class="mt-4 text-4xl font-bold leading-tight text-white md:text-6xl">{{ $content['title'] ?? '' }}</h1>
+            <h1 class="{{ $headingClass }}">{{ $content['title'] ?? '' }}</h1>
             @if(!empty($content['subtitle']))
                 <p class="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">{{ $content['subtitle'] }}</p>
             @endif
             <div class="mt-8 flex flex-wrap justify-center gap-3">
-                @if(!empty($content['primary_label']) && !empty($content['primary_url']))
+                @if($showPrimaryButton && !empty($content['primary_label']) && !empty($content['primary_url']))
                     <a href="{{ $content['primary_url'] }}" class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500">{{ $content['primary_label'] }}</a>
                 @endif
-                @if(!empty($content['secondary_label']) && !empty($content['secondary_url']))
+                @if($showSecondaryButton && !empty($content['secondary_label']) && !empty($content['secondary_url']))
                     <a href="{{ $content['secondary_url'] }}" class="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">{{ $content['secondary_label'] }}</a>
                 @endif
             </div>
@@ -63,12 +75,28 @@
                             id="hero-search-{{ $section->id }}"
                             type="search"
                             name="q"
-                            placeholder="พิมพ์สิ่งที่อยากค้นหา..."
+                            placeholder="{{ $searchPlaceholder }}"
                             class="h-full min-w-0 flex-1 bg-transparent px-0 text-sm text-white placeholder:text-white/65 focus:outline-none"
                         >
-                        <button type="submit" class="ml-3 shrink-0 text-sm font-normal text-white transition hover:opacity-75">ค้นหา</button>
+                        <button type="submit" class="ml-3 shrink-0 text-sm font-normal text-white transition hover:opacity-75">{{ $searchButtonLabel }}</button>
                     </div>
                 </form>
+            @endif
+            @if($showSummaryStats)
+                <div class="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                        <p class="text-xs text-slate-300">{{ $templeStatLabel }}</p>
+                        <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['temples'] ?? 0)) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                        <p class="text-xs text-slate-300">{{ $articleStatLabel }}</p>
+                        <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['articles'] ?? 0)) }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                        <p class="text-xs text-slate-300">{{ $viewStatLabel }}</p>
+                        <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['views'] ?? 0)) }}</p>
+                    </div>
+                </div>
             @endif
         </div>
     </div>

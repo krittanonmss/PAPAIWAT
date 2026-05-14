@@ -12,6 +12,24 @@ class UpdateArticleRequest extends FormRequest
         return auth('admin')->check();
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'cover_media_id' => $this->integerOrNull($this->input('cover_media_id')),
+        ]);
+    }
+
+    private function integerOrNull(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_scalar($value) && preg_match('/^\d+$/', (string) $value)
+            ? (int) $value
+            : null;
+    }
+
     public function rules(): array
     {
         return [

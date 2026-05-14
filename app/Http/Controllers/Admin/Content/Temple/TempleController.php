@@ -165,8 +165,12 @@ class TempleController extends Controller
             'temple' => $temple,
             'statusOptions' => self::STATUS_OPTIONS,
             'categories' => $this->templeCategories(),
-            'coverMediaItems' => $this->coverMediaItems(),
-            'galleryMediaItems' => $this->galleryMediaItems(),
+            'coverMediaItems' => $this->coverMediaItems([
+                $temple->content?->mediaUsages?->firstWhere('role_key', 'cover')?->media_id,
+            ]),
+            'galleryMediaItems' => $this->galleryMediaItems(
+                $temple->content?->mediaUsages?->where('role_key', 'gallery')->pluck('media_id')->all() ?? []
+            ),
             'facilities' => $this->facilities(),
             'detailTemplates' => $this->detailTemplates('temple'),
             'templatePreviewUrl' => $temple->content
@@ -186,7 +190,7 @@ class TempleController extends Controller
         $this->templeDataSyncService->update($temple, $request->validated());
 
         return redirect()
-            ->route('admin.temples.edit', $temple)
+            ->route('admin.temples.index')
             ->with('success', 'อัปเดตข้อมูลวัดเรียบร้อยแล้ว');
     }
 
@@ -221,27 +225,29 @@ class TempleController extends Controller
             ->get(['id', 'name', 'parent_id']);
     }
 
-    private function coverMediaItems()
+    private function coverMediaItems(array $selectedMediaIds = [])
     {
         return $this->paginatedMediaItems(
             pageName: 'cover_media_page',
             path: route('admin.temples.media-picker.cover'),
-            perPage: 7
+            perPage: 7,
+            selectedMediaIds: $selectedMediaIds
         );
     }
 
-    private function galleryMediaItems()
+    private function galleryMediaItems(array $selectedMediaIds = [])
     {
         return $this->paginatedMediaItems(
             pageName: 'gallery_media_page',
             path: route('admin.temples.media-picker.gallery'),
-            perPage: 8
+            perPage: 8,
+            selectedMediaIds: $selectedMediaIds
         );
     }
 
-    private function paginatedMediaItems(string $pageName, string $path, int $perPage)
+    private function paginatedMediaItems(string $pageName, string $path, int $perPage, array $selectedMediaIds = [])
     {
-        return Media::query()
+        $mediaItems = Media::query()
             ->where('upload_status', 'completed')
             ->where('media_type', 'image')
             ->orderByDesc('id')
@@ -251,6 +257,40 @@ class TempleController extends Controller
                 pageName: $pageName
             )
             ->withPath($path);
+
+        $selectedMediaIds = collect($selectedMediaIds)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($selectedMediaIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $visibleIds = $mediaItems->getCollection()->pluck('id')->map(fn ($id) => (int) $id);
+        $missingSelectedIds = $selectedMediaIds->diff($visibleIds)->values();
+
+        if ($missingSelectedIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $selectedItems = Media::query()
+            ->whereIn('id', $missingSelectedIds)
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->get(['id', 'title', 'original_filename', 'media_type', 'path'])
+            ->sortBy(fn (Media $media) => $selectedMediaIds->search((int) $media->id))
+            ->values();
+
+        $mediaItems->setCollection(
+            $selectedItems
+                ->concat($mediaItems->getCollection())
+                ->unique('id')
+                ->values()
+        );
+
+        return $mediaItems;
     }
 
     private function facilities()

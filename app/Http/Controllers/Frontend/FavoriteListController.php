@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content\Article\Article;
+use App\Models\Content\Layout\Page;
 use App\Models\Content\Temple\Temple;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,18 @@ class FavoriteListController extends Controller
 {
     public function __invoke(): View
     {
-        return view('frontend.favorites.index');
+        $page = Page::query()
+            ->with([
+                'template',
+                'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
+            ])
+            ->where('slug', 'favorites')
+            ->published()
+            ->firstOrFail();
+
+        $sections = app(FrontendPageController::class)->buildPageSections($page);
+
+        return view('frontend.favorites.index', compact('page', 'sections'));
     }
 
     public function items(Request $request): JsonResponse

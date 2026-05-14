@@ -151,7 +151,7 @@ class FrontendPageController extends Controller
         return view($viewPath, compact('page', 'items', 'filters', 'homeArticles', 'homeTemples', 'sections'));
     }
 
-    private function buildPageSections(Page $page): Collection
+    public function buildPageSections(Page $page): Collection
     {
         $sections = $page->relationLoaded('sections')
             ? $page->sections
@@ -159,15 +159,22 @@ class FrontendPageController extends Controller
 
         return $sections
             ->map(function (PageSection $section) {
-                $section->content_data = $section->content ?? [];
+                $contentData = $section->content ?? [];
+                $contentData['primary_url'] = $this->resolveSectionPageUrl($contentData, 'primary_page_id', 'primary_url');
+                $contentData['secondary_url'] = $this->resolveSectionPageUrl($contentData, 'secondary_page_id', 'secondary_url');
+
+                $section->content_data = $contentData;
                 $section->settings_data = $section->settings ?? [];
                 $section->image_data = $this->resolveSectionImageData($section->content_data, $section->component_key);
                 $section->image_url = $section->image_data['url'] ?? null;
+                $section->gallery_items = $section->component_key === 'gallery'
+                    ? $this->resolveSectionGalleryItems($section->content_data)
+                    : collect();
                 $section->all_button_url = $this->resolveSectionPageUrl($section->content_data);
                 $section->bento_items = $section->component_key === 'travel_discovery_bento'
                     ? $this->getBentoContentItems($section->content_data, $section->settings_data)
                     : collect();
-                $section->summary_stats = $section->component_key === 'travel_discovery_bento'
+                $section->summary_stats = in_array($section->component_key, ['hero', 'banner'], true)
                     ? $this->getSummaryStats()
                     : [];
                 $section->items = match ($section->component_key) {
@@ -180,6 +187,9 @@ class FrontendPageController extends Controller
                 $section->filters = match ($section->component_key) {
                     'article_list_full' => $this->getArticleFilterData(),
                     'temple_list_full' => $this->getTempleFilterData(),
+                    'travel_discovery_bento' => ($section->settings_data['bento_variant'] ?? 'travel') === 'article_filter'
+                        ? $this->getBentoFilterData($section->settings_data)
+                        : [],
                     default => [],
                 };
 
@@ -232,7 +242,7 @@ class FrontendPageController extends Controller
                 return [
                     'url' => $originalUrl,
                     'srcset' => $srcset !== '' ? $srcset : null,
-                    'sizes' => $componentKey === 'hero'
+                    'sizes' => in_array($componentKey, ['hero', 'banner'], true)
                         ? '100vw'
                         : '(min-width: 1024px) 50vw, 100vw',
                 ];
@@ -246,10 +256,10 @@ class FrontendPageController extends Controller
         ];
     }
 
-    private function resolveSectionPageUrl(array $content): ?string
+    private function resolveSectionPageUrl(array $content, string $pageKey = 'all_button_page_id', string $urlKey = 'all_button_url'): ?string
     {
-        if (! empty($content['all_button_page_id'])) {
-            $page = Page::query()->find((int) $content['all_button_page_id']);
+        if (! empty($content[$pageKey])) {
+            $page = Page::query()->find((int) $content[$pageKey]);
 
             if ($page) {
                 return $page->is_homepage
@@ -258,11 +268,51 @@ class FrontendPageController extends Controller
             }
         }
 
-        return $content['all_button_url'] ?? null;
+        return $content[$urlKey] ?? null;
+    }
+
+    private function resolveSectionGalleryItems(array $content): Collection
+    {
+        $ids = collect($content['gallery_media_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        $mediaItems = Media::query()
+            ->whereIn('id', $ids)
+            ->where('media_type', 'image')
+            ->get()
+            ->keyBy('id');
+
+        return $ids
+            ->map(function (int $id) use ($mediaItems) {
+                $media = $mediaItems->get($id);
+                $path = $media?->path;
+
+                if (! $path) {
+                    return null;
+                }
+
+                return [
+                    'url' => filter_var($path, FILTER_VALIDATE_URL) ? $path : Storage::url($path),
+                    'caption' => $media->title ?: $media->original_filename,
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     private function getBentoContentItems(array $content, array $settings): Collection
     {
+        if (($settings['bento_variant'] ?? 'travel') === 'article_filter') {
+            return $this->getFilteredBentoItems($settings);
+        }
+
         $slots = collect($content['bento_slots'] ?? [])
             ->map(fn ($slot) => [
                 'content_id' => (int) ($slot['content_id'] ?? 0),
@@ -341,6 +391,93 @@ class FrontendPageController extends Controller
             ->values();
     }
 
+    private function getFilteredBentoItems(array $settings): Collection
+    {
+        $limit = max(1, min((int) ($settings['limit'] ?? 6), 12));
+        $layoutSizes = $this->bentoLayoutSizes($settings['bento_layout'] ?? 'editorial_6');
+        $contentType = ($settings['bento_content_type'] ?? 'article') === 'temple' ? 'temple' : 'article';
+
+        $querySettings = array_merge($settings, [
+            'limit' => $limit,
+            'source' => 'all',
+            'sort' => 'random',
+        ]);
+
+        $items = $contentType === 'temple'
+            ? $this->getTempleListData($querySettings)
+            : $this->getArticleListData($querySettings);
+
+        return collect($items)
+            ->values()
+            ->map(function ($item, int $index) use ($layoutSizes, $contentType) {
+                return $contentType === 'temple'
+                    ? $this->mapTempleBentoItem($item, $layoutSizes[$index % count($layoutSizes)] ?? 'small')
+                    : $this->mapArticleBentoItem($item, $layoutSizes[$index % count($layoutSizes)] ?? 'small');
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function mapArticleBentoItem(Content $content, string $size): array
+    {
+        $mediaUsages = $content->relationLoaded('mediaUsages') ? $content->mediaUsages : collect();
+        $cover = $mediaUsages->firstWhere('role_key', 'cover');
+        $coverMedia = ($cover && $cover->relationLoaded('media')) ? $cover->media : null;
+        $path = $coverMedia?->path;
+        $imageUrl = $path
+            ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : Storage::url($path))
+            : null;
+        $category = $content->relationLoaded('categories') ? $content->categories->first() : null;
+        $article = $content->relationLoaded('article') ? $content->article : null;
+
+        return [
+            'title' => $content->title,
+            'description' => $content->excerpt ?: str($content->description ?? '')->stripTags()->limit(140)->toString(),
+            'label' => $category?->name ?: 'บทความ',
+            'url' => $this->contentPublicUrl($content),
+            'image' => $imageUrl,
+            'size' => $size,
+            'kicker' => $article?->author_name ?: ($content->published_at?->format('d M Y') ?? 'Article'),
+        ];
+    }
+
+    private function mapTempleBentoItem(Temple $temple, string $size): ?array
+    {
+        $content = $temple->relationLoaded('content') ? $temple->content : null;
+
+        if (! $content) {
+            return null;
+        }
+
+        $mediaUsages = $content->relationLoaded('mediaUsages') ? $content->mediaUsages : collect();
+        $cover = $mediaUsages->firstWhere('role_key', 'cover');
+        $coverMedia = ($cover && $cover->relationLoaded('media')) ? $cover->media : null;
+        $path = $coverMedia?->path;
+        $imageUrl = $path
+            ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : Storage::url($path))
+            : null;
+        $category = $content->relationLoaded('categories') ? $content->categories->first() : null;
+
+        return [
+            'title' => $content->title,
+            'description' => $content->excerpt ?: str($content->description ?? $temple->history ?? '')->stripTags()->limit(140)->toString(),
+            'label' => $category?->name ?: ($temple->address?->province ?: 'วัด'),
+            'url' => route('temples.show', $temple),
+            'image' => $imageUrl,
+            'size' => $size,
+            'kicker' => $temple->temple_type ?: ($temple->address?->province ?: 'Temple'),
+        ];
+    }
+
+    private function getBentoFilterData(array $settings): array
+    {
+        if (($settings['bento_content_type'] ?? 'article') === 'temple') {
+            return $this->getTempleFilterData();
+        }
+
+        return $this->getArticleFilterData();
+    }
+
     private function bentoLayoutSizes(string $layout): array
     {
         return match ($layout) {
@@ -390,6 +527,7 @@ class FrontendPageController extends Controller
     private function getTempleListData(array $settings, bool $paginate = false)
     {
         $limit = min((int) ($settings['limit'] ?? 12), 48);
+        $perPage = $this->fullListPerPage($settings);
         $source = $settings['source'] ?? 'all';
 
         $query = Temple::query()
@@ -470,6 +608,7 @@ class FrontendPageController extends Controller
         $sort = request('sort', $settings['sort'] ?? 'popular');
 
         match ($sort) {
+            'random' => $query->inRandomOrder(),
             'rating' => $query->orderByDesc(
                 TempleStat::query()
                     ->select('average_rating')
@@ -493,7 +632,7 @@ class FrontendPageController extends Controller
 
         if ($paginate) {
             return $query
-                ->paginate(16)
+                ->paginate($perPage)
                 ->withQueryString();
         }
 
@@ -537,6 +676,7 @@ class FrontendPageController extends Controller
     private function getArticleListData(array $settings, bool $paginate = false)
     {
         $limit = min((int) ($settings['limit'] ?? 12), 48);
+        $perPage = $this->fullListPerPage($settings);
         $source = $settings['source'] ?? 'all';
 
         $query = Content::query()
@@ -603,6 +743,7 @@ class FrontendPageController extends Controller
         $sort = request('sort', $settings['sort'] ?? 'latest');
 
         match ($sort) {
+            'random' => $query->inRandomOrder(),
             'popular' => $query->orderByDesc(
                 ArticleStat::query()
                     ->select('view_count')
@@ -643,11 +784,19 @@ class FrontendPageController extends Controller
 
         if ($paginate) {
             return $query
-                ->paginate(16)
+                ->paginate($perPage)
                 ->withQueryString();
         }
 
         return $query->limit($limit)->get();
+    }
+
+    private function fullListPerPage(array $settings): int
+    {
+        $rows = max(1, min((int) ($settings['list_rows'] ?? 4), 12));
+        $columns = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
+
+        return $rows * $columns;
     }
 
     private function getArticleFilterData(): array

@@ -1,9 +1,9 @@
 @php
     $content = $section->content_data ?? [];
 @endphp
-
-<section class="bg-slate-950 px-4 py-16">
-    <div class="mx-auto max-w-4xl">
+<section class="px-4 py-16" style="@include('frontend.templates.sections._background')">
+    <div class="mx-auto max-w-7xl">
+        <div class="max-w-4xl">
         @if(!empty($content['eyebrow']))
             <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
         @endif
@@ -22,5 +22,6 @@
                 @endforeach
             </div>
         @endif
+        </div>
     </div>
 </section>

@@ -947,7 +947,7 @@
         <section
             x-data="{
                 mediaSearch: '',
-                selectedCover: window.articleDraftValue('cover_media_id', @js((string) $selectedCoverMediaId)),
+                selectedCover: window.articleDraftMediaId('cover_media_id', @js((string) $selectedCoverMediaId)),
                 coverHtml: @js(view('admin.content.articles.partials._cover_media_grid', [
                     'mediaItems' => $coverMediaItems ?? $mediaItems,
                 ])->render()),
@@ -1015,6 +1015,7 @@
                                 id="article_quick_media_file"
                                 type="file"
                                 accept="image/*"
+                                multiple
                                 x-ref="fileInput"
                                 class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white
                                     file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500
@@ -1024,7 +1025,7 @@
 
                             <p x-show="errorMessage" x-text="errorMessage" class="mt-1 text-xs text-rose-400"></p>
                             <p class="mt-2 text-xs text-slate-500">
-                                รูปจะถูกบันทึกเข้า Media Library แล้ว refresh หน้าเพื่อให้เลือกรูปได้ทันที
+                                เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า Media Library แล้ว refresh หน้า
                             </p>
                         </div>
 
@@ -1290,6 +1291,21 @@
                 : fallback;
         };
 
+        window.normalizeArticleMediaIds = function (value) {
+            const values = Array.isArray(value) ? value : [value];
+
+            return values
+                .map((item) => String(item ?? '').trim())
+                .filter((item) => /^\d+$/.test(item));
+        };
+
+        window.articleDraftMediaId = function (name, fallback = '') {
+            const fallbackIds = window.normalizeArticleMediaIds(fallback);
+            const draftIds = window.normalizeArticleMediaIds(window.articleDraftValue(name, fallback));
+
+            return draftIds[0] ?? fallbackIds[0] ?? '';
+        };
+
         window.quickArticleMediaUploader = function () {
             return {
                 isUploading: false,
@@ -1298,17 +1314,31 @@
                 async upload() {
                     this.errorMessage = '';
 
-                    const file = this.$refs.fileInput.files[0];
+                    const files = Array.from(this.$refs.fileInput.files || []);
 
-                    if (!file) {
+                    if (files.length === 0) {
                         this.errorMessage = 'กรุณาเลือกรูปก่อนอัปโหลด';
+                        return;
+                    }
+
+                    const maxFileSize = 5 * 1024 * 1024;
+                    const invalidFile = files.find((file) => !file.type.startsWith('image/'));
+                    const oversizedFile = files.find((file) => file.size > maxFileSize);
+
+                    if (invalidFile) {
+                        this.errorMessage = 'อัปโหลดได้เฉพาะไฟล์รูปภาพเท่านั้น';
+                        return;
+                    }
+
+                    if (oversizedFile) {
+                        this.errorMessage = `ไฟล์ ${oversizedFile.name} มีขนาดเกิน 5 MB`;
                         return;
                     }
 
                     const formData = new FormData();
                     formData.append('_token', '{{ csrf_token() }}');
-                    formData.append('file', file);
                     formData.append('visibility', 'public');
+                    files.forEach((file) => formData.append('files[]', file));
 
                     this.isUploading = true;
 
@@ -1322,7 +1352,8 @@
                         });
 
                         if (!response.ok) {
-                            this.errorMessage = 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
+                            const payload = await response.json().catch(() => null);
+                            this.errorMessage = payload?.message || 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
                             return;
                         }
 

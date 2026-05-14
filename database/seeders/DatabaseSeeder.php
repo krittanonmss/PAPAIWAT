@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             SystemTemplateSeeder::class,
             DraftTempleAndDhammaSeeder::class,
             DraftCategorySeeder::class,
+            ContentCategoryAssignmentSeeder::class,
         ]);
     }
 }

@@ -7,6 +7,8 @@ use App\Models\Content\Content;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
+use App\Http\Controllers\Frontend\FrontendPageController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +29,47 @@ class PageSectionController extends Controller
     public function mediaPicker(Request $request): View|Response
     {
         $mediaItems = $this->sectionMediaItems();
+        $view = $request->string('mode')->toString() === 'gallery'
+            ? 'admin.content.layout.page-sections.partials._gallery_media_grid'
+            : 'admin.content.layout.page-sections.partials._media_grid';
 
-        return response()->view('admin.content.layout.page-sections.partials._media_grid', compact('mediaItems'));
+        return response()->view($view, compact('mediaItems'));
+    }
+
+    public function preview(Request $request, Page $page): JsonResponse
+    {
+        $componentKey = (string) $request->input('component_key', 'hero');
+        $section = new PageSection([
+            'page_id' => $page->id,
+            'name' => $request->input('name') ?: $this->defaultSectionName($componentKey),
+            'section_key' => $request->input('section_key') ?: 'preview-section',
+            'component_key' => $componentKey,
+            'content' => $this->prepareSectionContent($request->input('content')) ?? [],
+            'settings' => $this->decodeJson($request->input('settings')) ?? [],
+            'status' => 'active',
+            'is_visible' => true,
+            'sort_order' => (int) $request->input('sort_order', 0),
+        ]);
+        $section->id = (int) ($request->input('section_id') ?: 0);
+        $section->exists = false;
+
+        $page->setRelation('sections', collect([$section]));
+
+        try {
+            $sections = app(FrontendPageController::class)->buildPageSections($page);
+            $html = view('frontend.templates.previews.section', compact('sections'))->render();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $html = view('frontend.templates.previews.admin-iframe', [
+                'previewTitle' => 'Section preview error',
+                'previewMessage' => $exception->getMessage(),
+            ])->render();
+        }
+
+        return response()->json([
+            'html' => $html,
+        ]);
     }
 
     public function store(Request $request, Page $page): RedirectResponse
@@ -135,14 +176,38 @@ class PageSectionController extends Controller
             $content['all_button_enabled'] = (bool) $content['all_button_enabled'];
         }
 
-        if (! empty($content['all_button_page_id'])) {
-            $pageId = (int) $content['all_button_page_id'];
-            $content['all_button_page_id'] = Page::query()->whereKey($pageId)->exists()
-                ? (string) $pageId
-                : '';
+        foreach (['primary_page_id', 'secondary_page_id', 'all_button_page_id'] as $pageKey) {
+            if (! empty($content[$pageKey])) {
+                $pageId = (int) $content[$pageKey];
+                $content[$pageKey] = Page::query()->whereKey($pageId)->exists()
+                    ? (string) $pageId
+                    : '';
+            }
         }
 
-        $content['all_button_url'] = '';
+        $content['all_button_url'] = $content['all_button_url'] ?? '';
+
+        if (array_key_exists('gallery_media_ids', $content)) {
+            $ids = collect($content['gallery_media_ids'])
+                ->map(fn ($id) => (int) $id)
+                ->filter(fn ($id) => $id > 0)
+                ->unique()
+                ->take(36)
+                ->values();
+
+            $existingIds = Media::query()
+                ->whereIn('id', $ids)
+                ->where('media_type', 'image')
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+
+            $content['gallery_media_ids'] = $ids
+                ->map(fn ($id) => (string) $id)
+                ->filter(fn ($id) => in_array($id, $existingIds, true))
+                ->values()
+                ->all();
+        }
 
         if (array_key_exists('bento_slots', $content)) {
             $slots = collect($content['bento_slots'])
@@ -183,12 +248,14 @@ class PageSectionController extends Controller
     {
         return match ($componentKey) {
             'hero' => 'Hero',
+            'banner' => 'Banner',
             'rich_text' => 'ข้อความ',
             'image_text' => 'รูปภาพพร้อมข้อความ',
             'cta' => 'Call to Action',
             'article_grid' => 'รายการบทความ',
             'temple_grid' => 'รายการวัด',
             'travel_discovery_bento' => 'Travel Discovery Bento',
+            'favorites_list' => 'รายการโปรด',
             'article_list_full' => 'หน้ารวมบทความ',
             'temple_list_full' => 'หน้ารวมวัด',
             'gallery' => 'แกลเลอรี',

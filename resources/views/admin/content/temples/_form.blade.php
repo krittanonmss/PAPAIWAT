@@ -878,8 +878,8 @@
         id="media-section"
         x-data="{
             mediaSearch: '',
-            selectedCover: window.templeDraftValue('cover_media_id', @js((string) old('cover_media_id', $coverMedia?->media_id ?? ''))),
-            selectedGallery: window.templeDraftValue('gallery_media_ids[]', @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds)))),
+            selectedCover: window.templeDraftMediaId('cover_media_id', @js((string) old('cover_media_id', $coverMedia?->media_id ?? ''))),
+            selectedGallery: window.templeDraftMediaIdArray('gallery_media_ids[]', @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds)))),
 
             coverHtml: @js(view('admin.content.temples.partials._cover_media_grid', [
                 'mediaItems' => $coverMediaItems ?? $mediaItems,
@@ -986,6 +986,7 @@
                             id="quick_media_file"
                             type="file"
                             accept="image/*"
+                            multiple
                             x-ref="fileInput"
                             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white
                                 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500
@@ -1008,7 +1009,7 @@
                 </div>
 
                 <p class="mt-2 text-xs text-slate-500">
-                    รูปจะถูกบันทึกเข้า Media Library แบบไม่มีโฟลเดอร์ แล้ว refresh หน้าเพื่อให้เลือกรูปได้
+                    เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า Media Library แบบไม่มีโฟลเดอร์ แล้ว refresh หน้า
                 </p>
             </div>
 
@@ -2101,6 +2102,28 @@
             : fallback;
     };
 
+    window.normalizeTempleMediaIds = function (value) {
+        const values = Array.isArray(value) ? value : [value];
+
+        return values
+            .map((item) => String(item ?? '').trim())
+            .filter((item) => /^\d+$/.test(item));
+    };
+
+    window.templeDraftMediaId = function (name, fallback = '') {
+        const fallbackIds = window.normalizeTempleMediaIds(fallback);
+        const draftIds = window.normalizeTempleMediaIds(window.templeDraftValue(name, fallback));
+
+        return draftIds[0] ?? fallbackIds[0] ?? '';
+    };
+
+    window.templeDraftMediaIdArray = function (name, fallback = []) {
+        const fallbackIds = window.normalizeTempleMediaIds(fallback);
+        const draftIds = window.normalizeTempleMediaIds(window.templeDraftValue(name, fallback));
+
+        return draftIds.length > 0 ? draftIds : fallbackIds;
+    };
+
     function getTempleForm() {
         return document.getElementById('temple-form');
     }
@@ -2113,17 +2136,31 @@
             async upload() {
                 this.errorMessage = '';
 
-                const file = this.$refs.fileInput.files[0];
+                const files = Array.from(this.$refs.fileInput.files || []);
 
-                if (!file) {
+                if (files.length === 0) {
                     this.errorMessage = 'กรุณาเลือกรูปก่อนอัปโหลด';
+                    return;
+                }
+
+                const maxFileSize = 5 * 1024 * 1024;
+                const invalidFile = files.find((file) => !file.type.startsWith('image/'));
+                const oversizedFile = files.find((file) => file.size > maxFileSize);
+
+                if (invalidFile) {
+                    this.errorMessage = 'อัปโหลดได้เฉพาะไฟล์รูปภาพเท่านั้น';
+                    return;
+                }
+
+                if (oversizedFile) {
+                    this.errorMessage = `ไฟล์ ${oversizedFile.name} มีขนาดเกิน 5 MB`;
                     return;
                 }
 
                 const formData = new FormData();
                 formData.append('_token', '{{ csrf_token() }}');
-                formData.append('file', file);
                 formData.append('visibility', 'public');
+                files.forEach((file) => formData.append('files[]', file));
 
                 this.isUploading = true;
 
@@ -2137,7 +2174,8 @@
                     });
 
                     if (!response.ok) {
-                        this.errorMessage = 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
+                        const payload = await response.json().catch(() => null);
+                        this.errorMessage = payload?.message || 'อัปโหลดไม่สำเร็จ กรุณาตรวจสอบไฟล์อีกครั้ง';
                         return;
                     }
 
@@ -2188,17 +2226,17 @@
                 return;
             }
 
-            if (field.type === 'checkbox') {
-                if (field.name.endsWith('[]')) {
-                    data[field.name] = data[field.name] || [];
+            if (field.name.endsWith('[]')) {
+                data[field.name] = data[field.name] || [];
 
-                    if (field.checked) {
-                        data[field.name].push(field.value);
-                    }
-
-                    return;
+                if (field.type !== 'checkbox' || field.checked) {
+                    data[field.name].push(field.value);
                 }
 
+                return;
+            }
+
+            if (field.type === 'checkbox') {
                 data[field.name] = field.checked;
                 return;
             }

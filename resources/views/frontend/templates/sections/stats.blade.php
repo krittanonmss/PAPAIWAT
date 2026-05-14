@@ -6,9 +6,9 @@
             return ['value' => $value, 'label' => $label];
         })
         ->filter(fn ($item) => $item['value'] !== '');
+    $emptyText = trim((string) ($content['empty_text'] ?? '')) ?: 'ยังไม่มีตัวเลขสำคัญ';
 @endphp
-
-<section class="bg-slate-950 px-4 py-14">
+<section class="px-4 py-14" style="@include('frontend.templates.sections._background')">
     <div class="mx-auto max-w-7xl">
         @if(!empty($content['title']) || !empty($content['subtitle']))
             <div class="mb-8 max-w-3xl">
@@ -31,7 +31,7 @@
                     @endif
                 </div>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-4">ยังไม่มีตัวเลขสำคัญ</div>
+                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-4">{{ $emptyText }}</div>
             @endforelse
         </div>
     </div>

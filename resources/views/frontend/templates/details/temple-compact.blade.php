@@ -9,6 +9,7 @@
     $coverUsage = $content?->mediaUsages?->firstWhere('role_key', 'cover');
     $coverPath = $coverUsage?->media?->path;
     $coverUrl = $coverPath ? (filter_var($coverPath, FILTER_VALIDATE_URL) ? $coverPath : \Illuminate\Support\Facades\Storage::url($coverPath)) : null;
+    $galleryUsages = $content?->mediaUsages?->where('role_key', 'gallery') ?? collect();
     $favoriteCount = (int) data_get($stat, 'favorite_count', 0);
     $shareCount = (int) data_get($stat, 'share_count', 0);
 
@@ -45,11 +46,13 @@
             <aside class="lg:sticky lg:top-24 lg:self-start">
                 <div class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
                     @if ($coverUrl)
-                        <img
-                            src="{{ $coverUrl }}"
-                            alt="{{ $coverUsage?->media?->alt_text ?: $content?->title ?: 'Temple image' }}"
-                            class="aspect-[4/3] w-full object-cover"
-                        >
+                        <a href="{{ $coverUrl }}" target="_blank" rel="noopener" class="block">
+                            <img
+                                src="{{ $coverUrl }}"
+                                alt="{{ $coverUsage?->media?->alt_text ?: $content?->title ?: 'Temple image' }}"
+                                class="aspect-[4/3] w-full object-cover"
+                            >
+                        </a>
                     @else
                         <div class="aspect-[4/3] w-full bg-gradient-to-br from-amber-100 via-stone-100 to-emerald-100"></div>
                     @endif
@@ -180,6 +183,41 @@
                         </div>
                     </section>
                 @endif
+
+                <section class="mt-8 rounded-2xl border border-stone-200 bg-white p-6">
+                    <h2 class="text-2xl font-semibold">แกลเลอรีรูปภาพ</h2>
+                    @if ($galleryUsages->isNotEmpty())
+                        <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3">
+                            @foreach ($galleryUsages as $usage)
+                                @php
+                                    $path = $usage->media?->path;
+                                    $url = $path ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : \Illuminate\Support\Facades\Storage::url($path)) : null;
+                                @endphp
+
+                                @if ($url)
+                                    <figure class="group overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="relative block">
+                                            <img
+                                                src="{{ $url }}"
+                                                alt="{{ $usage->media?->alt_text ?: $usage->media?->title ?: $content?->title ?: 'Temple gallery image' }}"
+                                                class="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                                                loading="lazy"
+                                            >
+                                            <span class="pointer-events-none absolute inset-x-3 bottom-3 rounded-full bg-stone-950/75 px-3 py-1.5 text-center text-xs font-medium text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                                                ดูรูป
+                                            </span>
+                                        </a>
+                                        @if ($usage->media?->caption)
+                                            <figcaption class="p-3 text-xs text-stone-500">{{ $usage->media->caption }}</figcaption>
+                                        @endif
+                                    </figure>
+                                @endif
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="mt-4 text-sm text-stone-500">ยังไม่มีรูปภาพ</p>
+                    @endif
+                </section>
             </article>
         </section>
     </main>

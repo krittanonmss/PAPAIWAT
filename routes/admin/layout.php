@@ -45,6 +45,7 @@ Route::prefix('content/pages')->name('content.pages.')->group(function () {
     Route::delete('/{page}', [PageController::class, 'destroy'])->middleware('admin.permission:pages.delete')->name('destroy');
 
     Route::get('/{page}/sections/create', [PageSectionController::class, 'create'])->middleware('admin.permission:pages.create')->name('sections.create');
+    Route::post('/{page}/sections/preview', [PageSectionController::class, 'preview'])->middleware('admin.permission:pages.view')->name('sections.preview');
     Route::post('/{page}/sections', [PageSectionController::class, 'store'])->middleware('admin.permission:pages.create')->name('sections.store');
     Route::get('/{page}/sections/{section}/edit', [PageSectionController::class, 'edit'])->middleware('admin.permission:pages.update')->name('sections.edit');
     Route::put('/{page}/sections/{section}', [PageSectionController::class, 'update'])->middleware('admin.permission:pages.update')->name('sections.update');

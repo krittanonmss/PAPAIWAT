@@ -99,7 +99,7 @@ class MenuController extends Controller
         $menu->update($validated);
 
         return redirect()
-            ->route('admin.content.menus.show', $menu)
+            ->route('admin.content.menus.index')
             ->with('success', 'อัปเดตเมนูเรียบร้อยแล้ว');
     }
 

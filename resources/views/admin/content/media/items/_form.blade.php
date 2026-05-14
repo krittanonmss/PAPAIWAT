@@ -13,16 +13,23 @@
                     <input
                         type="file"
                         id="file"
-                        name="file"
+                        name="files[]"
+                        multiple
                         class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-500"
                         required
                     >
 
                     <p class="mt-1 text-xs text-slate-500">
-                        รองรับรูปภาพและไฟล์ทั่วไป ขนาดไม่เกิน 10 MB
+                        เลือกได้หลายไฟล์ รองรับรูปภาพและไฟล์ทั่วไป ขนาดไม่เกิน 5 MB ต่อไฟล์
                     </p>
 
                     @error('file')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                    @error('files')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                    @error('files.*')
                         <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
                 </div>

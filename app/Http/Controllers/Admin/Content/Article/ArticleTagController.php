@@ -77,7 +77,7 @@ class ArticleTagController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.content.article-tags.edit', $articleTag)
+            ->route('admin.content.article-tags.index')
             ->with('success', 'Article tag updated successfully.');
     }
 

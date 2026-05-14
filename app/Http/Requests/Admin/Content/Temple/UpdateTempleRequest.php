@@ -17,7 +17,25 @@ class UpdateTempleRequest extends FormRequest
         $this->merge([
             'is_featured' => $this->boolean('is_featured'),
             'is_popular' => $this->boolean('is_popular'),
+            'cover_media_id' => $this->integerOrNull($this->input('cover_media_id')),
+            'gallery_media_ids' => collect($this->input('gallery_media_ids', []))
+                ->filter(fn ($id) => is_scalar($id) && preg_match('/^\d+$/', (string) $id))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all(),
         ]);
+    }
+
+    private function integerOrNull(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_scalar($value) && preg_match('/^\d+$/', (string) $value)
+            ? (int) $value
+            : null;
     }
 
     public function rules(): array

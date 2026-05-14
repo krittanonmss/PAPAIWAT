@@ -157,7 +157,7 @@ class PageController extends Controller
         $page->update($validated);
 
         return redirect()
-            ->route('admin.content.pages.show', $page)
+            ->route('admin.content.pages.index')
             ->with('success', 'อัปเดตหน้าเว็บเรียบร้อยแล้ว');
     }
 

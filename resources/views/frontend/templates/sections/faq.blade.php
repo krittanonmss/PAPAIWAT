@@ -6,10 +6,11 @@
             return ['question' => $question, 'answer' => $answer];
         })
         ->filter(fn ($item) => $item['question'] !== '');
+    $emptyText = trim((string) ($content['empty_text'] ?? '')) ?: 'ยังไม่มีคำถาม';
 @endphp
-
-<section class="bg-slate-950 px-4 py-16">
-    <div class="mx-auto max-w-4xl">
+<section class="px-4 py-16" style="@include('frontend.templates.sections._background')">
+    <div class="mx-auto max-w-7xl">
+        <div class="max-w-4xl">
         @if(!empty($content['eyebrow']))
             <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
         @endif
@@ -27,8 +28,9 @@
                     @endif
                 </details>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">ยังไม่มีคำถาม</div>
+                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">{{ $emptyText }}</div>
             @endforelse
+        </div>
         </div>
     </div>
 </section>

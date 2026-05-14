@@ -1,14 +1,16 @@
 @php
     $content = $section->content_data ?? [];
-    $items = collect(preg_split("/\r\n|\n|\r/", trim($content['gallery_text'] ?? '')))
+    $selectedItems = collect($section->gallery_items ?? []);
+    $legacyItems = collect(preg_split("/\r\n|\n|\r/", trim($content['gallery_text'] ?? '')))
         ->map(function ($line) {
             [$url, $caption] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
             return ['url' => $url, 'caption' => $caption];
         })
         ->filter(fn ($item) => $item['url'] !== '');
+    $items = $selectedItems->isNotEmpty() ? $selectedItems : $legacyItems;
+    $emptyText = trim((string) ($content['empty_text'] ?? '')) ?: 'ยังไม่มีรูปในแกลเลอรี';
 @endphp
-
-<section class="bg-slate-950 px-4 py-16">
+<section class="px-4 py-16" style="@include('frontend.templates.sections._background')">
     <div class="mx-auto max-w-7xl">
         @if(!empty($content['eyebrow']))
             <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
@@ -27,7 +29,7 @@
                     @endif
                 </figure>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-3">ยังไม่มีรูปในแกลเลอรี</div>
+                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-3">{{ $emptyText }}</div>
             @endforelse
         </div>
     </div>

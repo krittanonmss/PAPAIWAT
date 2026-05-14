@@ -273,7 +273,9 @@ class ArticleController extends Controller
             'mediaItems',
             'relatedArticles'
         ) + [
-            'coverMediaItems' => $this->coverMediaItems(),
+            'coverMediaItems' => $this->coverMediaItems([
+                $article->content?->mediaUsages?->firstWhere('role_key', 'cover')?->media_id,
+            ]),
             'detailTemplates' => $this->detailTemplates('article'),
             'templatePreviewUrl' => $article->content
                 ? route('admin.content.template-preview', ['type' => 'article', 'content' => $article->content])
@@ -349,7 +351,7 @@ class ArticleController extends Controller
         });
 
         return redirect()
-            ->route('admin.content.articles.edit', $article)
+            ->route('admin.content.articles.index')
             ->with('success', 'Article updated successfully.');
     }
 
@@ -479,9 +481,9 @@ class ArticleController extends Controller
             ->get();
     }
 
-    private function coverMediaItems()
+    private function coverMediaItems(array $selectedMediaIds = [])
     {
-        return Media::query()
+        $mediaItems = Media::query()
             ->where('upload_status', 'completed')
             ->where('media_type', 'image')
             ->orderByDesc('id')
@@ -491,5 +493,39 @@ class ArticleController extends Controller
                 pageName: 'article_cover_media_page'
             )
             ->withPath(route('admin.content.articles.media-picker.cover'));
+
+        $selectedMediaIds = collect($selectedMediaIds)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($selectedMediaIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $visibleIds = $mediaItems->getCollection()->pluck('id')->map(fn ($id) => (int) $id);
+        $missingSelectedIds = $selectedMediaIds->diff($visibleIds)->values();
+
+        if ($missingSelectedIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $selectedItems = Media::query()
+            ->whereIn('id', $missingSelectedIds)
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->get(['id', 'title', 'original_filename', 'media_type', 'path'])
+            ->sortBy(fn (Media $media) => $selectedMediaIds->search((int) $media->id))
+            ->values();
+
+        $mediaItems->setCollection(
+            $selectedItems
+                ->concat($mediaItems->getCollection())
+                ->unique('id')
+                ->values()
+        );
+
+        return $mediaItems;
     }
 }

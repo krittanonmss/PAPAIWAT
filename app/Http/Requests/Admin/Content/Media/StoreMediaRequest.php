@@ -14,13 +14,33 @@ class StoreMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'max:10240'], // 10 MB
+            'file' => ['nullable', 'file', 'max:5120'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:5120'],
             'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
             'title' => ['nullable', 'string', 'max:255'],
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
             'visibility' => ['nullable', 'in:public,private'],
+        ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if (! $this->hasFile('file') && ! $this->hasFile('files')) {
+                $validator->errors()->add('file', 'กรุณาเลือกไฟล์ก่อนอัปโหลด');
+            }
+        });
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'file' => 'ไฟล์',
+            'files' => 'ไฟล์',
+            'files.*' => 'ไฟล์',
         ];
     }
 }

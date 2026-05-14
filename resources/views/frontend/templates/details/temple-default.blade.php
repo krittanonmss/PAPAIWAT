@@ -89,11 +89,13 @@
             <div class="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-slate-950/75 to-slate-950"></div>
 
             @if ($coverUrl)
-                <img
-                    src="{{ $coverUrl }}"
-                    alt="{{ $coverUsage?->media?->alt_text ?: $content?->title ?: 'Temple image' }}"
-                    class="h-[560px] w-full object-cover"
-                >
+                <a href="{{ $coverUrl }}" target="_blank" rel="noopener" class="block">
+                    <img
+                        src="{{ $coverUrl }}"
+                        alt="{{ $coverUsage?->media?->alt_text ?: $content?->title ?: 'Temple image' }}"
+                        class="h-[560px] w-full object-cover"
+                    >
+                </a>
             @else
                 <div class="h-[480px] w-full bg-gradient-to-br from-slate-900 via-blue-950/50 to-slate-950"></div>
             @endif
@@ -233,13 +235,18 @@
                                 @endphp
 
                                 @if ($url)
-                                    <figure class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/45">
-                                        <img
-                                            src="{{ $url }}"
-                                            alt="{{ $usage->media?->alt_text ?: $usage->media?->title ?: $content?->title ?: 'Temple gallery image' }}"
-                                            class="aspect-square w-full object-cover"
-                                            loading="lazy"
-                                        >
+                                    <figure class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/45">
+                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="relative block">
+                                            <img
+                                                src="{{ $url }}"
+                                                alt="{{ $usage->media?->alt_text ?: $usage->media?->title ?: $content?->title ?: 'Temple gallery image' }}"
+                                                class="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                                                loading="lazy"
+                                            >
+                                            <span class="pointer-events-none absolute inset-x-3 bottom-3 rounded-full bg-slate-950/75 px-3 py-1.5 text-center text-xs font-medium text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                                                ดูรูป
+                                            </span>
+                                        </a>
                                         @if ($usage->media?->caption)
                                             <figcaption class="p-3 text-xs text-slate-400">{{ $usage->media->caption }}</figcaption>
                                         @endif

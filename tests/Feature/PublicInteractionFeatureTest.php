@@ -6,6 +6,8 @@ use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Content;
+use App\Models\Content\Layout\Page;
+use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Temple\Temple;
 use App\Models\Interaction\AnonymousVisitor;
 use App\Models\Interaction\PublicComment;
@@ -28,14 +30,52 @@ class PublicInteractionFeatureTest extends TestCase
         $this->seed(SystemAccessSeeder::class);
     }
 
-    public function test_favorites_page_is_local_only_and_server_favorites_table_is_not_used(): void
+    public function test_favorites_page_has_no_default_public_page_without_admin_page(): void
     {
         $this->assertFalse(Schema::hasTable('favorites'));
 
         $this->get(route('favorites.index'))
+            ->assertNotFound();
+    }
+
+    public function test_favorites_page_renders_when_admin_creates_favorites_section(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'รายการโปรด',
+            'slug' => 'favorites',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        PageSection::query()->create([
+            'page_id' => $page->id,
+            'name' => 'รายการโปรด',
+            'section_key' => 'favorites-list',
+            'component_key' => 'favorites_list',
+            'content' => [
+                'title' => 'รายการโปรดของฉัน',
+                'subtitle' => 'สร้างจาก admin เท่านั้น',
+                'empty_title' => 'ยังไม่มีของที่เซฟ',
+                'temple_title' => 'วัดของฉัน',
+                'article_title' => 'บทความของฉัน',
+                'open_label' => 'ดูรายละเอียด',
+                'remove_label' => 'เอาออก',
+            ],
+            'settings' => [],
+            'status' => 'active',
+            'is_visible' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->get(route('favorites.index'))
             ->assertOk()
             ->assertSee('รายการโปรดของฉัน')
-            ->assertSee('โดยไม่เก็บว่าใครเป็นคนบันทึก');
+            ->assertSee('สร้างจาก admin เท่านั้น')
+            ->assertSee('ยังไม่มีของที่เซฟ')
+            ->assertSee('วัดของฉัน')
+            ->assertSee('บทความของฉัน')
+            ->assertSee('ดูรายละเอียด')
+            ->assertSee('เอาออก');
     }
 
     public function test_temple_detail_renders_parseable_favorite_payload_and_count(): void
