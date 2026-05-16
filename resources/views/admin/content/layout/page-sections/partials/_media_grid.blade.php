@@ -23,7 +23,7 @@
 
             <div class="border-t border-white/10 p-3">
                 <p class="text-base font-medium text-slate-200">ไม่ระบุรูปภาพ</p>
-                <p class="mt-0.5 text-xs text-slate-500">ใช้เฉพาะข้อความของ block</p>
+                <p class="mt-0.5 text-xs text-slate-500">ใช้เฉพาะข้อความของเซกชัน</p>
             </div>
 
             <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 shadow-[inset_0_0_0_2px_rgba(15,23,42,0.85)] peer-checked:block"></div>

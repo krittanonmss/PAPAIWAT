@@ -1,4 +1,4 @@
-<x-layouts.admin title="Media Folder Management" header="Media Folder Management">
+<x-layouts.admin title="จัดการโฟลเดอร์สื่อ" header="จัดการโฟลเดอร์สื่อ">
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -6,11 +6,11 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-blue-300">
-                        MEDIA LIBRARY
+                        คลังสื่อ
                     </p>
                     <h1 class="text-2xl font-bold text-white">จัดการโฟลเดอร์สื่อ</h1>
                     <p class="mt-2 text-sm text-slate-400">
-                        จัดการโฟลเดอร์สำหรับ media library แบบลำดับชั้น
+                        จัดการโฟลเดอร์สำหรับ คลังสื่อ แบบลำดับชั้น
                     </p>
                 </div>
 
@@ -53,7 +53,7 @@
             </div>
 
             <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                <p class="text-xs text-blue-300">Root Folders</p>
+                <p class="text-xs text-blue-300">โฟลเดอร์หลัก</p>
                 <p class="mt-1 text-2xl font-bold text-blue-300">{{ number_format($stats['root']) }}</p>
             </div>
         </div>
@@ -87,7 +87,7 @@
                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         >
                             <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="root" class="bg-slate-900" @selected($filters['parent_id'] === 'root')>Root Folder</option>
+                            <option value="root" class="bg-slate-900" @selected($filters['parent_id'] === 'root')>โฟลเดอร์หลัก</option>
                             @foreach ($parents as $parent)
                                 <option value="{{ $parent->id }}" class="bg-slate-900" @selected((string) $filters['parent_id'] === (string) $parent->id)>
                                     {{ $parent->name }}

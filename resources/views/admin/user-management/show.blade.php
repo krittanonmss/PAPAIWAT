@@ -130,7 +130,7 @@
             </div>
         </div>
 
-        {{-- Actions --}}
+        {{-- การจัดการs --}}
         <div class="flex justify-end gap-3">
             <a
                 href="{{ route('admin.users.index') }}"

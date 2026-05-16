@@ -84,7 +84,7 @@ class MediaFolderController extends Controller
         ];
 
         return view('admin.content.media.folders.index', [
-            'title' => 'Media Folder Management',
+            'title' => 'จัดการโฟลเดอร์สื่อ',
             'folders' => $folders,
             'parents' => $parents,
             'stats' => $stats,
@@ -99,7 +99,7 @@ class MediaFolderController extends Controller
             ->get(['id', 'name']);
 
         return view('admin.content.media.folders.create', [
-            'title' => 'Create Media Folder',
+            'title' => 'สร้างโฟลเดอร์สื่อ',
             'parents' => $parents,
         ]);
     }
@@ -134,7 +134,7 @@ class MediaFolderController extends Controller
             ->get(['id', 'name']);
 
         return view('admin.content.media.folders.edit', [
-            'title' => 'Edit Media Folder',
+            'title' => 'แก้ไขโฟลเดอร์สื่อ',
             'folder' => $mediaFolder,
             'parents' => $parents,
         ]);

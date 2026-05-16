@@ -71,7 +71,7 @@
                         </div>
 
                         <div>
-                            <p class="mb-1 text-xs font-medium text-slate-500">Description</p>
+                            <p class="mb-1 text-xs font-medium text-slate-500">คำอธิบาย</p>
                             <p class="whitespace-pre-line text-sm leading-6 text-slate-300">{{ $page->description ?: '-' }}</p>
                         </div>
                     </div>
@@ -102,8 +102,8 @@
                                     <th class="px-6 py-4 font-semibold">Component</th>
                                     <th class="px-6 py-4 font-semibold">Order</th>
                                     <th class="px-6 py-4 font-semibold">Visible</th>
-                                    <th class="px-6 py-4 font-semibold">Status</th>
-                                    <th class="px-6 py-4 text-right font-semibold">Action</th>
+                                    <th class="px-6 py-4 font-semibold">สถานะ</th>
+                                    <th class="px-6 py-4 text-right font-semibold">การจัดการ</th>
                                 </tr>
                             </thead>
 
@@ -146,11 +146,11 @@
                                         <td class="px-6 py-4">
                                             @if ($section->status === 'active')
                                                 <span class="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                                                    Active
+                                                    เปิดใช้งาน
                                                 </span>
                                             @else
                                                 <span class="inline-flex rounded-full border border-slate-400/20 bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-400">
-                                                    Inactive
+                                                    ปิดใช้งาน
                                                 </span>
                                             @endif
                                         </td>
@@ -211,7 +211,7 @@
 
                     <div class="divide-y divide-white/10">
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Title</p>
+                            <p class="text-xs text-slate-500">หัวข้อ</p>
                             <p class="mt-0.5 break-words text-sm font-medium text-slate-200">{{ $page->title }}</p>
                         </div>
 
@@ -225,7 +225,7 @@
                         </div>
 
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Template</p>
+                            <p class="text-xs text-slate-500">เทมเพลต</p>
                             <p class="mt-0.5 text-sm text-slate-300">{{ $page->template?->name ?? '-' }}</p>
                         </div>
 
@@ -235,7 +235,7 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Sort Order</span>
+                            <span class="text-sm text-slate-400">ลำดับ</span>
                             <span class="text-sm font-medium text-slate-200">{{ $page->sort_order }}</span>
                         </div>
 
@@ -251,7 +251,7 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Status</span>
+                            <span class="text-sm text-slate-400">สถานะ</span>
                             <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium {{ $statusClass }}">
                                 {{ ucfirst($page->status) }}
                             </span>
@@ -285,7 +285,7 @@
                         </div>
 
                         <div>
-                            <p class="text-xs font-medium text-slate-500">Meta Description</p>
+                            <p class="text-xs font-medium text-slate-500">Meta คำอธิบาย</p>
                             <p class="mt-0.5 text-sm leading-6 text-slate-300">{{ $page->meta_description ?: '-' }}</p>
                         </div>
 
@@ -305,7 +305,7 @@
 
                 <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
                     <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">Danger Zone</h2>
+                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
                     </div>
 
                     <div class="p-6">

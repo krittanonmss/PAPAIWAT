@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Create Menu Item'" header="สร้างเมนูย่อย">
+<x-layouts.admin :title="'สร้างเมนูย่อย'" header="สร้างเมนูย่อย">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Menu Management
+                        จัดการเมนู
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">สร้างเมนูย่อย</h1>
@@ -104,7 +104,7 @@
                                             name="label"
                                             value="{{ old('label') }}"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                            placeholder="เช่น หน้าแรก, บทความ, ติดต่อเรา"
+                                            placeholder="เช่น หน้าแรก, , ติดต่อเรา"
                                             required
                                         >
                                         @error('label')
@@ -157,7 +157,7 @@
                                             <option value="heading" class="bg-slate-900" @selected(old('menu_item_type', $menu->location_key === 'footer' ? 'heading' : 'route') === 'heading')>หัวข้อกลุ่ม ไม่เป็นลิงก์</option>
                                             <option value="route" class="bg-slate-900" @selected(old('menu_item_type', $menu->location_key === 'footer' ? 'heading' : 'route') === 'route')>หน้าในระบบ</option>
                                             <option value="page" class="bg-slate-900" @selected(old('menu_item_type') === 'page')>เพจที่สร้างไว้</option>
-                                            <option value="content" class="bg-slate-900" @selected(old('menu_item_type') === 'content')>บทความหรือวัด</option>
+                                            <option value="content" class="bg-slate-900" @selected(old('menu_item_type') === 'content')>หรือ</option>
                                             <option value="external_url" class="bg-slate-900" @selected(old('menu_item_type') === 'external_url')>ลิงก์หรือ path</option>
                                             <option value="anchor" class="bg-slate-900" @selected(old('menu_item_type') === 'anchor')>จุดในหน้าเดียวกัน</option>
                                         </select>
@@ -208,18 +208,18 @@
                                     <button
                                         type="button"
                                         class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
-                                        @click="applyPreset({ type: 'external_url', externalUrl: '/temple-list' })"
+                                        @click="applyPreset({ type: 'external_url', externalUrl: '/-list' })"
                                     >
-                                        <span class="block text-sm font-medium text-white">รายการวัด</span>
-                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /temple-list</span>
+                                        <span class="block text-sm font-medium text-white">รายการ</span>
+                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /-list</span>
                                     </button>
                                     <button
                                         type="button"
                                         class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-blue-400/40 hover:bg-blue-500/10"
-                                        @click="applyPreset({ type: 'external_url', externalUrl: '/article-list' })"
+                                        @click="applyPreset({ type: 'external_url', externalUrl: '/-list' })"
                                     >
-                                        <span class="block text-sm font-medium text-white">รายการบทความ</span>
-                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /article-list</span>
+                                        <span class="block text-sm font-medium text-white">รายการ</span>
+                                        <span class="mt-1 block text-xs text-slate-500">ลิงก์ไป /-list</span>
                                     </button>
                                 </div>
 
@@ -268,7 +268,7 @@
 
                                     <div x-show="type === 'content'" x-cloak>
                                         <label for="content_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                            เลือกบทความหรือวัด
+                                            เลือกหรือ
                                         </label>
                                         <select
                                             id="content_id"
@@ -276,7 +276,7 @@
                                             x-ref="content"
                                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                                         >
-                                            <option value="" class="bg-slate-900">เลือกบทความหรือวัด</option>
+                                            <option value="" class="bg-slate-900">เลือกหรือ</option>
                                             @foreach($contents as $content)
                                                 <option value="{{ $content->id }}" class="bg-slate-900" @selected((string) old('content_id') === (string) $content->id)>
                                                     {{ $content->title }}
@@ -324,7 +324,7 @@
                                     </div>
 
                                     <details class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                        <summary class="cursor-pointer text-sm font-medium text-slate-300">ตั้งค่าขั้นสูง</summary>
+                                        <summary class="cursor-pointer text-sm font-medium text-slate-300">ตั้งขั้นสูง</summary>
                                         <div class="mt-4">
                                             <label for="route_params" class="mb-1.5 block text-sm font-medium text-slate-300">
                                                 Route Params (JSON)
@@ -363,7 +363,7 @@
                                 </div>
                             </div>
 
-                            {{-- Section: Status --}}
+                            {{-- Section: สถานะ --}}
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
                                 <h3 class="text-sm font-semibold text-white">สถานะ</h3>
 
@@ -422,7 +422,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

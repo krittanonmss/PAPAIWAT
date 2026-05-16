@@ -1,4 +1,4 @@
-<x-layouts.admin title="Edit Media" header="Edit Media">
+<x-layouts.admin title="แก้ไขสื่อ" header="แก้ไขสื่อ">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Media Library
+                        คลังสื่อ
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">แก้ไขไฟล์สื่อ</h1>
@@ -140,7 +140,7 @@
 
                             <div>
                                 <label for="description" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                    Description
+                                    คำอธิบาย
                                 </label>
                                 <textarea
                                     id="description"
@@ -316,7 +316,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

@@ -91,7 +91,7 @@
             </div>
 
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                {{-- Status --}}
+                {{-- สถานะ --}}
                 <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
                     <h2 class="text-base font-semibold text-white">สถานะบัญชี</h2>
                     <p class="mt-1 text-sm text-slate-400">กำหนดสถานะการเข้าใช้งานของบัญชีนี้</p>
@@ -165,7 +165,7 @@
                 </div>
             </div>
 
-            {{-- Actions --}}
+            {{-- การจัดการs --}}
             <div class="flex justify-end gap-3">
                 <a
                     href="{{ route('admin.users.index') }}"

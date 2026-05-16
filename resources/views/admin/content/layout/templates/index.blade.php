@@ -1,13 +1,13 @@
-<x-layouts.admin :title="'Templates'">
+<x-layouts.admin :title="''">
     <div class="space-y-6 text-white">
         {{-- Header --}}
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p class="text-sm font-medium text-blue-300">CMS Layout</p>
-                    <h1 class="mt-1 text-2xl font-bold text-white">Template Management</h1>
+                    <p class="text-sm font-medium text-blue-300">เลย์เอาต์ CMS</p>
+                    <h1 class="mt-1 text-2xl font-bold text-white">จัดการเทมเพลต</h1>
                     <p class="mt-2 text-sm text-slate-400">
-                        จัดการรูปแบบการ render หน้าเว็บไซต์และ layout หลักของ CMS
+                        จัดการรูปแบบการ แสดงผล หน้าเว็บไซต์และ layout หลักของ CMS
                     </p>
                 </div>
 
@@ -15,18 +15,18 @@
                     href="{{ route('admin.content.templates.create') }}"
                     class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                 >
-                    + Create Template
+                    + สร้างเทมเพลต
                 </a>
             </div>
         </div>
 
-        {{-- Template List --}}
+        {{-- รายการเทมเพลต --}}
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="border-b border-white/10 px-6 py-5">
                 <div class="flex flex-col gap-1">
-                    <h2 class="text-base font-semibold text-white">Templates</h2>
+                    <h2 class="text-base font-semibold text-white"></h2>
                     <p class="text-sm text-slate-400">
-                        รายการ Template ทั้งหมดในระบบ
+                        รายการ เทมเพลตทั้งหมดในระบบ
                     </p>
                 </div>
             </div>
@@ -35,13 +35,13 @@
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-950/50 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-6 py-4 font-semibold">Template</th>
+                            <th class="px-6 py-4 font-semibold">เทมเพลต</th>
                             <th class="px-6 py-4 font-semibold">Key</th>
-                            <th class="px-6 py-4 font-semibold">View Path</th>
-                            <th class="px-6 py-4 font-semibold">Pages</th>
-                            <th class="px-6 py-4 font-semibold">Default</th>
-                            <th class="px-6 py-4 font-semibold">Status</th>
-                            <th class="px-6 py-4 text-right font-semibold">Action</th>
+                            <th class="px-6 py-4 font-semibold">พาธ ดูรายละเอียด</th>
+                            <th class="px-6 py-4 font-semibold">หน้า</th>
+                            <th class="px-6 py-4 font-semibold">เริ่มต้น</th>
+                            <th class="px-6 py-4 font-semibold">สถานะ</th>
+                            <th class="px-6 py-4 text-right font-semibold">การจัดการ</th>
                         </tr>
                     </thead>
 
@@ -81,7 +81,7 @@
                                 <td class="px-6 py-4">
                                     @if($template->is_default)
                                         <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">
-                                            Default
+                                            เริ่มต้น
                                         </span>
                                     @else
                                         <span class="text-xs text-slate-500">-</span>
@@ -91,11 +91,11 @@
                                 <td class="px-6 py-4">
                                     @if($template->status === 'active')
                                         <span class="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                                            Active
+                                            เปิดใช้งาน
                                         </span>
                                     @else
                                         <span class="inline-flex rounded-full border border-white/10 bg-slate-800/60 px-2.5 py-1 text-xs font-medium text-slate-400">
-                                            Inactive
+                                            ปิดใช้งาน
                                         </span>
                                     @endif
                                 </td>
@@ -105,7 +105,7 @@
                                         href="{{ route('admin.content.templates.show', $template) }}"
                                         class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-blue-400/30 hover:bg-blue-500/10 hover:text-blue-300"
                                     >
-                                        View
+                                        ดูรายละเอียด
                                     </a>
                                 </td>
                             </tr>
@@ -114,10 +114,10 @@
                                 <td colspan="7" class="px-6 py-14 text-center">
                                     <div class="mx-auto max-w-sm rounded-3xl border border-white/10 bg-slate-950/30 p-6">
                                         <div class="text-sm font-semibold text-white">
-                                            ยังไม่มี Template
+                                            ยังไม่มี เทมเพลต
                                         </div>
                                         <p class="mt-2 text-sm text-slate-400">
-                                            เริ่มสร้าง Template สำหรับหน้าเว็บไซต์ได้เลย
+                                            เริ่มสร้าง เทมเพลต สำหรับหน้าเว็บไซต์ได้เลย
                                         </p>
                                     </div>
                                 </td>

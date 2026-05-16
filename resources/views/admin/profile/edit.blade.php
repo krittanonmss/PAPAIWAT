@@ -2,7 +2,7 @@
     <div class="space-y-6 text-white">
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="border-b border-white/10 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 px-6 py-6">
-                <p class="text-sm font-medium text-blue-300">My Profile</p>
+                <p class="text-sm font-medium text-blue-300">โปรไฟล์ของฉัน</p>
                 <h1 class="mt-1 text-2xl font-bold text-white">โปรไฟล์ของฉัน</h1>
                 <p class="mt-2 max-w-3xl text-sm text-slate-400">
                     แก้ไขข้อมูลบัญชีและเปลี่ยนรหัสผ่านของตัวเองได้โดยไม่ต้องมีสิทธิ์จัดการผู้ใช้งาน

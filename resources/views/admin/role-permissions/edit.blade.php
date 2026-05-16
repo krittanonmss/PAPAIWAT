@@ -1,6 +1,6 @@
 <x-layouts.admin title="จัดการสิทธิ์บทบาท">
     @php
-        $initialSelectedPermissionIds = $role->permissions
+        $initialSelectedสิทธิ์Ids = $role->permissions
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->values();
@@ -24,13 +24,13 @@
             )
             ->toArray();
 
-        $totalPermissionCount = $permissions->flatten()->count();
+        $totalสิทธิ์Count = $permissions->flatten()->count();
     @endphp
 
     <div
         class="space-y-5 text-white"
         x-data="permissionManager(
-            @js($initialSelectedPermissionIds),
+            @js($initialSelectedสิทธิ์Ids),
             @js($permissionGroups),
             @js($permissionIndex)
         )"
@@ -99,7 +99,7 @@
                     <p class="text-4xl font-bold text-blue-300" x-text="selectedCount"></p>
 
                     <p class="mt-1 text-xs text-slate-500">
-                        จากทั้งหมด {{ $totalPermissionCount }} สิทธิ์
+                        จากทั้งหมด {{ $totalสิทธิ์Count }} สิทธิ์
                     </p>
 
                     <div class="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
@@ -114,7 +114,7 @@
                     <p class="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">ภาพรวมกลุ่ม</p>
 
                     <div class="flex flex-col gap-2.5">
-                        @foreach ($permissions as $groupKey => $groupPermissions)
+                        @foreach ($permissions as $groupKey => $groupสิทธิ์s)
                             <div class="flex items-center justify-between gap-3">
                                 <span class="truncate text-xs text-slate-400">
                                     {{ ucfirst($groupKey) }}
@@ -122,12 +122,12 @@
 
                                 <span
                                     class="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium"
-                                    :class="groupSelectedCount('{{ $groupKey }}') === {{ $groupPermissions->count() }}
+                                    :class="groupSelectedCount('{{ $groupKey }}') === {{ $groupสิทธิ์s->count() }}
                                         ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-300'
                                         : groupSelectedCount('{{ $groupKey }}') > 0
                                             ? 'border-blue-400/25 bg-blue-500/10 text-blue-300'
                                             : 'border-white/10 bg-white/5 text-slate-500'"
-                                    x-text="`${groupSelectedCount('{{ $groupKey }}')}/{{ $groupPermissions->count() }}`"
+                                    x-text="`${groupSelectedCount('{{ $groupKey }}')}/{{ $groupสิทธิ์s->count() }}`"
                                 ></span>
                             </div>
                         @endforeach
@@ -163,9 +163,9 @@
                     >
                 </div>
 
-                {{-- Permission Groups --}}
+                {{-- สิทธิ์ Groups --}}
                 <div class="flex flex-col gap-3">
-                    @foreach ($permissions as $groupKey => $groupPermissions)
+                    @foreach ($permissions as $groupKey => $groupสิทธิ์s)
                         <details
                             data-group="{{ $groupKey }}"
                             class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur"
@@ -192,12 +192,12 @@
 
                                         <span
                                             class="shrink-0 rounded-full border px-3 py-1 text-xs font-medium"
-                                            :class="groupSelectedCount('{{ $groupKey }}') === {{ $groupPermissions->count() }}
+                                            :class="groupSelectedCount('{{ $groupKey }}') === {{ $groupสิทธิ์s->count() }}
                                                 ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-300'
                                                 : groupSelectedCount('{{ $groupKey }}') > 0
                                                     ? 'border-blue-400/25 bg-blue-500/10 text-blue-300'
                                                     : 'border-white/10 bg-white/5 text-slate-500'"
-                                            x-text="`${groupSelectedCount('{{ $groupKey }}')}/{{ $groupPermissions->count() }}`"
+                                            x-text="`${groupSelectedCount('{{ $groupKey }}')}/{{ $groupสิทธิ์s->count() }}`"
                                         ></span>
                                     </div>
 
@@ -221,10 +221,10 @@
                                 </div>
                             </summary>
 
-                            {{-- Permissions Grid --}}
+                            {{-- สิทธิ์s Grid --}}
                             <div>
                                 <div class="grid grid-cols-1 md:grid-cols-2">
-                                    @foreach ($groupPermissions as $permission)
+                                    @foreach ($groupสิทธิ์s as $permission)
                                         <label
                                             class="flex cursor-pointer items-start gap-3 px-5 py-4 transition hover:bg-white/[0.06] md:odd:border-r md:border-white/10"
                                             x-show="permVisible({{ $permission->id }})"

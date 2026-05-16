@@ -92,6 +92,12 @@
         'name' => $facility->name,
     ])->values();
 
+    $jsNearbyTemples = $nearbyTemples->map(fn ($temple) => [
+        'id' => (string) $temple->id,
+        'title' => $temple->content?->title ?? 'Temple #' . $temple->id,
+        'search' => mb_strtolower(($temple->content?->title ?? 'Temple #' . $temple->id) . ' ' . $temple->id),
+    ])->values();
+
     $oldHighlights = old('highlights');
     $jsHighlights = $oldHighlights !== null ? collect($oldHighlights)->map(function ($h) {
         return [
@@ -411,15 +417,26 @@
                     padding-left: {{ $i * 1.5 }}rem;
                 }
             @endfor
+
+            .temple-studio-tab-content .temple-panel:not(.temple-panel-content),
+            .temple-studio-tab-details .temple-panel:not(.temple-panel-details),
+            .temple-studio-tab-media .temple-panel:not(.temple-panel-media),
+            .temple-studio-tab-visit .temple-panel:not(.temple-panel-visit),
+            .temple-studio-tab-publish .temple-panel:not(.temple-panel-publish) {
+                display: none !important;
+            }
         </style>
     @endonce
+
+    <input type="hidden" name="content_id" value="{{ $content?->id }}">
+    <input type="hidden" name="temple_id" value="{{ $temple?->id }}">
 
     {{-- Section: Basic Info --}}
     <section
         x-data="{
-            title: window.templeDraftValue('title', @js(old('title', $content?->title))),
-            slug: window.templeDraftValue('slug', @js(old('slug', $content?->slug))),
-            slugEdited: Boolean(window.templeDraftValue('slug', @js(old('slug', $content?->slug)))),
+            title: window.templeDraft('title', @js(old('title', $content?->title))),
+            slug: window.templeDraft('slug', @js(old('slug', $content?->slug))),
+            slugEdited: Boolean(window.templeDraft('slug', @js(old('slug', $content?->slug)))),
             makeSlug(value) {
                 return value
                     .toString()
@@ -440,18 +457,18 @@
                 this.syncSlug();
             }
         }"
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-content overflow-visible rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
     >
         <div id="basic-info" class="border-b border-white/10 px-6 py-4">
             <h2 class="text-base font-semibold text-white">ข้อมูลหลักของวัด</h2>
-            <p class="mt-1 text-xs text-slate-400">ตั้งชื่อ จัดการ slug เนื้อหาหลัก และ template หน้า detail</p>
+            <p class="mt-1 text-xs text-slate-400">ตั้งชื่อ จัดการ slug เนื้อหาหลัก และ template หน้ารายละเอียด</p>
         </div>
 
         <div class="space-y-5 p-6">
             <div class="space-y-5">
                 <div>
                     <label for="title" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ชื่อวัด <span class="text-rose-400">*</span>
+                        ชื่อ <span class="text-rose-400">*</span>
                     </label>
                     <input
                         type="text"
@@ -460,7 +477,7 @@
                         x-model="title"
                         @input="syncSlug()"
                         class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base font-medium text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 @error('title') border-rose-400 @enderror"
-                        placeholder="เช่น วัดพระแก้ว"
+                        placeholder="เช่น พระแก้ว"
                     >
                     @error('title')
                         <p class="mt-1 text-xs text-rose-300">{{ $message }}</p>
@@ -478,7 +495,7 @@
                             @click="resetSlug()"
                             class="text-xs font-medium text-blue-300 hover:text-blue-200"
                         >
-                            สร้างจากชื่อวัดอีกครั้ง
+                            สร้างจากชื่ออีกครั้ง
                         </button>
                     </div>
 
@@ -493,7 +510,7 @@
                     >
 
                     <p class="mt-1 text-xs text-slate-500">
-                        ระบบจะสร้าง slug ให้อัตโนมัติจากชื่อวัด แต่สามารถแก้เองได้ แนะนำให้ใช้ภาษาอังกฤษ ตัวเลข และขีดกลาง
+                        ระบบจะสร้าง slug ให้อัตโนมัติจากชื่อ แต่สามารถแก้เองได้ แนะนำให้ใช้ภาษาอังกฤษ ตัวเลข และขีดกลาง
                     </p>
 
                     @error('slug')
@@ -509,7 +526,7 @@
                     name="excerpt"
                     rows="2"
                     class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 @error('excerpt') border-rose-400 @enderror"
-                    placeholder="คำอธิบายสั้นๆ เกี่ยวกับวัด ใช้ในรายการและ social preview"
+                    placeholder="คำอธิบายสั้นๆ เกี่ยวกับวัด ใช้ในรายการและตัวอย่างเวลาแชร์"
                 >{{ old('excerpt', $content?->excerpt) }}</textarea>
                 @error('excerpt')
                     <p class="mt-1 text-xs text-rose-300">{{ $message }}</p>
@@ -529,103 +546,36 @@
             <div class="grid grid-cols-1 gap-5">
                 <div class="sm:col-span-2">
                     <label for="template_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        Template หน้า Detail
+                        เทมเพลต หน้า Detail
                     </label>
-                    <select
-                        id="template_id"
-                        name="template_id"
-                        data-template-preview-select
-                        data-preview-target="temple-template-preview"
-                        data-preview-base="{{ $templatePreviewUrl }}"
-                        class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 @error('template_id') border-rose-400 @enderror"
-                    >
-                        <option value="">ใช้ค่าเริ่มต้นของวัด</option>
-                        @foreach ($detailTemplates as $template)
-                            <option value="{{ $template->id }}" @selected((string) old('template_id', $content?->template_id) === (string) $template->id)>
-                                {{ $template->name }} ({{ $template->key }})
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'template_id',
+                        'name' => 'template_id',
+                        'selected' => old('template_id', $content?->template_id),
+                        'emptyLabel' => 'ใช้ค่าเริ่มต้นของวัด',
+                        'placeholder' => 'เลือกเทมเพลต',
+                        'searchPlaceholder' => 'ค้นหาเทมเพลต...',
+                        'errorKey' => 'template_id',
+                        'visibleLimit' => null,
+                        'dataAttributes' => [
+                            'data-template-preview-select' => '',
+                            'data-preview-target' => 'temple-template-preview',
+                            'data-preview-base' => $templatePreviewUrl,
+                        ],
+                        'options' => $detailTemplates->map(fn ($template) => [
+                            'value' => $template->id,
+                            'label' => $template->name,
+                            'meta' => $template->key,
+                            'search' => $template->name . ' ' . $template->key . ' ' . $template->view_path,
+                        ]),
+                    ])
                     @error('template_id')
                         <p class="mt-1 text-xs text-rose-300">{{ $message }}</p>
                     @enderror
                     <p class="mt-1 text-xs text-slate-500">
-                        ถ้าไม่เลือก ระบบจะใช้ temple-detail template ที่ active อยู่
+                        ถ้าไม่เลือก ระบบจะใช้เทมเพลต temple-detail ที่เปิดใช้งานอยู่
                     </p>
 
-                    @if ($templatePreviewSrc)
-                        <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
-                            <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-200">Preview template</p>
-                                    <p class="mt-0.5 text-xs text-slate-500">ใช้ข้อมูล temple จาก database ล่าสุด กดบันทึกก่อนรีเฟรช preview</p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        data-template-preview-refresh
-                                        class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10"
-                                    >
-                                        รีเฟรชข้อมูลจาก DB
-                                    </button>
-                                    <a
-                                        href="{{ $templatePreviewSrc }}"
-                                        target="_blank"
-                                        rel="noopener"
-                                        data-template-preview-open
-                                        class="rounded-lg border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20"
-                                    >
-                                        เปิดเต็มหน้า
-                                    </a>
-                                </div>
-                            </div>
-                            <iframe
-                                id="temple-template-preview"
-                                src="{{ $templatePreviewSrc }}"
-                                class="h-[520px] w-full bg-slate-950"
-                                loading="lazy"
-                            ></iframe>
-                        </div>
-
-                        <script>
-                            document.querySelectorAll('[data-template-preview-select]').forEach((select) => {
-                                if (select.dataset.previewBound === '1') {
-                                    return;
-                                }
-
-                                select.dataset.previewBound = '1';
-                                const updatePreview = () => {
-                                    const baseUrl = select.dataset.previewBase;
-                                    const frame = document.getElementById(select.dataset.previewTarget);
-                                    const openLink = select.closest('div').querySelector('[data-template-preview-open]');
-
-                                    if (!baseUrl || !frame) {
-                                        return;
-                                    }
-
-                                    const url = new URL(baseUrl, window.location.origin);
-
-                                    if (select.value) {
-                                        url.searchParams.set('template_id', select.value);
-                                    }
-
-                                    url.searchParams.set('_preview_ts', Date.now().toString());
-
-                                    frame.src = url.toString();
-
-                                    if (openLink) {
-                                        openLink.href = url.toString();
-                                    }
-                                };
-
-                                select.addEventListener('change', updatePreview);
-
-                                select.closest('div')
-                                    .querySelector('[data-template-preview-refresh]')
-                                    ?.addEventListener('click', updatePreview);
-                            });
-                        </script>
-                    @endif
                 </div>
 
             </div>
@@ -633,23 +583,23 @@
     </section>
 
     {{-- Section: Temple Details --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+    <section class="temple-panel temple-panel-details overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
         <div id="temple-details" class="border-b border-white/10 px-6 py-4">
             <h2 class="text-base font-semibold text-white">ข้อมูลเฉพาะของวัด</h2>
-            <p class="mt-1 text-xs text-slate-400">ประเภทวัด นิกาย สถาปัตยกรรม ประวัติ และข้อแนะนำการเข้าชม</p>
+            <p class="mt-1 text-xs text-slate-400">ประเภท นิกาย สถาปัตยกรรม ประวัติ และข้อแนะนำการเข้าชม</p>
         </div>
 
         <div class="space-y-5 p-6">
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-                    <label for="temple_type" class="mb-1.5 block text-sm font-medium text-slate-300">ประเภทวัด</label>
+                    <label for="temple_type" class="mb-1.5 block text-sm font-medium text-slate-300">ประเภท</label>
                     <select
                         id="temple_type"
                         name="temple_type"
                         class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
-                        <option value="">— เลือกประเภทวัด —</option>
-                        @foreach (['วัดราษฎร์', 'พระอารามหลวง', 'วัดหลวง', 'สำนักสงฆ์', 'วัดร้าง', 'อื่น ๆ'] as $option)
+                        <option value="">— เลือกประเภท —</option>
+                        @foreach (['ราษฎร์', 'พระอารามหลวง', 'หลวง', 'สำนักสงฆ์', 'ร้าง', 'อื่น ๆ'] as $option)
                             <option value="{{ $option }}" @selected(old('temple_type', $temple?->temple_type) === $option)>
                                 {{ $option }}
                             </option>
@@ -766,9 +716,9 @@
         </div>
     </section>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6">
         {{-- Section: SEO --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+        <section class="temple-panel temple-panel-publish overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">SEO</h2>
                 <p class="mt-1 text-xs text-slate-400">ข้อมูลสำหรับ title และ description ของหน้าเว็บ</p>
@@ -783,13 +733,13 @@
                         name="meta_title"
                         value="{{ old('meta_title', $content?->meta_title) }}"
                         class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="เช่น วัดพระแก้ว | PAPAIWAT"
+                        placeholder="เช่น พระแก้ว | PAPAIWAT"
                     >
-                    <p class="mt-1 text-xs text-slate-500">ควรสั้น กระชับ และสื่อถึงชื่อวัดหรือจังหวัด</p>
+                    <p class="mt-1 text-xs text-slate-500">ควรสั้น กระชับ และสื่อถึงชื่อหรือจังหวัด</p>
                 </div>
 
                 <div>
-                    <label for="meta_description" class="mb-1.5 block text-sm font-medium text-slate-300">Meta Description</label>
+                    <label for="meta_description" class="mb-1.5 block text-sm font-medium text-slate-300">Meta คำอธิบาย</label>
                     <textarea
                         id="meta_description"
                         name="meta_description"
@@ -797,76 +747,166 @@
                         class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         placeholder="คำอธิบายสั้นสำหรับผลการค้นหา เช่น ประวัติ จุดเด่น และข้อมูลการเข้าชม"
                     >{{ old('meta_description', $content?->meta_description) }}</textarea>
-                    <p class="mt-1 text-xs text-slate-500">ใช้สำหรับแสดงในผลการค้นหาและ social preview</p>
+                    <p class="mt-1 text-xs text-slate-500">ใช้สำหรับแสดงในผลการค้นหาและ ตัวอย่างเวลาแชร์</p>
                 </div>
             </div>
         </section>
 
         {{-- Section: Categories --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            
-            {{-- Header --}}
-            <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
-                <div>
-                    <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
-                    <p class="mt-1 text-xs text-slate-400">เลือกหมวดหมู่และหมวดหมู่หลักของวัด</p>
-                </div>
-
-                <a
-                    href="{{ route('admin.categories.index') }}"
-                    target="_blank"
-                    class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition hover:bg-blue-500/20"
-                >
-                    + ไปจัดการหมวดหมู่
-                </a>
-            </div>
-
-            {{-- Content --}}
-            <div class="p-6">
-                @if ($categories->isEmpty())
-                    <p class="text-sm text-slate-400">ไม่มีหมวดหมู่</p>
-                @else
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        @foreach ($categories as $cat)
-                            @php
-                                $checked = in_array($cat->id, old('category_ids', $existingCategoryIds));
-                            @endphp
-
-                            <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 px-4 py-3 transition hover:bg-white/[0.06] @if($checked) border-blue-400/40 bg-blue-500/10 @else bg-slate-950/40 @endif">
-                                <input
-                                    type="checkbox"
-                                    name="category_ids[]"
-                                    value="{{ $cat->id }}"
-                                    class="h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-600"
-                                    @checked($checked)
-                                    onchange="updatePrimaryCategoryOptions()"
-                                >
-                                <span class="text-sm text-slate-300">{{ $cat->name }}</span>
-                            </label>
-                        @endforeach
+        <section class="temple-panel temple-panel-media overflow-visible rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+            <div class="border-b border-white/10 px-6 py-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
+                        <p class="mt-1 text-xs text-slate-400">กำหนดกลุ่มเนื้อหาและหมวดหมู่หลักสำหรับหน้าแสดงผลวัด</p>
                     </div>
 
-                    <div class="mt-4">
-                        <label for="primary_category_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                            หมวดหมู่หลัก
-                        </label>
+                    <a
+                        href="{{ route('admin.categories.index') }}"
+                        target="_blank"
+                        class="inline-flex w-fit items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+                    >
+                        + จัดการหมวดหมู่
+                    </a>
+                </div>
+            </div>
 
-                        <select
-                            id="primary_category_id"
-                            name="primary_category_id"
-                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 sm:w-64"
-                        >
-                            <option value="">— ไม่ระบุ —</option>
-                            @foreach ($categories as $cat)
-                                <option value="{{ $cat->id }}" @selected(old('primary_category_id', $primaryCategoryId) == $cat->id)>
-                                    {{ $cat->name }}
-                                </option>
-                            @endforeach
-                        </select>
+            <div class="p-6">
+                @if ($categories->isEmpty())
+                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-8 text-center">
+                        <p class="text-sm font-medium text-slate-300">ยังไม่มีหมวดหมู่</p>
+                        <p class="mt-1 text-xs text-slate-500">สร้างหมวดหมู่ก่อนเพื่อจัดกลุ่มวัดบนหน้าเว็บไซต์</p>
+                    </div>
+                @else
+                    <div
+                        class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]"
+                        x-data="{
+                            search: '',
+                            selectedCategoryIds: @js(array_map('strval', old('category_ids', $existingCategoryIds))),
+                            categories: @js($categories->map(fn ($cat) => [
+                                'id' => (string) $cat->id,
+                                'name' => $cat->name,
+                                'search' => mb_strtolower($cat->name . ' ' . $cat->id),
+                            ])->values()),
+                            isSelected(id) {
+                                return this.selectedCategoryIds.includes(String(id));
+                            },
+                            get filteredCategories() {
+                                const keyword = this.search.toLowerCase().trim();
+                                if (!keyword) {
+                                    return this.categories;
+                                }
+                                return this.categories.filter((category) => category.search.includes(keyword));
+                            },
+                            get selectedCategories() {
+                                return this.categories.filter((category) => this.isSelected(category.id));
+                            }
+                        }"
+                    >
+                        <div class="min-w-0 space-y-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                <div class="min-w-0 flex-1">
+                                    <label for="temple_category_search" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                        ค้นหาหมวดหมู่
+                                    </label>
+                                    <input
+                                        id="temple_category_search"
+                                        type="search"
+                                        x-model.debounce.100ms="search"
+                                        placeholder="ค้นหาจากชื่อหมวดหมู่หรือ ID"
+                                        class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                    >
+                                </div>
 
-                        <p class="mt-1 text-xs text-slate-500">
-                            หมวดหมู่หลักควรเป็นหมวดที่ใช้จัดกลุ่มหลักบนหน้าเว็บไซต์
-                        </p>
+                                <div class="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-slate-300">
+                                    เลือกแล้ว <span class="font-semibold text-blue-300" x-text="selectedCategoryIds.length"></span>
+                                </div>
+                            </div>
+
+                            <div class="grid max-h-[320px] grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-2 2xl:grid-cols-3">
+                                @foreach ($categories as $cat)
+                                    @php
+                                        $checked = in_array($cat->id, old('category_ids', $existingCategoryIds));
+                                    @endphp
+
+                                    <label
+                                        x-show="filteredCategories.some((category) => category.id === '{{ $cat->id }}')"
+                                        class="group flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition hover:bg-white/[0.06]"
+                                        :class="isSelected('{{ $cat->id }}') ? 'border-blue-400/40 bg-blue-500/10' : 'border-white/10 bg-slate-950/40'"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="category_ids[]"
+                                            value="{{ $cat->id }}"
+                                            x-model="selectedCategoryIds"
+                                            class="h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-600"
+                                            @checked($checked)
+                                            onchange="updatePrimaryCategoryOptions()"
+                                        >
+                                        <span class="min-w-0 flex-1 truncate text-sm text-slate-300">{{ $cat->name }}</span>
+                                        <span x-show="isSelected('{{ $cat->id }}')" class="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-medium text-blue-200">เลือก</span>
+                                    </label>
+                                @endforeach
+                            </div>
+
+                            <div
+                                x-show="filteredCategories.length === 0"
+                                class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
+                            >
+                                ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา
+                            </div>
+                        </div>
+
+                        <aside class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div>
+                                <label for="primary_category_id" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                    หมวดหมู่หลัก
+                                </label>
+
+                                @include('admin.content.partials._searchable_select', [
+                                    'id' => 'primary_category_id',
+                                    'name' => 'primary_category_id',
+                                    'selected' => old('primary_category_id', $primaryCategoryId),
+                                    'emptyLabel' => '— ไม่ระบุ —',
+                                    'placeholder' => 'เลือกหมวดหมู่หลัก',
+                                    'searchPlaceholder' => 'ค้นหาหมวดหมู่หลัก...',
+                                    'options' => $categories->map(fn ($cat) => [
+                                        'value' => $cat->id,
+                                        'label' => $cat->name,
+                                        'meta' => 'Category #' . $cat->id,
+                                        'search' => $cat->name . ' ' . $cat->id,
+                                    ]),
+                                ])
+
+                                <p class="mt-2 text-xs leading-5 text-slate-500">
+                                    ใช้เป็นหมวดหลักในรายการและ metadata ของหน้าเว็บไซต์
+                                </p>
+                            </div>
+
+                            <div class="border-t border-white/10 pt-4">
+                                <div class="mb-2 flex items-center justify-between gap-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ที่เลือก</p>
+                                    <button
+                                        type="button"
+                                        x-show="selectedCategoryIds.length > 0"
+                                        @click="selectedCategoryIds = []; $nextTick(() => updatePrimaryCategoryOptions())"
+                                        class="text-xs font-medium text-rose-300 hover:text-rose-200"
+                                    >
+                                        ล้างทั้งหมด
+                                    </button>
+                                </div>
+
+                                <div x-show="selectedCategories.length > 0" class="flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-1">
+                                    <template x-for="category in selectedCategories" :key="category.id">
+                                        <span class="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs text-blue-100" x-text="category.name"></span>
+                                    </template>
+                                </div>
+
+                                <p x-show="selectedCategories.length === 0" class="rounded-xl border border-dashed border-white/10 px-3 py-3 text-center text-xs text-slate-500">
+                                    ยังไม่ได้เลือกหมวดหมู่
+                                </p>
+                            </div>
+                        </aside>
                     </div>
                 @endif
             </div>
@@ -953,34 +993,54 @@
             }
         },
         }"
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-media overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
     >
-        <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
-            <div>
-                <h2 class="text-base font-semibold text-white">รูปภาพและมีเดีย</h2>
-                <p class="mt-1 text-xs text-slate-400">เลือกรูป Cover และ Gallery สำหรับหน้าแสดงผล</p>
-            </div>
+        <div class="border-b border-white/10 px-6 py-4">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">รูปภาพและมีเดีย</h2>
+                    <p class="mt-1 text-xs text-slate-400">เลือกรูปปกและรูปแกลเลอรีที่ใช้แสดงหน้า Detail</p>
+                </div>
 
-            <a
-                href="{{ route('admin.media.index') }}"
-                target="_blank"
-                class="shrink-0 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300 transition hover:bg-blue-500/20"
-            >
-                + ไปจัดการมีเดีย
-            </a>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="w-full sm:w-72">
+                        <label for="media_search" class="mb-1.5 block text-xs font-medium text-slate-400">
+                            ค้นหารูปในหน้านี้
+                        </label>
+
+                        <input
+                            id="media_search"
+                            type="text"
+                            x-model="mediaSearch"
+                            placeholder="ชื่อรูปหรือชื่อไฟล์..."
+                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                    </div>
+
+                    <a
+                        href="{{ route('admin.media.index') }}"
+                        target="_blank"
+                        class="inline-flex shrink-0 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2.5 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
+                    >
+                        + คลังสื่อ
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <div class="space-y-8 p-6">
-            {{-- Quick Upload --}}
+        <div class="space-y-6 p-6">
             <div
                 x-data="quickMediaUploader()"
                 class="rounded-2xl border border-dashed border-blue-400/30 bg-blue-500/5 p-4"
             >
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <div class="flex-1">
-                        <label for="quick_media_file" class="mb-1.5 block text-sm font-medium text-slate-300">
-                            อัปโหลดรูปใหม่แบบด่วน
-                        </label>
+                <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-3">
+                            <label for="quick_media_file" class="block text-sm font-medium text-slate-300">
+                                อัปโหลดรูปใหม่แบบด่วน
+                            </label>
+                            <span class="text-xs text-slate-500">สูงสุด 5 MB ต่อรูป</span>
+                        </div>
 
                         <input
                             id="quick_media_file"
@@ -1001,35 +1061,12 @@
                         type="button"
                         @click="upload()"
                         :disabled="isUploading"
-                        class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <span x-show="!isUploading">อัปโหลด</span>
                         <span x-show="isUploading">กำลังอัปโหลด...</span>
                     </button>
                 </div>
-
-                <p class="mt-2 text-xs text-slate-500">
-                    เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า Media Library แบบไม่มีโฟลเดอร์ แล้ว refresh หน้า
-                </p>
-            </div>
-
-            {{-- Search --}}
-            <div class="max-w-md">
-                <label for="media_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    ค้นหารูปจากชื่อ
-                </label>
-
-                <input
-                    id="media_search"
-                    type="text"
-                    x-model="mediaSearch"
-                    placeholder="พิมพ์ชื่อรูป, title หรือชื่อไฟล์..."
-                    class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                >
-
-                <p class="mt-1 text-xs text-slate-500">
-                    ใช้ค้นหาเฉพาะรูปที่แสดงอยู่ในหน้าปัจจุบันของ Cover และ Gallery
-                </p>
             </div>
 
             {{-- Hidden values --}}
@@ -1039,13 +1076,21 @@
                 <input type="hidden" name="gallery_media_ids[]" :value="mediaId">
             </template>
 
-            {{-- Cover --}}
-            <div class="space-y-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-200">รูป Cover</h3>
-                    <p class="mt-1 text-xs text-slate-500">
-                        เลือกรูปหลักที่ใช้แสดงเป็นภาพหน้าปกของเนื้อหานี้
-                    </p>
+            {{-- รูปปก --}}
+            <div class="space-y-3 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200">รูปปก</h3>
+                        <p class="mt-1 text-xs text-slate-500">รูปหลักที่ใช้เป็นภาพนำของหน้า Detail</p>
+                    </div>
+                    <button
+                        type="button"
+                        x-show="selectedCover"
+                        @click="selectedCover = ''"
+                        class="w-fit rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+                    >
+                        ล้างรูปปก
+                    </button>
                 </div>
 
                 <div
@@ -1056,12 +1101,23 @@
             </div>
 
             {{-- Gallery --}}
-            <div class="space-y-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-200">Gallery Images</h3>
-                    <p class="mt-1 text-xs text-slate-500">
-                        เลือกได้หลายรูปสำหรับแสดงในแกลเลอรีของหน้าแสดงผล
-                    </p>
+            <div class="space-y-3 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200">รูปแกลเลอรี</h3>
+                        <p class="mt-1 text-xs text-slate-500">เลือกได้หลายรูปสำหรับส่วนแกลเลอรี</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-slate-400">เลือกแล้ว <span class="font-semibold text-blue-300" x-text="selectedGallery.length"></span></span>
+                        <button
+                            type="button"
+                            x-show="selectedGallery.length > 0"
+                            @click="selectedGallery = []"
+                            class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+                        >
+                            ล้างแกลเลอรี
+                        </button>
+                    </div>
                 </div>
 
                 <div
@@ -1074,60 +1130,76 @@
     </section>
 
     {{-- Section: Address --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+    <section class="temple-panel temple-panel-media overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="border-b border-white/10 px-6 py-4">
-            <h2 class="text-base font-semibold text-white">ที่ตั้ง</h2>
-            <p class="mt-1 text-xs text-slate-400">ที่อยู่ พิกัด และลิงก์ Google Maps</p>
+            <h2 class="text-base font-semibold text-white">ที่ตั้งและแผนที่</h2>
+            <p class="mt-1 text-xs text-slate-400">ที่อยู่สำหรับแสดงผลและข้อมูลพิกัดสำหรับลิงก์แผนที่</p>
         </div>
-        <div class="space-y-5 p-6">
-            <div>
-                <label for="address_line" class="mb-1.5 block text-sm font-medium text-slate-300">Address Line</label>
-                <input type="text" id="address_line" name="address[address_line]" value="{{ old('address.address_line', $address?->address_line) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="เลขที่ ถนน">
+        <div class="grid gap-5 p-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-200">ที่อยู่</h3>
+                    <p class="mt-1 text-xs text-slate-500">ข้อมูลนี้ใช้แสดงในหน้า Detail และตัวกรองจังหวัด</p>
+                </div>
+
+                <div>
+                    <label for="address_line" class="mb-1.5 block text-sm font-medium text-slate-300">ที่อยู่</label>
+                    <input type="text" id="address_line" name="address[address_line]" value="{{ old('address.address_line', $address?->address_line) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="เลขที่ ถนน หรือชื่อชุมชน">
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="subdistrict" class="mb-1.5 block text-sm font-medium text-slate-300">แขวง / ตำบล</label>
+                        <input type="text" id="subdistrict" name="address[subdistrict]" value="{{ old('address.subdistrict', $address?->subdistrict) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    </div>
+                    <div>
+                        <label for="district" class="mb-1.5 block text-sm font-medium text-slate-300">เขต / อำเภอ</label>
+                        <input type="text" id="district" name="address[district]" value="{{ old('address.district', $address?->district) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    </div>
+                    <div>
+                        <label for="province" class="mb-1.5 block text-sm font-medium text-slate-300">จังหวัด</label>
+                        <input type="text" id="province" name="address[province]" value="{{ old('address.province', $address?->province) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    </div>
+                    <div>
+                        <label for="postal_code" class="mb-1.5 block text-sm font-medium text-slate-300">รหัสไปรษณีย์</label>
+                        <input type="text" id="postal_code" name="address[postal_code]" value="{{ old('address.postal_code', $address?->postal_code) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <aside class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
                 <div>
-                    <label for="subdistrict" class="mb-1.5 block text-sm font-medium text-slate-300">แขวง / ตำบล</label>
-                    <input type="text" id="subdistrict" name="address[subdistrict]" value="{{ old('address.subdistrict', $address?->subdistrict) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    <h3 class="text-sm font-semibold text-slate-200">พิกัดและแผนที่</h3>
+                    <p class="mt-1 text-xs text-slate-500">กรอกพิกัดเมื่อต้องการแสดงตำแหน่งแบบแม่นยำ</p>
                 </div>
-                <div>
-                    <label for="district" class="mb-1.5 block text-sm font-medium text-slate-300">เขต / อำเภอ</label>
-                    <input type="text" id="district" name="address[district]" value="{{ old('address.district', $address?->district) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
-                </div>
-                <div>
-                    <label for="province" class="mb-1.5 block text-sm font-medium text-slate-300">จังหวัด</label>
-                    <input type="text" id="province" name="address[province]" value="{{ old('address.province', $address?->province) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
-                </div>
-                <div>
-                    <label for="postal_code" class="mb-1.5 block text-sm font-medium text-slate-300">รหัสไปรษณีย์</label>
-                    <input type="text" id="postal_code" name="address[postal_code]" value="{{ old('address.postal_code', $address?->postal_code) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
-                </div>
-            </div>
 
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div>
-                    <label for="latitude" class="mb-1.5 block text-sm font-medium text-slate-300">Latitude</label>
-                    <input type="text" id="latitude" name="address[latitude]" value="{{ old('address.latitude', $address?->latitude) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white font-mono outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="13.7563">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-1">
+                    <div>
+                        <label for="latitude" class="mb-1.5 block text-sm font-medium text-slate-300">ละติจูด</label>
+                        <input type="text" id="latitude" name="address[latitude]" value="{{ old('address.latitude', $address?->latitude) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 font-mono text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="13.7563">
+                    </div>
+                    <div>
+                        <label for="longitude" class="mb-1.5 block text-sm font-medium text-slate-300">ลองจิจูด</label>
+                        <input type="text" id="longitude" name="address[longitude]" value="{{ old('address.longitude', $address?->longitude) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 font-mono text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="100.5018">
+                    </div>
                 </div>
-                <div>
-                    <label for="longitude" class="mb-1.5 block text-sm font-medium text-slate-300">Longitude</label>
-                    <input type="text" id="longitude" name="address[longitude]" value="{{ old('address.longitude', $address?->longitude) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white font-mono outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="100.5018">
-                </div>
+
                 <div>
                     <label for="google_place_id" class="mb-1.5 block text-sm font-medium text-slate-300">Google Place ID</label>
-                    <input type="text" id="google_place_id" name="address[google_place_id]" value="{{ old('address.google_place_id', $address?->google_place_id) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white font-mono outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    <input type="text" id="google_place_id" name="address[google_place_id]" value="{{ old('address.google_place_id', $address?->google_place_id) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 font-mono text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
                 </div>
+
                 <div>
                     <label for="google_maps_url" class="mb-1.5 block text-sm font-medium text-slate-300">Google Maps URL</label>
                     <input type="url" id="google_maps_url" name="address[google_maps_url]" value="{{ old('address.google_maps_url', $address?->google_maps_url) }}" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="https://maps.google.com/...">
                 </div>
-            </div>
+            </aside>
         </div>
     </section>
 
     {{-- Section: Opening Hours --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="openingHoursManager()"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
@@ -1216,7 +1288,7 @@
                             >
                         </div>
 
-                        {{-- Actions --}}
+                        {{-- การจัดการs --}}
                         <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
                             <label class="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
                                 <input
@@ -1273,13 +1345,13 @@
 
     {{-- Section: Fees --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="feesManager()"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
-                <h2 class="text-base font-semibold text-white">ค่าธรรมเนียม</h2>
-                <p class="mt-1 text-xs text-slate-400">ค่าเข้าชม ค่าจอดรถ หรือค่าใช้จ่ายอื่น ๆ</p>
+                <h2 class="text-base font-semibold text-white">ธรรมเนียม</h2>
+                <p class="mt-1 text-xs text-slate-400">เข้าชม จอดรถ หรือใช้จ่ายอื่น ๆ</p>
             </div>
 
             <button
@@ -1287,7 +1359,7 @@
                 @click="addRow()"
                 class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
             >
-                + เพิ่มค่าธรรมเนียม
+                + เพิ่มธรรมเนียม
             </button>
         </div>
 
@@ -1298,7 +1370,7 @@
                         <div class="grid grid-cols-12 items-start gap-3">
                             {{-- Fee Type --}}
                             <div class="col-span-12 md:col-span-3">
-                                <label class="mb-1 block text-xs font-medium text-slate-400">ประเภทค่าธรรมเนียม</label>
+                                <label class="mb-1 block text-xs font-medium text-slate-400">ประเภทธรรมเนียม</label>
                                 <input
                                     type="text"
                                     :name="`fees[${index}][fee_type]`"
@@ -1316,7 +1388,7 @@
                                     :name="`fees[${index}][label]`"
                                     x-model="row.label"
                                     class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
-                                    placeholder="เช่น ค่าเข้าชมผู้ใหญ่"
+                                    placeholder="เช่น เข้าชมผู้ใหญ่"
                                 >
                             </div>
 
@@ -1346,7 +1418,7 @@
                                 >
                             </div>
 
-                            {{-- Active --}}
+                            {{-- เปิดใช้งาน --}}
                             <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
                                 <label class="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-slate-400 md:mt-7">
                                     <input
@@ -1387,7 +1459,7 @@
                 </template>
 
                 <p x-show="rows.length === 0" class="text-sm text-slate-400">
-                    ยังไม่มีข้อมูล — กดเพิ่มค่าธรรมเนียมเพื่อเพิ่ม
+                    ยังไม่มีข้อมูล — กดเพิ่มธรรมเนียมเพื่อเพิ่ม
                 </p>
             </div>
         </div>
@@ -1395,13 +1467,13 @@
 
     {{-- Section: Facilities --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="facilitiesManager()"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">สิ่งอำนวยความสะดวก</h2>
-                <p class="mt-1 text-xs text-slate-400">เพิ่มสิ่งอำนวยความสะดวกของวัดได้จากหน้านี้โดยตรง</p>
+                <p class="mt-1 text-xs text-slate-400">เพิ่มสิ่งอำนวยความสะดวกของได้จากหน้านี้โดยตรง</p>
             </div>
 
             <button
@@ -1419,6 +1491,12 @@
                     <div class="grid grid-cols-12 items-start gap-3">
                         <div class="col-span-12 md:col-span-4">
                             <label class="mb-1 block text-xs font-medium text-slate-400">เลือกจากรายการเดิม</label>
+                            <input
+                                type="search"
+                                x-model.debounce.100ms="row.facility_search"
+                                class="mb-2 w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="ค้นหาสิ่งอำนวยความสะดวก..."
+                            >
                             <select
                                 :name="`facility_items[${index}][facility_id]`"
                                 x-model="row.facility_id"
@@ -1426,7 +1504,7 @@
                                 class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
                             >
                                 <option value="">สร้างรายการใหม่</option>
-                                <template x-for="facility in facilities" :key="facility.id">
+                                <template x-for="facility in filteredFacilities(row)" :key="facility.id">
                                     <option :value="facility.id" x-text="facility.name"></option>
                                 </template>
                             </select>
@@ -1445,7 +1523,7 @@
                         </div>
 
                         <div class="col-span-12 md:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">Value</label>
+                            <label class="mb-1 block text-xs font-medium text-slate-400"></label>
                             <input
                                 type="text"
                                 :name="`facility_items[${index}][value]`"
@@ -1498,13 +1576,13 @@
 
     {{-- Section: Highlights --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="repeaterManager('highlights', @json($jsHighlights))"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
-                <h2 class="text-base font-semibold text-white">จุดเด่นของวัด</h2>
-                <p class="mt-1 text-xs text-slate-400">ไฮไลต์สำคัญที่ใช้แสดงในหน้า detail</p>
+                <h2 class="text-base font-semibold text-white">จุดเด่นของ</h2>
+                <p class="mt-1 text-xs text-slate-400">ไฮไลต์สำคัญที่ใช้แสดงในหน้ารายละเอียด</p>
             </div>
 
             <button
@@ -1520,7 +1598,7 @@
             <template x-for="(row, index) in rows" :key="row._key || index">
                 <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                     <div class="grid grid-cols-12 items-start gap-3">
-                        {{-- Title --}}
+                        {{-- หัวข้อ --}}
                         <div class="col-span-12 md:col-span-5">
                             <label class="mb-1 block text-xs font-medium text-slate-400">
                                 ชื่อจุดเด่น <span class="text-rose-400">*</span>
@@ -1535,7 +1613,7 @@
                             >
                         </div>
 
-                        {{-- Sort Order --}}
+                        {{-- ลำดับ --}}
                         <div class="col-span-12 md:col-span-2">
                             <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
 
@@ -1609,7 +1687,7 @@
 
     {{-- Section: Visit Rules --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="repeaterManager('visit_rules', @json($jsVisitRules))"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
@@ -1677,7 +1755,7 @@
                             </p>
                         </div>
 
-                        {{-- Sort Order --}}
+                        {{-- ลำดับ --}}
                         <div class="col-span-12 md:col-span-2">
                             <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
 
@@ -1713,13 +1791,13 @@
 
     {{-- Section: Travel Infos --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="travelInfosManager()"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
                 <h2 class="text-base font-semibold text-white">ข้อมูลการเดินทาง</h2>
-                <p class="mt-1 text-xs text-slate-400">วิธีเดินทาง ระยะทาง ระยะเวลา และค่าใช้จ่ายโดยประมาณ</p>
+                <p class="mt-1 text-xs text-slate-400">วิธีเดินทาง ระยะทาง ระยะเวลา และใช้จ่ายโดยประมาณ</p>
             </div>
 
             <button
@@ -1788,7 +1866,7 @@
                             >
                         </div>
 
-                        {{-- Active --}}
+                        {{-- เปิดใช้งาน --}}
                         <div class="col-span-12 flex items-center justify-between gap-3 md:col-span-1 md:flex-col md:items-end">
                             <label class="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-slate-400 md:mt-7">
                                 <input
@@ -1804,7 +1882,7 @@
 
                         {{-- Cost Estimate --}}
                         <div class="col-span-12 md:col-span-4">
-                            <label class="mb-1 block text-xs font-medium text-slate-400">ค่าใช้จ่ายโดยประมาณ</label>
+                            <label class="mb-1 block text-xs font-medium text-slate-400">ใช้จ่ายโดยประมาณ</label>
                             <input
                                 type="text"
                                 :name="`travel_infos[${index}][cost_estimate]`"
@@ -1848,13 +1926,13 @@
 
     {{-- Section: Nearby Places --}}
     <section
-        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        class="temple-panel temple-panel-visit overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         x-data="nearbyPlacesManager()"
     >
         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
             <div>
-                <h2 class="text-base font-semibold text-white">วัดใกล้เคียง</h2>
-                <p class="mt-1 text-xs text-slate-400">เชื่อมโยงวัดที่อยู่ใกล้กันหรือเกี่ยวข้องกัน</p>
+                <h2 class="text-base font-semibold text-white">ใกล้เคียง</h2>
+                <p class="mt-1 text-xs text-slate-400">เชื่อมโยงที่อยู่ใกล้กันหรือเกี่ยวข้องกัน</p>
             </div>
 
             <button
@@ -1862,7 +1940,7 @@
                 @click="addRow()"
                 class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-300 transition hover:bg-blue-500/20"
             >
-                + เพิ่มวัดใกล้เคียง
+                + เพิ่มใกล้เคียง
             </button>
         </div>
 
@@ -1873,18 +1951,24 @@
                         {{-- Temple --}}
                         <div class="col-span-12 md:col-span-5">
                             <label class="mb-1 block text-xs font-medium text-slate-400">
-                                วัดที่เกี่ยวข้อง <span class="text-rose-400">*</span>
+                                ที่เกี่ยวข้อง <span class="text-rose-400">*</span>
                             </label>
 
+                            <input
+                                type="search"
+                                x-model.debounce.100ms="row.temple_search"
+                                class="mb-2 w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
+                                placeholder="ค้นหาชื่อหรือ ID..."
+                            >
                             <select
                                 :name="`nearby_places[${index}][nearby_temple_id]`"
                                 x-model="row.nearby_temple_id"
                                 class="w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-blue-400"
                             >
-                                <option value="">— เลือกวัด —</option>
-                                @foreach ($nearbyTemples as $nt)
-                                    <option value="{{ $nt->id }}">{{ $nt->content?->title ?? "Temple #$nt->id" }}</option>
-                                @endforeach
+                                <option value="">— เลือก —</option>
+                                <template x-for="temple in filteredNearbyTemples(row)" :key="temple.id">
+                                    <option :value="temple.id" x-text="temple.title"></option>
+                                </template>
                             </select>
                         </div>
 
@@ -1944,7 +2028,7 @@
                             >
                         </div>
 
-                        {{-- Sort Order --}}
+                        {{-- ลำดับ --}}
                         <div class="col-span-6 md:col-span-2">
                             <label class="mb-1 block text-xs font-medium text-slate-400">ลำดับ</label>
 
@@ -1973,13 +2057,13 @@
             </template>
 
             <p x-show="rows.length === 0" class="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 px-4 py-5 text-sm text-slate-400">
-                ยังไม่มีข้อมูล — กดเพิ่มวัดใกล้เคียงเพื่อเชื่อมโยงวัดที่เกี่ยวข้อง
+                ยังไม่มีข้อมูล — กดเพิ่มใกล้เคียงเพื่อเชื่อมโยงที่เกี่ยวข้อง
             </p>
         </div>
     </section>
 
     {{-- Section: Publishing --}}
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+    <section class="temple-panel temple-panel-publish overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
         <div id="temple-publishing" class="border-b border-white/10 px-6 py-4">
             <h2 class="text-base font-semibold text-white">การเผยแพร่</h2>
             <p class="mt-1 text-xs text-slate-400">กำหนดสถานะ เวลาเผยแพร่ และการแสดงผลของวัด</p>
@@ -2033,7 +2117,7 @@
                     >
                     <div>
                         <div class="text-sm font-medium text-slate-200">แนะนำบนหน้าเว็บ</div>
-                        <div class="text-xs text-slate-500">ใช้เน้นวัดในส่วนสำคัญของเว็บไซต์</div>
+                        <div class="text-xs text-slate-500">ใช้เน้นในส่วนสำคัญของเว็บไซต์</div>
                     </div>
                 </label>
 
@@ -2058,7 +2142,7 @@
 <script>
     window.templeFormHasServerErrors = @json($errors->any());
 
-    window.templeDraft = {
+    const templeDraftStore = {
         key: 'papaiwat:temple-form-draft:' + window.location.pathname,
         storage: window.sessionStorage,
 
@@ -2090,7 +2174,7 @@
         },
     };
 
-    window.templeDraftValue = function (name, fallback = '') {
+    window.templeDraft = Object.assign(function (name, fallback = '') {
         if (window.templeFormHasServerErrors) {
             return fallback;
         }
@@ -2100,7 +2184,7 @@
         return Object.prototype.hasOwnProperty.call(fields, name)
             ? fields[name]
             : fallback;
-    };
+    }, templeDraftStore);
 
     window.normalizeTempleMediaIds = function (value) {
         const values = Array.isArray(value) ? value : [value];
@@ -2112,14 +2196,14 @@
 
     window.templeDraftMediaId = function (name, fallback = '') {
         const fallbackIds = window.normalizeTempleMediaIds(fallback);
-        const draftIds = window.normalizeTempleMediaIds(window.templeDraftValue(name, fallback));
+        const draftIds = window.normalizeTempleMediaIds(window.templeDraft(name, fallback));
 
         return draftIds[0] ?? fallbackIds[0] ?? '';
     };
 
     window.templeDraftMediaIdArray = function (name, fallback = []) {
         const fallbackIds = window.normalizeTempleMediaIds(fallback);
-        const draftIds = window.normalizeTempleMediaIds(window.templeDraftValue(name, fallback));
+        const draftIds = window.normalizeTempleMediaIds(window.templeDraft(name, fallback));
 
         return draftIds.length > 0 ? draftIds : fallbackIds;
     };
@@ -2197,16 +2281,20 @@
             return;
         }
 
-        const selectedValues = Array.from(form.querySelectorAll('input[name="category_ids[]"]'))
+        const selecteds = Array.from(form.querySelectorAll('input[name="category_ids[]"]'))
             .filter((checkbox) => checkbox.checked)
             .map((checkbox) => checkbox.value);
 
-        Array.from(primarySelect.options).forEach((option) => {
-            option.hidden = option.value ? !selectedValues.includes(option.value) : false;
-        });
+        if (primarySelect.options) {
+            Array.from(primarySelect.options).forEach((option) => {
+                option.hidden = option.value ? !selecteds.includes(option.value) : false;
+            });
+        }
 
-        if (primarySelect.value && !selectedValues.includes(primarySelect.value)) {
+        if (primarySelect.value && !selecteds.includes(primarySelect.value)) {
             primarySelect.value = '';
+            primarySelect.dispatchEvent(new Event('input', { bubbles: true }));
+            primarySelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 
@@ -2406,7 +2494,7 @@
                 sourceEditor.value = input.value || '';
             }
 
-            const dispatchValueChange = () => {
+            const dispatchChange = () => {
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             };
@@ -2417,23 +2505,23 @@
                 }
             };
 
-            const syncValue = () => {
+            const sync = () => {
                 const html = quill.root.innerHTML.trim();
                 input.value = html === '<p><br></p>' ? '' : html;
                 if (sourceEditor && sourceEditor.classList.contains('hidden')) {
                     sourceEditor.value = input.value;
                 }
                 updateCounter();
-                dispatchValueChange();
+                dispatchChange();
             };
 
-            quill.on('text-change', syncValue);
+            quill.on('text-change', sync);
             updateCounter();
 
             if (sourceEditor) {
                 sourceEditor.addEventListener('input', () => {
                     input.value = sourceEditor.value.trim();
-                    dispatchValueChange();
+                    dispatchChange();
                 });
             }
 
@@ -2461,7 +2549,7 @@
                         modeLabel.textContent = 'Rich text';
                     }
                     updateCounter();
-                    dispatchValueChange();
+                    dispatchChange();
                 });
             }
         });
@@ -2600,14 +2688,14 @@
 
                 normalizedRows.forEach((row) => {
                     const last = groupedRows[groupedRows.length - 1];
-                    const hasSameValues = last
+                    const hasSames = last
                         && last.day_to + 1 === row.day
                         && last.open_time === row.open_time
                         && last.close_time === row.close_time
                         && last.is_closed === row.is_closed
                         && last.note === row.note;
 
-                    if (hasSameValues) {
+                    if (hasSames) {
                         last.day_to = row.day;
                         last.preset = this.detectPreset(last.day_from, last.day_to);
                         return;
@@ -2806,6 +2894,7 @@
                 ).map((row) => ({
                     _key: row._key || `facility-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                     facility_id: row.facility_id ? String(row.facility_id) : '',
+                    facility_search: row.facility_search || '',
                     facility_name: row.facility_name || '',
                     value: row.value || '',
                     note: row.note || '',
@@ -2823,6 +2912,7 @@
                 this.rows.push({
                     _key: `facility-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                     facility_id: '',
+                    facility_search: '',
                     facility_name: '',
                     value: '',
                     note: '',
@@ -2832,6 +2922,20 @@
 
             removeRow(index) {
                 this.rows.splice(index, 1);
+            },
+
+            filteredFacilities(row) {
+                const keyword = (row.facility_search || '').toLowerCase().trim();
+
+                return this.facilities
+                    .filter((facility) => {
+                        if (row.facility_id && String(facility.id) === String(row.facility_id)) {
+                            return true;
+                        }
+
+                        return !keyword || facility.name.toLowerCase().includes(keyword) || String(facility.id).includes(keyword);
+                    })
+                    .slice(0, 80);
             },
         };
     }
@@ -2876,15 +2980,22 @@
 
     function nearbyPlacesManager() {
         const existing = @json($jsNearbyPlaces);
+        const nearbyTemples = @json($jsNearbyTemples);
 
         return {
             rows: [],
+            nearbyTemples,
 
             init() {
                 const fallbackRows = existing.length ? existing : [];
                 this.rows = window.templeFormHasServerErrors
                     ? fallbackRows
                     : window.templeDraft.get('nearby_places_rows', fallbackRows);
+                this.rows = this.rows.map((row) => ({
+                    ...row,
+                    nearby_temple_id: row.nearby_temple_id ? String(row.nearby_temple_id) : '',
+                    temple_search: row.temple_search || '',
+                }));
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
@@ -2896,6 +3007,7 @@
             addRow() {
                 this.rows.push({
                     nearby_temple_id: '',
+                    temple_search: '',
                     relation_type: '',
                     distance_km: '',
                     duration_minutes: '',
@@ -2906,6 +3018,20 @@
 
             removeRow(index) {
                 this.rows.splice(index, 1);
+            },
+
+            filteredNearbyTemples(row) {
+                const keyword = (row.temple_search || '').toLowerCase().trim();
+
+                return this.nearbyTemples
+                    .filter((temple) => {
+                        if (row.nearby_temple_id && String(temple.id) === String(row.nearby_temple_id)) {
+                            return true;
+                        }
+
+                        return !keyword || temple.search.includes(keyword);
+                    })
+                    .slice(0, 80);
             },
         };
     }

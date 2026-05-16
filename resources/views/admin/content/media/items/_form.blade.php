@@ -74,7 +74,7 @@
                         id="title"
                         name="title"
                         value="{{ old('title') }}"
-                        placeholder="เช่น รูปปกวัดพระแก้ว"
+                        placeholder="เช่น รูปปกพระแก้ว"
                         class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
 
@@ -116,8 +116,8 @@
                         name="visibility"
                         class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
-                        <option value="public" @selected(old('visibility', 'public') === 'public')>Public</option>
-                        <option value="private" @selected(old('visibility') === 'private')>Private</option>
+                        <option value="public" @selected(old('visibility', 'public') === 'public')>สาธารณะ</option>
+                        <option value="private" @selected(old('visibility') === 'private')>ส่วนตัว</option>
                     </select>
 
                     @error('visibility')
@@ -154,7 +154,7 @@
 
                 <div>
                     <label for="description" class="mb-2 block text-sm font-medium text-slate-300">
-                        Description
+                        คำอธิบาย
                     </label>
 
                     <textarea

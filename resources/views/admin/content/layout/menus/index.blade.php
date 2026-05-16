@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
-                        Menu Management
+                        จัดการเมนู
                     </p>
                     <h1 class="text-2xl font-bold text-white">จัดการเมนู</h1>
                     <p class="mt-1 text-sm text-slate-400">
@@ -39,13 +39,13 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3 text-left">Name</th>
+                            <th class="px-4 py-3 text-left">ชื่อ</th>
                             <th class="px-4 py-3 text-left">Slug</th>
                             <th class="px-4 py-3 text-left">Location</th>
                             <th class="px-4 py-3 text-left">Items</th>
-                            <th class="px-4 py-3 text-left">Default</th>
-                            <th class="px-4 py-3 text-left">Status</th>
-                            <th class="px-4 py-3 text-right">Action</th>
+                            <th class="px-4 py-3 text-left">เริ่มต้น</th>
+                            <th class="px-4 py-3 text-left">สถานะ</th>
+                            <th class="px-4 py-3 text-right">การจัดการ</th>
                         </tr>
                     </thead>
 
@@ -91,7 +91,7 @@
                                 <td class="px-4 py-3">
                                     @if($menu->is_default)
                                         <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
-                                            Default
+                                            เริ่มต้น
                                         </span>
                                     @else
                                         <span class="text-xs text-slate-500">-</span>
@@ -102,12 +102,12 @@
                                     @if($menu->status === 'active')
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                            Active
+                                            เปิดใช้งาน
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
-                                            Inactive
+                                            ปิดใช้งาน
                                         </span>
                                     @endif
                                 </td>

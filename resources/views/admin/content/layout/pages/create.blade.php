@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Create Page'">
+<x-layouts.admin :title="'สร้างหน้าเว็บไซต์'">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,13 +6,13 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Page Management
+                        จัดการหน้าเว็บไซต์
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">Create Page</h1>
+                    <h1 class="text-2xl font-bold text-white">สร้างหน้าเว็บไซต์</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        สร้างหน้าเว็บไซต์ใหม่สำหรับระบบ PAPAIWAT และกำหนด Template, SEO, สถานะการเผยแพร่
+                        สร้างหน้าเว็บไซต์ใหม่สำหรับระบบ PAPAIWAT และกำหนด เทมเพลต, SEO, สถานะการเผยแพร่
                     </p>
                 </div>
 
@@ -80,14 +80,14 @@
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">ข้อมูลหน้า</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบชื่อหน้า slug ประเภทหน้า และ Template ให้ถูกต้อง
+                                    ตรวจสอบชื่อหน้า slug ประเภทหน้า และ เทมเพลต ให้ถูกต้อง
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">SEO และ Social</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    กรอก Meta Title, Description และ OG Image เพื่อให้แสดงผลดีบน search engine และ social sharing
+                                    กรอกชื่อ SEO, คำอธิบาย และรูปภาพแชร์ เพื่อให้แสดงผลดีบนเครื่องมือค้นหาและโซเชียล
                                 </p>
                             </div>
 
@@ -102,7 +102,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

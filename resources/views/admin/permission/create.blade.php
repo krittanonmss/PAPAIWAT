@@ -1,8 +1,8 @@
-<x-layouts.admin :title="'สร้างสิทธิ์ (Permission)'">
+<x-layouts.admin :title="'สร้างสิทธิ์ (สิทธิ์)'">
     <div class="mx-auto max-w-3xl space-y-6 text-white">
 
         <div>
-            <h1 class="text-2xl font-bold text-white">เพิ่ม Permission</h1>
+            <h1 class="text-2xl font-bold text-white">เพิ่ม สิทธิ์</h1>
             <p class="mt-1 text-sm text-slate-400">สร้างสิทธิ์ใหม่สำหรับใช้งานในระบบ</p>
         </div>
 

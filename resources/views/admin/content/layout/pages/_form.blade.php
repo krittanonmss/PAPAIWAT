@@ -2,7 +2,7 @@
     {{-- Page Information --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
-            <p class="text-sm font-medium text-blue-300">Page Builder</p>
+            <p class="text-sm font-medium text-blue-300">ตัวสร้างหน้า</p>
             <h2 class="mt-1 text-lg font-semibold text-white">ข้อมูลหน้า</h2>
             <p class="mt-1 text-sm text-slate-400">ข้อมูลหลักของหน้าเว็บไซต์</p>
         </div>
@@ -53,7 +53,7 @@
                     name="template_id"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                 >
-                    <option value="">Page Builder / Default</option>
+                    <option value="">Page Builder / เริ่มต้น</option>
                     @foreach($templates as $template)
                         <option
                             value="{{ $template->id }}"
@@ -70,7 +70,7 @@
 
             <div class="hidden">
                 <label for="page_type" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Page Type <span class="text-rose-400">*</span>
+                    ประเภทหน้า <span class="text-rose-400">*</span>
                 </label>
                 <input
                     id="page_type"
@@ -112,7 +112,7 @@
 
             <div class="hidden">
                 <label for="sort_order" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Sort Order
+                    ลำดับ
                 </label>
                 <input
                     id="sort_order"
@@ -151,14 +151,14 @@
     {{-- Content Summary --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
-            <p class="text-sm font-medium text-blue-300">Page Content</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">Content Summary</h2>
+            <p class="text-sm font-medium text-blue-300">เนื้อหาหน้า</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">สรุปเนื้อหา</h2>
             <p class="mt-1 text-sm text-slate-400">ข้อความสรุปและรายละเอียดของหน้า</p>
         </div>
 
         <div class="space-y-5">
             <div>
-                <label for="excerpt" class="mb-1.5 block text-sm font-medium text-slate-300">Excerpt</label>
+                <label for="excerpt" class="mb-1.5 block text-sm font-medium text-slate-300">คำโปรย</label>
                 <input
                     id="excerpt"
                     type="text"
@@ -173,7 +173,7 @@
             </div>
 
             <div>
-                <label for="description" class="mb-1.5 block text-sm font-medium text-slate-300">Description</label>
+                <label for="description" class="mb-1.5 block text-sm font-medium text-slate-300">คำอธิบาย</label>
                 <textarea
                     id="description"
                     name="description"
@@ -191,14 +191,14 @@
     {{-- SEO Settings --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
-            <p class="text-sm font-medium text-blue-300">Search & Sharing</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">SEO Settings</h2>
-            <p class="mt-1 text-sm text-slate-400">ข้อมูลสำหรับ search engine และ social sharing</p>
+            <p class="text-sm font-medium text-blue-300">การค้นหาและการแชร์</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">ตั้งค่า SEO</h2>
+            <p class="mt-1 text-sm text-slate-400">ข้อมูลสำหรับเครื่องมือค้นหาและการแชร์บนโซเชียล</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
             <div>
-                <label for="meta_title" class="mb-1.5 block text-sm font-medium text-slate-300">Meta Title</label>
+                <label for="meta_title" class="mb-1.5 block text-sm font-medium text-slate-300">ชื่อ SEO</label>
                 <input
                     id="meta_title"
                     type="text"
@@ -212,14 +212,14 @@
             </div>
 
             <div>
-                <label for="meta_keywords" class="mb-1.5 block text-sm font-medium text-slate-300">Meta Keywords</label>
+                <label for="meta_keywords" class="mb-1.5 block text-sm font-medium text-slate-300">คีย์เวิร์ด SEO</label>
                 <input
                     id="meta_keywords"
                     type="text"
                     name="meta_keywords"
                     value="{{ old('meta_keywords', $page->meta_keywords ?? '') }}"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="วัดไทย, ธรรมะ, ท่องเที่ยว"
+                    placeholder="ไทย, ธรรมะ, ท่องเที่ยว"
                 >
                 @error('meta_keywords')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -227,7 +227,7 @@
             </div>
 
             <div class="lg:col-span-2">
-                <label for="meta_description" class="mb-1.5 block text-sm font-medium text-slate-300">Meta Description</label>
+                <label for="meta_description" class="mb-1.5 block text-sm font-medium text-slate-300">Meta คำอธิบาย</label>
                 <textarea
                     id="meta_description"
                     name="meta_description"
@@ -258,7 +258,7 @@
                     $selectedOgImageId = (string) old('og_image_media_id', $page->og_image_media_id ?? '');
                 @endphp
 
-                <label class="mb-2 block text-sm font-medium text-slate-300">OG Image</label>
+                <label class="mb-2 block text-sm font-medium text-slate-300">รูปภาพสำหรับแชร์</label>
 
                 @if ($media->isEmpty())
                     <div class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-4 text-sm text-slate-400">
@@ -281,7 +281,7 @@
 
                             <div class="border-t border-white/10 p-3">
                                 <p class="text-sm font-medium text-slate-200">ไม่ระบุรูป</p>
-                                <p class="mt-0.5 text-xs text-slate-500">ใช้ค่าเริ่มต้นของระบบ</p>
+                                <p class="mt-0.5 text-xs text-slate-500">ใช้เริ่มต้นของระบบ</p>
                             </div>
 
                             <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 bg-blue-500/10 ring-4 ring-blue-400/30 peer-checked:block"></div>
@@ -297,7 +297,7 @@
                                         ? $image->path
                                         : \Illuminate\Support\Facades\Storage::url($image->path))
                                     : null;
-                                $imageTitle = $image->title ?: $image->original_filename;
+                                $imageหัวข้อ = $image->title ?: $image->original_filename;
                             @endphp
 
                             <label class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]">
@@ -313,7 +313,7 @@
                                     @if ($imageUrl)
                                         <img
                                             src="{{ $imageUrl }}"
-                                            alt="{{ $imageTitle }}"
+                                            alt="{{ $imageหัวข้อ }}"
                                             class="h-full w-full object-cover"
                                             loading="lazy"
                                         >
@@ -326,7 +326,7 @@
 
                                 <div class="border-t border-white/10 p-3">
                                     <p class="truncate text-sm font-medium text-slate-200">
-                                        {{ $imageTitle }}
+                                        {{ $imageหัวข้อ }}
                                     </p>
                                     <p class="mt-0.5 text-xs text-slate-500">
                                         #{{ $image->id }} · {{ $image->media_type }}
@@ -362,7 +362,7 @@
             </div>
 
             <div>
-                <label for="og_description" class="mb-1.5 block text-sm font-medium text-slate-300">OG Description</label>
+                <label for="og_description" class="mb-1.5 block text-sm font-medium text-slate-300">OG คำอธิบาย</label>
                 <textarea
                     id="og_description"
                     name="og_description"

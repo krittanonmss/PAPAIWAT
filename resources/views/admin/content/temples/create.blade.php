@@ -1,12 +1,12 @@
-<x-layouts.admin title="{{ $title ?? 'Create Temple' }}" header="เพิ่มข้อมูลวัด">
-    <div class="space-y-6 text-white">
+<x-layouts.admin title="{{ $title ?? 'สร้างข้อมูลวัด' }}" header="เพิ่มข้อมูลวัด">
+    <div class="w-full max-w-none space-y-6 text-white">
 
         {{-- Page Header --}}
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 shadow-xl shadow-slate-950/30">
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Temple Management
+                        จัดการวัด
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">เพิ่มข้อมูลวัดใหม่</h1>
@@ -56,48 +56,33 @@
             id="temple-form"
             action="{{ route('admin.temples.store') }}"
             method="POST"
-            class="space-y-6"
+            class="w-full max-w-none space-y-6"
         >
             @csrf
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div x-data="{ activeTab: 'content' }" :class="`temple-studio-tab-${activeTab}`" class="w-full max-w-none space-y-6">
+                @include('admin.content.temples.partials._template_preview_panel', [
+                    'temple' => new \App\Models\Content\Temple\Temple(),
+                ])
 
-                {{-- Main Form --}}
-                <div class="space-y-6">
+                <div class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="grid gap-2 md:grid-cols-5">
+                        <button type="button" @click="activeTab = 'content'" :class="activeTab === 'content' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">เนื้อหา</button>
+                        <button type="button" @click="activeTab = 'details'" :class="activeTab === 'details' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">รายละเอียด</button>
+                        <button type="button" @click="activeTab = 'media'" :class="activeTab === 'media' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">สื่อ/ที่ตั้ง</button>
+                        <button type="button" @click="activeTab = 'visit'" :class="activeTab === 'visit' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">การเข้าชม</button>
+                        <button type="button" @click="activeTab = 'publish'" :class="activeTab === 'publish' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">เผยแพร่</button>
+                    </div>
+                </div>
+
+                <div class="w-full max-w-none space-y-6">
                     @include('admin.content.temples._form', [
                         'temple' => new \App\Models\Content\Temple\Temple(),
                     ])
                 </div>
-
-                <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">ลำดับการกรอกข้อมูล</h3>
-
-                        <div class="mt-4 space-y-2 text-sm">
-                            <a href="#basic-info" class="block rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-blue-200 hover:bg-blue-500/20">
-                                1. ข้อมูลหลักและเนื้อหา
-                            </a>
-                            <a href="#temple-details" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
-                                2. รายละเอียดเฉพาะวัด
-                            </a>
-                            <a href="#media-section" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
-                                3. รูปภาพและที่ตั้ง
-                            </a>
-                            <a href="#temple-publishing" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
-                                4. การเผยแพร่
-                            </a>
-                        </div>
-
-                        <div class="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
-                            <p class="text-xs leading-5 text-amber-100">
-                                ช่องรายละเอียดและประวัติใช้ editor แล้ว สามารถจัดหัวข้อ ลิสต์ ลิงก์ และข้อความเน้นได้ก่อนบันทึก
-                            </p>
-                        </div>
-                    </div>
-                </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

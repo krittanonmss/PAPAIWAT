@@ -98,7 +98,7 @@ class MediaController extends Controller
         $mediaTypes = ['image', 'video', 'audio', 'document', 'other'];
 
         return view('admin.content.media.items.index', [
-            'title' => 'Media Management',
+            'title' => 'จัดการคลังสื่อ',
             'mediaItems' => $mediaItems,
             'folders' => $folders,
             'folderOptions' => $folderOptions,
@@ -118,7 +118,7 @@ class MediaController extends Controller
             ->get(['id', 'name']);
 
         return view('admin.content.media.items.create', [
-            'title' => 'Upload Media',
+            'title' => 'อัปโหลดสื่อ',
             'folders' => $folders,
         ]);
     }
@@ -187,7 +187,7 @@ class MediaController extends Controller
             ->get(['id', 'name']);
 
         return view('admin.content.media.items.edit', [
-            'title' => 'Edit Media',
+            'title' => 'แก้ไขสื่อ',
             'media' => $media,
             'folders' => $folders,
         ]);

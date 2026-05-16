@@ -106,6 +106,7 @@ class TempleController extends Controller
             'facilities' => $this->facilities(),
             'detailTemplates' => $this->detailTemplates('temple'),
             'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'temple']),
+            'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'temple']),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
                 ->whereHas('content')
@@ -176,6 +177,7 @@ class TempleController extends Controller
             'templatePreviewUrl' => $temple->content
                 ? route('admin.content.template-preview', ['type' => 'temple', 'content' => $temple->content])
                 : route('admin.content.template-preview.sample', ['type' => 'temple']),
+            'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'temple']),
             'nearbyTemples' => Temple::query()
                 ->with('content:id,title')
                 ->where('id', '!=', $temple->id)
@@ -190,7 +192,7 @@ class TempleController extends Controller
         $this->templeDataSyncService->update($temple, $request->validated());
 
         return redirect()
-            ->route('admin.temples.index')
+            ->route('admin.temples.edit', $temple)
             ->with('success', 'อัปเดตข้อมูลวัดเรียบร้อยแล้ว');
     }
 

@@ -87,7 +87,7 @@
         .admin-content section,
         .admin-content aside,
         .admin-content form,
-        .admin-content article,
+        .admin-content บทความ,
         .admin-content div {
             border-color: var(--admin-border);
         }
@@ -133,33 +133,33 @@
     @php
         $admin = auth('admin')->user();
 
-        $isAccessManagementActive = request()->routeIs('admin.users.*')
+        $isAccessManagementเปิดใช้งาน = request()->routeIs('admin.users.*')
             || request()->routeIs('admin.roles.*')
             || request()->routeIs('admin.permissions.*');
 
-        $isTempleManagementActive = request()->routeIs('admin.temples.*');
+        $isTempleManagementเปิดใช้งาน = request()->routeIs('admin.temples.*');
 
-        $isArticleManagementActive = request()->routeIs('admin.content.articles.*')
+        $isArticleManagementเปิดใช้งาน = request()->routeIs('admin.content.articles.*')
             || request()->routeIs('admin.content.article-tags.*');
 
-        $isCategoryManagementActive = request()->routeIs('admin.categories.*');
+        $isCategoryManagementเปิดใช้งาน = request()->routeIs('admin.categories.*');
 
-        $isMediaManagementActive = request()->routeIs('admin.media-folders.*')
+        $isMediaManagementเปิดใช้งาน = request()->routeIs('admin.media-folders.*')
             || request()->routeIs('admin.media.*');
 
-        $isLayoutManagementActive = request()->routeIs('admin.content.menus.*')
+        $isLayoutManagementเปิดใช้งาน = request()->routeIs('admin.content.menus.*')
             || request()->routeIs('admin.content.pages.*')
             || request()->routeIs('admin.content.templates.*')
             || request()->routeIs('admin.content.footer.*');
 
-        $isInteractionManagementActive = request()->routeIs('admin.interactions.*');
+        $isInteractionManagementเปิดใช้งาน = request()->routeIs('admin.interactions.*');
 
-        $isContentManagementActive = $isTempleManagementActive
-            || $isArticleManagementActive
-            || $isCategoryManagementActive
-            || $isMediaManagementActive
-            || $isLayoutManagementActive
-            || $isInteractionManagementActive;
+        $isContentManagementเปิดใช้งาน = $isTempleManagementเปิดใช้งาน
+            || $isArticleManagementเปิดใช้งาน
+            || $isCategoryManagementเปิดใช้งาน
+            || $isMediaManagementเปิดใช้งาน
+            || $isLayoutManagementเปิดใช้งาน
+            || $isInteractionManagementเปิดใช้งาน;
     @endphp
 
     <div x-data="{ sidebarOpen: true }" class="min-h-screen">
@@ -211,7 +211,7 @@
                         </a>
 
                         <details
-                            x-data="{ open: {{ $isContentManagementActive ? 'true' : 'false' }} }"
+                            x-data="{ open: {{ $isContentManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                             x-bind:open="open"
                             class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
                         >
@@ -227,7 +227,7 @@
 
                             <div class="mt-2 space-y-2 transition-all duration-200">
                                 <details
-                                    x-data="{ open: {{ $isTempleManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isTempleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -254,7 +254,7 @@
                                 </details>
 
                                 <details
-                                    x-data="{ open: {{ $isArticleManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isArticleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -290,7 +290,7 @@
                                 </details>
 
                                 <details
-                                    x-data="{ open: {{ $isCategoryManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isCategoryManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -317,7 +317,7 @@
                                 </details>
 
                                 <details
-                                    x-data="{ open: {{ $isMediaManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isMediaManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -345,7 +345,7 @@
                                 </details>
 
                                 <details
-                                    x-data="{ open: {{ $isLayoutManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isLayoutManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -399,7 +399,7 @@
                                 </details>
 
                                 <details
-                                    x-data="{ open: {{ $isInteractionManagementActive ? 'true' : 'false' }} }"
+                                    x-data="{ open: {{ $isInteractionManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
                                     class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
                                 >
@@ -437,7 +437,7 @@
                         </details>
 
                         <details
-                            x-data="{ open: {{ $isAccessManagementActive ? 'true' : 'false' }} }"
+                            x-data="{ open: {{ $isAccessManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                             x-bind:open="open"
                             class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
                         >

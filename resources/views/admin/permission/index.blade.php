@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'จัดการ Permission'">
+<x-layouts.admin :title="'จัดการ สิทธิ์'">
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -8,7 +8,7 @@
                     <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
                         Access Management
                     </p>
-                    <h1 class="text-2xl font-bold text-white">จัดการ Permission</h1>
+                    <h1 class="text-2xl font-bold text-white">จัดการ สิทธิ์</h1>
                     <p class="mt-1 text-sm text-slate-400">
                         จัดการสิทธิ์การเข้าถึงของระบบ แยกตามกลุ่มการใช้งาน
                     </p>
@@ -19,7 +19,7 @@
                     class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                 >
                     <span class="text-lg leading-none">+</span>
-                    เพิ่ม Permission
+                    เพิ่ม สิทธิ์
                 </a>
             </div>
         </div>
@@ -41,7 +41,7 @@
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <form method="GET" action="{{ route('admin.permissions.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-5">
-                    <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา Permission</label>
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา สิทธิ์</label>
                     <input
                         type="text"
                         name="search"
@@ -84,15 +84,15 @@
             </form>
         </div>
 
-        {{-- Permission Groups --}}
-        @if ($groupedPermissions->isEmpty())
+        {{-- สิทธิ์ Groups --}}
+        @if ($groupedสิทธิ์s->isEmpty())
             <div class="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-10 text-center shadow-lg shadow-slate-950/20 backdrop-blur">
-                <p class="text-base font-medium text-slate-300">ไม่พบข้อมูล Permission</p>
-                <p class="mt-1 text-sm text-slate-500">ลองเปลี่ยนเงื่อนไขการค้นหา หรือเพิ่ม Permission ใหม่</p>
+                <p class="text-base font-medium text-slate-300">ไม่พบข้อมูล สิทธิ์</p>
+                <p class="mt-1 text-sm text-slate-500">ลองเปลี่ยนเงื่อนไขการค้นหา หรือเพิ่ม สิทธิ์ ใหม่</p>
             </div>
         @else
             <div class="space-y-4">
-                @foreach ($groupedPermissions as $group)
+                @foreach ($groupedสิทธิ์s as $group)
                     <details
                         class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur"
                         @if($selectedGroupKey === $group['group_key']) open @endif
@@ -198,7 +198,7 @@
         @endif
 
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-3 shadow-lg shadow-slate-950/20 backdrop-blur">
-            {{ $groupedPermissions->links() }}
+            {{ $groupedสิทธิ์s->links() }}
         </div>
 
     </div>

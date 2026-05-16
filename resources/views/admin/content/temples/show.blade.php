@@ -1,4 +1,4 @@
-<x-layouts.admin :title="$title" header="รายละเอียดข้อมูลวัด">
+<x-layouts.admin :title="$title" header="รายละเอียดข้อมูล">
     @php
         $content = $temple->content;
         $address = $temple->address;
@@ -18,7 +18,7 @@
 
         $galleryUsages = $content?->mediaUsages?->where('role_key', 'gallery') ?? collect();
 
-        $renderRichText = function (?string $value) {
+        $temple = function (?string $value) {
             if (! $value) {
                 return '-';
             }
@@ -55,7 +55,7 @@
                         href="{{ route('admin.temples.index') }}"
                         class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                     >
-                        กลับไปรายการวัด
+                        กลับไปรายการ
                     </a>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                 </div>
 
                 <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 shadow-xl shadow-slate-950/30 backdrop-blur">
-                    <p class="text-xs font-medium text-slate-400">Views</p>
+                    <p class="text-xs font-medium text-slate-400">ดูรายละเอียดs</p>
                     <p class="mt-1 text-2xl font-semibold text-white">{{ number_format($temple->stat->view_count ?? 0) }}</p>
                 </div>
             </div>
@@ -95,10 +95,10 @@
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <div class="space-y-6 xl:col-span-2">
 
-                {{-- Cover --}}
+                {{-- รูปปก --}}
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">รูป Cover</h2>
+                        <h2 class="text-base font-semibold text-white">รูป รูปปก</h2>
                     </div>
 
                     @if ($coverUrl)
@@ -112,7 +112,7 @@
                             {{ $coverUsage?->media?->title ?: $coverUsage?->media?->original_filename }}
                         </div>
                     @else
-                        <div class="p-6 text-sm text-slate-400">ไม่ได้เลือกรูป Cover</div>
+                        <div class="p-6 text-sm text-slate-400">ไม่ได้เลือกรูป รูปปก</div>
                     @endif
                 </section>
 
@@ -162,9 +162,9 @@
 
                     <div class="divide-y divide-white/10">
                         @foreach ([
-                            ['ชื่อวัด', $content?->title],
+                            ['ชื่อ', $content?->title],
                             ['Slug', $content?->slug],
-                            ['ประเภทวัด', $temple->temple_type],
+                            ['ประเภท', $temple->temple_type],
                             ['นิกาย', $temple->sect],
                             ['รูปแบบสถาปัตยกรรม', $temple->architecture_style],
                             ['ปีที่ก่อตั้ง', $temple->founded_year],
@@ -194,14 +194,14 @@
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">รายละเอียด</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $renderRichText($content?->description) !!}
+                                {!! $temple($content?->description) !!}
                             </div>
                         </div>
 
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">ประวัติ</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $renderRichText($temple->history) !!}
+                                {!! $temple($temple->history) !!}
                             </div>
                         </div>
                     </div>
@@ -249,7 +249,7 @@
                 {{-- Fees --}}
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">ค่าธรรมเนียม</h2>
+                        <h2 class="text-base font-semibold text-white">ธรรมเนียม</h2>
                     </div>
 
                     @if ($temple->fees->isNotEmpty())
@@ -282,7 +282,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="p-6 text-sm text-slate-400">ยังไม่มีข้อมูลค่าธรรมเนียม</div>
+                        <div class="p-6 text-sm text-slate-400">ยังไม่มีข้อมูลธรรมเนียม</div>
                     @endif
                 </section>
 
@@ -299,7 +299,7 @@
                                     <p class="text-xs text-slate-500">Order: {{ $highlight->sort_order ?? 0 }}</p>
                                     <p class="mt-1 text-sm font-medium text-white">{{ $highlight->title }}</p>
                                     <div class="mt-1 text-sm leading-6 text-slate-400">
-                                        {!! $renderRichText($highlight->description) !!}
+                                        {!! $temple($highlight->description) !!}
                                     </div>
                                 </div>
                             @endforeach
@@ -322,7 +322,7 @@
                                     <span class="mt-0.5 shrink-0 text-blue-300">•</span>
                                     <div>
                                         <div class="text-sm text-slate-300">
-                                            {!! $renderRichText($rule->rule_text) !!}
+                                            {!! $temple($rule->rule_text) !!}
                                         </div>
                                         <p class="mt-1 text-xs text-slate-500">Order: {{ $rule->sort_order ?? 0 }}</p>
                                     </div>
@@ -367,7 +367,7 @@
                                             <p class="text-slate-300">{{ $info->duration_minutes !== null ? $info->duration_minutes . ' นาที' : '-' }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-xs text-slate-500">ค่าใช้จ่าย</p>
+                                            <p class="text-xs text-slate-500">ใช้จ่าย</p>
                                             <p class="text-slate-300">{{ $info->cost_estimate ?: '-' }}</p>
                                         </div>
                                     </div>
@@ -386,7 +386,7 @@
                 {{-- Nearby Places --}}
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">วัดใกล้เคียง</h2>
+                        <h2 class="text-base font-semibold text-white">ใกล้เคียง</h2>
                     </div>
 
                     @if ($temple->nearbyPlaces->isNotEmpty())
@@ -429,7 +429,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="p-6 text-sm text-slate-400">ยังไม่มีข้อมูลวัดใกล้เคียง</div>
+                        <div class="p-6 text-sm text-slate-400">ยังไม่มีข้อมูลใกล้เคียง</div>
                     @endif
                 </section>
             </div>
@@ -437,7 +437,7 @@
             {{-- Right Column --}}
             <div class="space-y-6">
 
-                {{-- Status --}}
+                {{-- สถานะ --}}
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
                         <h2 class="text-base font-semibold text-white">สถานะและการเผยแพร่</h2>
@@ -454,7 +454,7 @@
 
                     <div class="divide-y divide-white/10">
                         <div class="flex items-center justify-between px-6 py-3">
-                            <span class="text-sm text-slate-400">Status</span>
+                            <span class="text-sm text-slate-400">สถานะ</span>
                             <span class="rounded-full border px-3 py-1 text-xs font-medium {{ $statusClass }}">
                                 {{ ucfirst($content?->status ?? '-') }}
                             </span>
@@ -523,13 +523,13 @@
                     @if ($address)
                         <div class="divide-y divide-white/10">
                             @foreach ([
-                                ['Address Line', $address->address_line],
+                                ['ที่อยู่', $address->address_line],
                                 ['แขวง / ตำบล', $address->subdistrict],
                                 ['เขต / อำเภอ', $address->district],
-                                ['จังหวัด', $address->province],
+                                ['จังห', $address->province],
                                 ['รหัสไปรษณีย์', $address->postal_code],
-                                ['Latitude', $address->latitude],
-                                ['Longitude', $address->longitude],
+                                ['ละติจูด', $address->latitude],
+                                ['ลองจิจูด', $address->longitude],
                                 ['Google Place ID', $address->google_place_id],
                             ] as [$label, $value])
                                 <div class="px-6 py-3">
@@ -573,7 +573,7 @@
                                     <p class="text-sm font-medium text-slate-200">
                                         {{ $item->facility?->name ?? "Facility #$item->facility_id" }}
                                     </p>
-                                    <p class="mt-1 text-sm text-slate-300">ค่า: {{ $item->value ?: '-' }}</p>
+                                    <p class="mt-1 text-sm text-slate-300">: {{ $item->value ?: '-' }}</p>
                                     <p class="mt-1 text-xs text-slate-500">หมายเหตุ: {{ $item->note ?: '-' }}</p>
                                 </div>
                             @endforeach
@@ -596,25 +596,25 @@
                         </div>
 
                         <div>
-                            <p class="text-xs font-medium text-slate-500">Meta Description</p>
+                            <p class="text-xs font-medium text-slate-500">Meta คำอธิบาย</p>
                             <p class="mt-0.5 text-sm text-slate-300">{{ $content?->meta_description ?: '-' }}</p>
                         </div>
                     </div>
                 </section>
 
-                {{-- Danger Zone --}}
+                {{-- โซนอันตราย --}}
                 <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
                     <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">Danger Zone</h2>
+                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
                     </div>
 
                     <div class="p-6">
-                        <p class="mb-4 text-sm text-rose-200/80">การลบข้อมูลวัดจะไม่สามารถกู้คืนได้</p>
+                        <p class="mb-4 text-sm text-rose-200/80">การลบข้อมูลจะไม่สามารถกู้คืนได้</p>
 
                         <form
                             method="POST"
                             action="{{ route('admin.temples.destroy', $temple) }}"
-                            onsubmit="return confirm('ยืนยันการลบข้อมูลวัดนี้?')"
+                            onsubmit="return confirm('ยืนยันการลบข้อมูลนี้?')"
                         >
                             @csrf
                             @method('DELETE')
@@ -623,7 +623,7 @@
                                 type="submit"
                                 class="w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20"
                             >
-                                ลบข้อมูลวัด
+                                ลบข้อมูล
                             </button>
                         </form>
                     </div>

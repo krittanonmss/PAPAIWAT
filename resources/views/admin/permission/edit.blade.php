@@ -1,8 +1,8 @@
-<x-layouts.admin :title="'แก้ไขสิทธิ์ (Permission)'">
+<x-layouts.admin :title="'แก้ไขสิทธิ์ (สิทธิ์)'">
     <div class="mx-auto max-w-3xl space-y-6 text-white">
 
         <div>
-            <h1 class="text-2xl font-bold text-white">แก้ไข Permission</h1>
+            <h1 class="text-2xl font-bold text-white">แก้ไข สิทธิ์</h1>
             <p class="mt-1 text-sm text-slate-400">
                 ปรับกลุ่มหรือประเภทสิทธิ์ได้ โดยระบบจะอัปเดต key ให้อัตโนมัติ
             </p>

@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Menu Detail
+                        รายละเอียดเมนู
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">{{ $menu->name }}</h1>
@@ -21,7 +21,7 @@
                         href="{{ route('admin.content.menu-items.create', $menu) }}"
                         class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
                     >
-                        Add Menu Item
+                        เพิ่มเมนูย่อย
                     </a>
 
                     <a
@@ -59,7 +59,7 @@
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="flex flex-col gap-4 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-white">Menu Items</h2>
+                            <h2 class="text-base font-semibold text-white">รายการเมนู</h2>
                             <p class="mt-1 text-sm text-slate-400">
                                 รายการเมนูที่อยู่ภายใต้กลุ่มนี้
                             </p>
@@ -69,7 +69,7 @@
                             href="{{ route('admin.content.menu-items.create', $menu) }}"
                             class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                         >
-                            Add
+                            เพิ่ม
                         </a>
                     </div>
 
@@ -77,12 +77,12 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-950/50 text-xs uppercase tracking-wide text-slate-400">
                                 <tr>
-                                    <th class="px-6 py-4 font-semibold">Label</th>
-                                    <th class="px-6 py-4 font-semibold">Type</th>
-                                    <th class="px-6 py-4 font-semibold">Target</th>
-                                    <th class="px-6 py-4 font-semibold">Order</th>
-                                    <th class="px-6 py-4 font-semibold">Status</th>
-                                    <th class="px-6 py-4 text-right font-semibold">Action</th>
+                                    <th class="px-6 py-4 font-semibold">ชื่อเมนู</th>
+                                    <th class="px-6 py-4 font-semibold">ประเภท</th>
+                                    <th class="px-6 py-4 font-semibold">ปลายทาง</th>
+                                    <th class="px-6 py-4 font-semibold">ลำดับ</th>
+                                    <th class="px-6 py-4 font-semibold">สถานะ</th>
+                                    <th class="px-6 py-4 text-right font-semibold">การจัดการ</th>
                                 </tr>
                             </thead>
 
@@ -164,12 +164,12 @@
             <div class="space-y-6">
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">Menu Detail</h2>
+                        <h2 class="text-base font-semibold text-white">รายละเอียดเมนู</h2>
                     </div>
 
                     <div class="divide-y divide-white/10">
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Name</p>
+                            <p class="text-xs text-slate-500">ชื่อ</p>
                             <p class="mt-0.5 break-words text-sm font-medium text-slate-200">{{ $menu->name }}</p>
                         </div>
 
@@ -188,15 +188,15 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Sort Order</span>
+                            <span class="text-sm text-slate-400">ลำดับ</span>
                             <span class="text-sm font-medium text-slate-200">{{ $menu->sort_order }}</span>
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Default</span>
+                            <span class="text-sm text-slate-400">เริ่มต้น</span>
                             @if($menu->is_default)
                                 <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">
-                                    Default
+                                    เริ่มต้น
                                 </span>
                             @else
                                 <span class="text-sm text-slate-500">-</span>
@@ -204,14 +204,14 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Status</span>
+                            <span class="text-sm text-slate-400">สถานะ</span>
                             <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium {{ $statusClass }}">
                                 {{ ucfirst($menu->status) }}
                             </span>
                         </div>
 
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Description</p>
+                            <p class="text-xs text-slate-500">คำอธิบาย</p>
                             <p class="mt-0.5 text-sm leading-6 text-slate-300">
                                 {{ $menu->description ?: '-' }}
                             </p>
@@ -221,7 +221,7 @@
 
                 <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
                     <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">Danger Zone</h2>
+                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
                     </div>
 
                     <div class="p-6">

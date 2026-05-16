@@ -49,9 +49,9 @@
                     </div>
 
                     <div class="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4">
-                        <p class="text-xs text-yellow-300">Super Admin</p>
+                        <p class="text-xs text-yellow-300">ผู้ดูแลสูงสุด</p>
                         <p class="mt-1 text-2xl font-bold text-yellow-300">
-                            {{ $admins->filter(fn ($a) => $a->role?->name === 'Super Admin')->count() }}
+                            {{ $admins->filter(fn ($a) => $a->role?->name === 'ผู้ดูแลสูงสุด')->count() }}
                         </p>
                     </div>
                 </div>
@@ -140,7 +140,7 @@
             </form>
         </div>
 
-        {{-- Bulk Actions --}}
+        {{-- Bulk การจัดการs --}}
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -408,7 +408,7 @@
                         .map((checkbox) => checkbox.value);
 
                     if (selectedIds.length === 0) {
-                        event.preventDefault();
+                        event.preventเริ่มต้น();
                         alert('กรุณาเลือกผู้ใช้งานอย่างน้อย 1 คน');
                         return;
                     }
@@ -416,7 +416,7 @@
                     const confirmMessage = form.dataset.confirmMessage || 'ยืนยันการทำรายการ?';
 
                     if (! confirm(confirmMessage)) {
-                        event.preventDefault();
+                        event.preventเริ่มต้น();
                         return;
                     }
 

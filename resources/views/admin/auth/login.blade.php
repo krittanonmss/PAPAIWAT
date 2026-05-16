@@ -1,4 +1,4 @@
-<x-layouts.admin-guest :title="'Admin Login'">
+<x-layouts.admin-guest :title="'เข้าสู่ระบบผู้ดูแล'">
     <div class="mb-8 text-center">
         <h1 class="text-3xl font-bold text-white tracking-wide">PAPAWAT CMS</h1>
         <p class="mt-2 text-sm text-slate-400">ระบบจัดการเนื้อหา</p>

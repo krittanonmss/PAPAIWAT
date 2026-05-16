@@ -151,6 +151,7 @@ class ArticleController extends Controller
             'coverMediaItems' => $this->coverMediaItems(),
             'detailTemplates' => $this->detailTemplates('article'),
             'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'article']),
+            'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'article']),
         ]);
     }
 
@@ -208,7 +209,7 @@ class ArticleController extends Controller
 
         return redirect()
             ->route('admin.content.articles.index')
-            ->with('success', 'Article created successfully.');
+            ->with('success', 'สร้างบทความเรียบร้อยแล้ว');
     }
 
     public function show(Article $article): View
@@ -280,6 +281,7 @@ class ArticleController extends Controller
             'templatePreviewUrl' => $article->content
                 ? route('admin.content.template-preview', ['type' => 'article', 'content' => $article->content])
                 : route('admin.content.template-preview.sample', ['type' => 'article']),
+            'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'article']),
         ]);
     }
 
@@ -351,8 +353,8 @@ class ArticleController extends Controller
         });
 
         return redirect()
-            ->route('admin.content.articles.index')
-            ->with('success', 'Article updated successfully.');
+            ->route('admin.content.articles.edit', $article)
+            ->with('success', 'อัปเดตบทความเรียบร้อยแล้ว');
     }
 
     public function destroy(Article $article): RedirectResponse
@@ -374,7 +376,7 @@ class ArticleController extends Controller
 
         return redirect()
             ->route('admin.content.articles.index')
-            ->with('success', 'Article deleted successfully.');
+            ->with('success', 'ลบบทความเรียบร้อยแล้ว');
     }
 
     private function syncCategories(Content $content, array $categoryIds): void

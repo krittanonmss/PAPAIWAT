@@ -1,19 +1,19 @@
 <div class="space-y-6">
-    {{-- Template Information --}}
+    {{-- เทมเพลต Information --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
             <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                Template Setup
+                เทมเพลต Setup
             </div>
 
-            <h2 class="text-lg font-semibold text-white">Template Information</h2>
-            <p class="mt-1 text-sm text-slate-400">ข้อมูลหลักของ Template สำหรับ render หน้าเว็บไซต์</p>
+            <h2 class="text-lg font-semibold text-white">เทมเพลต Information</h2>
+            <p class="mt-1 text-sm text-slate-400">ข้อมูลหลักของ เทมเพลต สำหรับ แสดงผล หน้าเว็บไซต์</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
             <div>
                 <label for="name" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Name <span class="text-rose-400">*</span>
+                    ชื่อ <span class="text-rose-400">*</span>
                 </label>
                 <input
                     id="name"
@@ -21,7 +21,7 @@
                     name="name"
                     value="{{ old('name', $template->name ?? '') }}"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="เช่น Default Page"
+                    placeholder="เช่น เริ่มต้น Page"
                     required
                 >
                 @error('name')
@@ -41,7 +41,7 @@
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                     placeholder="เช่น default-page"
                 >
-                <p class="mt-1.5 text-xs text-slate-500">เว้นว่างได้ ระบบจะสร้างจากชื่อ Template ให้อัตโนมัติ</p>
+                <p class="mt-1.5 text-xs text-slate-500">เว้นว่างได้ ระบบจะสร้างจากชื่อ เทมเพลต ให้อัตโนมัติ</p>
                 @error('key')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
                 @enderror
@@ -49,7 +49,7 @@
 
             <div>
                 <label for="view_path" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    View Path <span class="text-rose-400">*</span>
+                    พาธ ดูรายละเอียด <span class="text-rose-400">*</span>
                 </label>
                 <input
                     id="view_path"
@@ -57,10 +57,10 @@
                     name="view_path"
                     value="{{ old('view_path', $template->view_path ?? '') }}"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="เช่น frontend.pages.default"
+                    placeholder="เช่น หน้าเว็บจริง.pages.default"
                     required
                 >
-                <p class="mt-1.5 text-xs text-slate-500">ใช้รูปแบบ Blade view path เช่น frontend.pages.default</p>
+                <p class="mt-1.5 text-xs text-slate-500">ใช้รูปแบบ Blade view path เช่น หน้าเว็บจริง.pages.default</p>
                 @error('view_path')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
                 @enderror
@@ -68,7 +68,7 @@
 
             <div>
                 <label for="sort_order" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Sort Order
+                    ลำดับ
                 </label>
                 <input
                     id="sort_order"
@@ -85,7 +85,7 @@
 
             <div>
                 <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Status <span class="text-rose-400">*</span>
+                    สถานะ <span class="text-rose-400">*</span>
                 </label>
                 <select
                     id="status"
@@ -94,10 +94,10 @@
                     required
                 >
                     <option value="active" {{ old('status', $template->status ?? 'active') === 'active' ? 'selected' : '' }}>
-                        Active
+                        เปิดใช้งาน
                     </option>
                     <option value="inactive" {{ old('status', $template->status ?? 'active') === 'inactive' ? 'selected' : '' }}>
-                        Inactive
+                        ปิดใช้งาน
                     </option>
                 </select>
                 @error('status')
@@ -120,7 +120,7 @@
                             Set as default template
                         </label>
                         <p class="mt-1 text-xs leading-5 text-slate-400">
-                            ถ้าเลือก Template นี้ ค่า default เดิมจะถูกยกเลิก
+                            ถ้าเลือก เทมเพลต นี้  default เดิมจะถูกยกเลิก
                         </p>
                     </div>
                 </div>
@@ -129,14 +129,14 @@
 
         <div class="mt-6">
             <label for="description" class="mb-1.5 block text-sm font-medium text-slate-300">
-                Description
+                คำอธิบาย
             </label>
             <textarea
                 id="description"
                 name="description"
                 rows="4"
                 class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                placeholder="คำอธิบาย Template เช่น ใช้สำหรับหน้า CMS ทั่วไป"
+                placeholder="คำอธิบาย เทมเพลต เช่น ใช้สำหรับหน้า CMS ทั่วไป"
             >{{ old('description', $template->description ?? '') }}</textarea>
             @error('description')
                 <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>

@@ -1,4 +1,4 @@
-<x-layouts.admin title="รายละเอียดบทความ" header="รายละเอียดบทความ">
+<x-layouts.admin title="รายละเอียด" header="รายละเอียด">
     @php
         $content = $article->content;
         $coverUsage = $content?->mediaUsages?->firstWhere('role_key', 'cover');
@@ -30,10 +30,10 @@
                         Article Detail
                     </p>
                     <h1 class="text-2xl font-bold text-white">
-                        {{ $content?->title ?? 'รายละเอียดบทความ' }}
+                        {{ $content?->title ?? 'รายละเอียด' }}
                     </h1>
                     <p class="mt-1 text-sm text-slate-400">
-                        แสดงรายละเอียดบทความ เนื้อหา SEO หมวดหมู่ แท็ก รูปภาพ สถิติ และข้อมูลการเผยแพร่
+                        แสดงรายละเอียด เนื้อหา SEO หมวดหมู่ แท็ก รูปภาพ สถิติ และข้อมูลการเผยแพร่
                     </p>
                 </div>
 
@@ -58,11 +58,11 @@
         <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div class="space-y-5">
 
-                {{-- Cover --}}
+                {{-- รูปปก --}}
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-3">
                         <h2 class="text-base font-semibold text-white">รูปภาพหน้าปก</h2>
-                        <p class="text-sm text-slate-400">รูปหลักที่ใช้แสดงผลในหน้าบทความ</p>
+                        <p class="text-sm text-slate-400">รูปหลักที่ใช้แสดงผลในหน้า</p>
                     </div>
 
                     <div class="p-5">
@@ -98,7 +98,7 @@
                         @else
                             <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-10 text-center">
                                 <p class="text-base font-medium text-slate-300">ไม่มีรูปภาพหน้าปก</p>
-                                <p class="mt-1 text-sm text-slate-500">ยังไม่ได้เลือก cover media สำหรับบทความนี้</p>
+                                <p class="mt-1 text-sm text-slate-500">ยังไม่ได้เลือก cover media สำหรับนี้</p>
                             </div>
                         @endif
                     </div>
@@ -107,13 +107,13 @@
                 {{-- Content Information --}}
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-3">
-                        <h2 class="text-base font-semibold text-white">ข้อมูลบทความ</h2>
-                        <p class="text-sm text-slate-400">ข้อมูลหลักจาก content และ article record</p>
+                        <h2 class="text-base font-semibold text-white">ข้อมูล</h2>
+                        <p class="text-sm text-slate-400">ข้อมูลหลักจาก content และ  record</p>
                     </div>
 
                     <div class="grid gap-3 p-5 md:grid-cols-2">
                         @foreach ([
-                            'ชื่อบทความ' => $content?->title ?? '-',
+                            'ชื่อ' => $content?->title ?? '-',
                             'ชื่อภาษาอังกฤษ' => $article->title_en ?: '-',
                             'Slug' => $content?->slug ?? '-',
                             'ผู้เขียน' => $article->author_name ?: '-',
@@ -171,7 +171,7 @@
                         </div>
 
                         <div>
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">เนื้อหาบทความ</div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">เนื้อหา</div>
                             <div class="mt-2 max-h-[520px] overflow-y-auto whitespace-pre-line rounded-2xl border border-white/10 bg-slate-950/60 p-4 font-mono text-sm text-slate-200">
                                 {{ $article->body ?: '-' }}
                             </div>
@@ -183,7 +183,7 @@
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-3">
                         <h2 class="text-base font-semibold text-white">SEO</h2>
-                        <p class="text-sm text-slate-400">ข้อมูลสำหรับ Search Engine และ Social Preview</p>
+                        <p class="text-sm text-slate-400">ข้อมูลสำหรับ เครื่องมือค้นหา และ Social Preview</p>
                     </div>
 
                     <div class="space-y-4 p-5">
@@ -193,7 +193,7 @@
                         </div>
 
                         <div class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Meta Description</div>
+                            <div class="text-xs font-medium uppercase tracking-wide text-slate-500">Meta คำอธิบาย</div>
                             <div class="mt-1 whitespace-pre-line text-sm text-slate-200">{{ $content?->meta_description ?: '-' }}</div>
                         </div>
 
@@ -229,7 +229,7 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3">
-                            <span class="text-slate-400">บทความแนะนำ</span>
+                            <span class="text-slate-400">แนะนำ</span>
                             <span class="font-medium {{ $content?->is_featured ? 'text-yellow-300' : 'text-slate-400' }}">
                                 {{ $content?->is_featured ? 'ใช่' : 'ไม่ใช่' }}
                             </span>
@@ -310,26 +310,26 @@
                 {{-- Related Articles --}}
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-3">
-                        <h2 class="text-base font-semibold text-white">บทความที่เกี่ยวข้อง</h2>
+                        <h2 class="text-base font-semibold text-white">ที่เกี่ยวข้อง</h2>
                     </div>
 
                     <div class="space-y-3 p-5">
                         @forelse ($article->relatedArticles as $relatedArticle)
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-300">
                                 <div class="font-medium text-slate-200">
-                                    {{ $relatedArticle->content?->title ?? 'ไม่มีชื่อบทความ' }}
+                                    {{ $relatedArticle->content?->title ?? 'ไม่มีชื่อ' }}
                                 </div>
                                 <div class="mt-1 text-xs text-slate-500">
                                     #{{ $relatedArticle->id }} | {{ $relatedArticle->content?->slug ?? '-' }}
                                 </div>
                             </div>
                         @empty
-                            <span class="text-sm text-slate-500">ยังไม่มีบทความที่เกี่ยวข้อง</span>
+                            <span class="text-sm text-slate-500">ยังไม่มีที่เกี่ยวข้อง</span>
                         @endforelse
                     </div>
                 </section>
 
-                {{-- Cover Media Metadata --}}
+                {{-- รูปปก Media Metadata --}}
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-3">
                         <h2 class="text-base font-semibold text-white">ข้อมูลไฟล์หน้าปก</h2>
@@ -339,7 +339,7 @@
                         @if ($coverMedia)
                             <div class="space-y-2 text-sm text-slate-300">
                                 <div><span class="text-slate-500">ID:</span> #{{ $coverMedia->id }}</div>
-                                <div><span class="text-slate-500">Title:</span> {{ $coverMedia->title ?: '-' }}</div>
+                                <div><span class="text-slate-500">หัวข้อ:</span> {{ $coverMedia->title ?: '-' }}</div>
                                 <div><span class="text-slate-500">File:</span> {{ $coverMedia->original_filename ?: '-' }}</div>
                                 <div><span class="text-slate-500">MIME:</span> {{ $coverMedia->mime_type ?: '-' }}</div>
                                 <div><span class="text-slate-500">Size:</span> {{ $coverMedia->file_size ? number_format($coverMedia->file_size / 1024, 2) . ' KB' : '-' }}</div>

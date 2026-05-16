@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Edit Template'">
+<x-layouts.admin :title="'แก้ไขเทมเพลต'">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,10 +6,10 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Template Management
+                        จัดการเทมเพลต
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">Edit Template</h1>
+                    <h1 class="text-2xl font-bold text-white">แก้ไขเทมเพลต</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
                         กำลังแก้ไข:
@@ -76,23 +76,23 @@
 
                         <div class="mt-4 space-y-3">
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">ข้อมูล Template</p>
+                                <p class="text-sm font-medium text-slate-200">ข้อมูล เทมเพลต</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    แก้ไขชื่อ key รายละเอียด และ View Path ของ Template
+                                    แก้ไขชื่อ key รายละเอียด และ พาธ ดูรายละเอียด ของ เทมเพลต
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">การ Render</p>
+                                <p class="text-sm font-medium text-slate-200">การ การแสดงผล</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบ View Path ให้ตรงกับ Blade view ที่ใช้แสดงผลจริง
+                                    ตรวจสอบ พาธ ดูรายละเอียด ให้ตรงกับ Blade view ที่ใช้แสดงผลจริง
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">การใช้งานกับ Page</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    Template นี้อาจถูกใช้งานกับ Page ที่ผูกอยู่แล้ว ควรตรวจสอบก่อนบันทึก
+                                    เทมเพลต นี้อาจถูกใช้งานกับ Page ที่ผูกอยู่แล้ว ควรตรวจสอบก่อนบันทึก
                                 </p>
                             </div>
                         </div>
@@ -100,7 +100,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

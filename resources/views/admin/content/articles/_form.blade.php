@@ -1,5 +1,6 @@
 @php
     /** @var \App\Models\Content\Article\Article|null $article */
+    $article = $article ?? null;
     $content = $article->content ?? null;
 
     $selectedCategoryIds = old(
@@ -277,22 +278,33 @@
         .article-form-ui label {
             font-size: 0.95rem;
         }
-    </style>
-@endonce
 
-<div class="article-form-ui space-y-6">
+        .article-studio-tab-content .article-panel:not(.article-panel-content),
+        .article-studio-tab-taxonomy .article-panel:not(.article-panel-taxonomy),
+        .article-studio-tab-media .article-panel:not(.article-panel-media),
+        .article-studio-tab-seo .article-panel:not(.article-panel-seo),
+        .article-studio-tab-publish .article-panel:not(.article-panel-publish) {
+            display: none !important;
+        }
+    </style>
+    @endonce
+
+    <input type="hidden" name="content_id" value="{{ $content?->id }}">
+    <input type="hidden" name="article_id" value="{{ $article?->id }}">
+
+    <div class="article-form-ui space-y-6">
     <div class="space-y-6">
         {{-- Main Content --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+        <section class="article-panel article-panel-content overflow-visible rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-main" class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">ข้อมูลหลักของบทความ</h2>
-                <p class="mt-1 text-xs text-slate-400">กรอกชื่อบทความ คำโปรย เนื้อหา ผู้เขียน และเวลาการเผยแพร่ในพื้นที่เดียว</p>
+                <p class="mt-1 text-xs text-slate-400">กรอกชื่อ คำโปรย เนื้อหา ผู้เขียน และเวลาการเผยแพร่ในพื้นที่เดียว</p>
             </div>
 
             <div class="grid gap-6 p-6 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label for="title" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ชื่อบทความ <span class="text-rose-400">*</span>
+                        ชื่อ <span class="text-rose-400">*</span>
                     </label>
                     <input
                         type="text"
@@ -300,7 +312,7 @@
                         name="title"
                         value="{{ old('title', $content->title ?? '') }}"
                         class="@error('title') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="กรอกชื่อบทความ"
+                        placeholder="กรอกชื่อ"
                     >
                     @error('title')
                         <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -326,36 +338,42 @@
 
                 <div class="md:col-span-2">
                     <label for="template_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        Template หน้า Detail
+                        เทมเพลต หน้า Detail
                     </label>
-                    <select
-                        id="template_id"
-                        name="template_id"
-                        data-template-preview-select
-                        data-preview-target="article-template-preview"
-                        data-preview-base="{{ $templatePreviewUrl }}"
-                        class="@error('template_id') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="">ใช้ค่าเริ่มต้นของบทความ</option>
-                        @foreach ($detailTemplates as $template)
-                            <option value="{{ $template->id }}" @selected((string) old('template_id', $content?->template_id) === (string) $template->id)>
-                                {{ $template->name }} ({{ $template->key }})
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'template_id',
+                        'name' => 'template_id',
+                        'selected' => old('template_id', $content?->template_id),
+                        'emptyLabel' => 'ใช้ค่าเริ่มต้นของบทความ',
+                        'placeholder' => 'เลือกเทมเพลต',
+                        'searchPlaceholder' => 'ค้นหาเทมเพลต...',
+                        'errorKey' => 'template_id',
+                        'visibleLimit' => null,
+                        'dataAttributes' => [
+                            'data-template-preview-select' => '',
+                            'data-preview-target' => 'article-template-preview',
+                            'data-preview-base' => $templatePreviewUrl,
+                        ],
+                        'options' => $detailTemplates->map(fn ($template) => [
+                            'value' => $template->id,
+                            'label' => $template->name,
+                            'meta' => $template->key,
+                            'search' => $template->name . ' ' . $template->key . ' ' . $template->view_path,
+                        ]),
+                    ])
                     @error('template_id')
                         <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
                     @enderror
                     <p class="mt-1.5 text-xs text-slate-500">
-                        ถ้าไม่เลือก ระบบจะใช้ article-detail template ที่ active อยู่
+                        ถ้าไม่เลือก ระบบจะใช้เทมเพลต article-detail ที่เปิดใช้งานอยู่
                     </p>
 
                     @if ($templatePreviewSrc)
-                        <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
+                        <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70" data-template-preview-live-url="{{ $templatePreviewLiveUrl ?? '' }}">
                             <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
                                 <div>
-                                    <p class="text-sm font-medium text-slate-200">Preview template</p>
-                                    <p class="mt-0.5 text-xs text-slate-500">ใช้ข้อมูล article จาก database ล่าสุด กดบันทึกก่อนรีเฟรช preview</p>
+                                    <p class="text-sm font-medium text-slate-200">ตัวอย่างเทมเพลต</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">แสดงข้อมูลจากฟอร์มที่กำลังแก้แบบ realtime ก่อนบันทึกจริง</p>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <button
@@ -363,7 +381,7 @@
                                         data-template-preview-refresh
                                         class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10"
                                     >
-                                        รีเฟรชข้อมูลจาก DB
+                                        รีเฟรช preview
                                     </button>
                                     <a
                                         href="{{ $templatePreviewSrc }}"
@@ -391,10 +409,16 @@
                                 }
 
                                 select.dataset.previewBound = '1';
-                                const updatePreview = () => {
+                                const form = select.closest('form');
+                                const frame = document.getElementById(select.dataset.previewTarget);
+                                const previewBox = frame?.closest('[data-template-preview-live-url]');
+                                const liveUrl = previewBox?.dataset.templatePreviewLiveUrl;
+                                let previewTimer = null;
+                                let previewController = null;
+
+                                const updateStaticUrl = () => {
                                     const baseUrl = select.dataset.previewBase;
-                                    const frame = document.getElementById(select.dataset.previewTarget);
-                                    const openLink = select.closest('div').querySelector('[data-template-preview-open]');
+                                    const openLink = previewBox?.querySelector('[data-template-preview-open]');
 
                                     if (!baseUrl || !frame) {
                                         return;
@@ -406,20 +430,59 @@
                                         url.searchParams.set('template_id', select.value);
                                     }
 
-                                    url.searchParams.set('_preview_ts', Date.now().toString());
-
-                                    frame.src = url.toString();
-
                                     if (openLink) {
                                         openLink.href = url.toString();
                                     }
                                 };
 
-                                select.addEventListener('change', updatePreview);
+                                const แสดงผลLivePreview = async () => {
+                                    updateStaticUrl();
 
-                                select.closest('div')
-                                    .querySelector('[data-template-preview-refresh]')
-                                    ?.addEventListener('click', updatePreview);
+                                    if (!form || !frame || !liveUrl) {
+                                        return;
+                                    }
+
+                                    previewController?.abort();
+                                    previewController = new AbortController();
+
+                                    const formData = new FormData(form);
+                                    formData.delete('_method');
+
+                                    try {
+                                        const response = await fetch(liveUrl, {
+                                            method: 'POST',
+                                            body: formData,
+                                            headers: {
+                                                Accept: 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                            },
+                                            signal: previewController.signal,
+                                        });
+
+                                        const payload = await response.json();
+                                        frame.srcdoc = payload.html || '';
+                                    } catch (error) {
+                                        if (error.name !== 'AbortError') {
+                                            frame.srcdoc = '<div style="font-family: sans-serif; padding: 2rem; color: white; background: #020617;">Preview failed</div>';
+                                        }
+                                    }
+                                };
+
+                                const scheduleLivePreview = () => {
+                                    window.clearTimeout(previewTimer);
+                                    previewTimer = window.setTimeout(แสดงผลLivePreview, 350);
+                                };
+
+                                select.addEventListener('change', scheduleLivePreview);
+
+                                form?.addEventListener('input', scheduleLivePreview, true);
+                                form?.addEventListener('change', scheduleLivePreview, true);
+
+                                previewBox
+                                    ?.querySelector('[data-template-preview-refresh]')
+                                    ?.addEventListener('click', แสดงผลLivePreview);
+
+                                แสดงผลLivePreview();
                             });
                         </script>
                     @endif
@@ -427,7 +490,7 @@
 
                 <div class="md:col-span-2">
                     <label for="title_en" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ชื่อบทความภาษาอังกฤษ
+                        ชื่อภาษาอังกฤษ
                     </label>
                     <input
                         type="text"
@@ -435,7 +498,7 @@
                         name="title_en"
                         value="{{ old('title_en', $article->title_en ?? '') }}"
                         class="@error('title_en') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="กรอกชื่อบทความภาษาอังกฤษ"
+                        placeholder="กรอกชื่อภาษาอังกฤษ"
                     >
                     @error('title_en')
                         <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -451,7 +514,7 @@
                         name="excerpt"
                         rows="3"
                         class="@error('excerpt') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="สรุปบทความแบบสั้น"
+                        placeholder="สรุปแบบสั้น"
                     >{{ old('excerpt', $content->excerpt ?? '') }}</textarea>
                     @error('excerpt')
                         <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -467,7 +530,7 @@
                         name="excerpt_en"
                         rows="3"
                         class="@error('excerpt_en') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        placeholder="สรุปบทความภาษาอังกฤษแบบสั้น"
+                        placeholder="สรุปภาษาอังกฤษแบบสั้น"
                     >{{ old('excerpt_en', $article->excerpt_en ?? '') }}</textarea>
                     @error('excerpt_en')
                         <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -525,9 +588,9 @@
                         @include('admin.content.partials._rich_text_editor', [
                             'name' => 'body',
                             'id' => 'body',
-                            'label' => 'เนื้อหาบทความ',
+                            'label' => 'เนื้อหา',
                             'value' => $bodyEditorValue,
-                            'placeholder' => 'เขียนเนื้อหาบทความ จัดหัวข้อ ลิสต์ ลิงก์ และข้อความเน้นได้',
+                            'placeholder' => 'เขียนเนื้อหา จัดหัวข้อ ลิสต์ ลิงก์ และข้อความเน้นได้',
                             'hint' => 'รองรับหัวข้อ ลิสต์ ลิงก์ quote และ code block',
                             'minHeight' => '420px',
                             'maxHeight' => '560px',
@@ -537,7 +600,7 @@
 
                     <div class="mt-6" x-show="bodyFormat !== 'html'">
                         <label for="body_raw" class="mb-1.5 block text-sm font-medium text-slate-300">
-                            เนื้อหาบทความ
+                            เนื้อหา
                         </label>
                         <textarea
                             id="body_raw"
@@ -590,10 +653,10 @@
         </section>
 
         {{-- SEO --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+        <section class="article-panel article-panel-seo overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-seo" class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">SEO</h2>
-                <p class="mt-1 text-xs text-slate-400">ข้อมูลสำหรับ Search Engine และการแชร์บทความ</p>
+                <p class="mt-1 text-xs text-slate-400">ข้อมูลสำหรับ เครื่องมือค้นหา และการแชร์</p>
             </div>
 
             <div class="grid gap-6 p-6">
@@ -616,7 +679,7 @@
 
                 <div>
                     <label for="meta_description" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        Meta Description
+                        Meta คำอธิบาย
                     </label>
                     <textarea
                         id="meta_description"
@@ -692,13 +755,13 @@
                     });
                 },
             }"
-            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
             <div id="article-categories" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-base font-semibold text-white">หมวดหมู่</h2>
+                    <h2 class="text-base font-semibold text-white">Categories / Tags</h2>
                     <p class="mt-1 text-xs text-slate-400">
-                        เลือกหมวดหมู่ที่เกี่ยวข้องกับบทความ
+                        เลือกหมวดหมู่ที่เกี่ยวข้องกับ
                     </p>
                 </div>
 
@@ -789,7 +852,7 @@
                     </div>
 
                     @if ($categories->isEmpty())
-                        <p class="text-sm text-slate-500">ไม่พบหมวดหมู่บทความที่เปิดใช้งาน</p>
+                        <p class="text-sm text-slate-500">ไม่พบหมวดหมู่ที่เปิดใช้งาน</p>
                     @endif
                 </div>
 
@@ -833,7 +896,7 @@
                     });
                 },
             }"
-            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
             <div id="article-tags" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -930,7 +993,7 @@
                     </div>
 
                     @if ($tags->isEmpty())
-                        <p class="text-sm text-slate-500">ไม่พบแท็กบทความที่เปิดใช้งาน</p>
+                        <p class="text-sm text-slate-500">ไม่พบแท็กที่เปิดใช้งาน</p>
                     @endif
                 </div>
 
@@ -980,13 +1043,13 @@
                     }
                 },
             }"
-            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+            class="article-panel article-panel-media overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
         >
             <div id="article-media" class="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
                 <div>
-                    <h2 class="text-base font-semibold text-white">รูปภาพหน้าปก</h2>
+                    <h2 class="text-base font-semibold text-white">Media</h2>
                     <p class="mt-1 text-xs text-slate-400">
-                        อัปโหลดรูปใหม่หรือเลือกรูปจาก Media Library เพื่อใช้เป็นภาพหน้าปกของบทความ
+                        อัปโหลดรูปใหม่หรือเลือกรูปจาก คลังสื่อ เพื่อใช้เป็นภาพหน้าปกของ
                     </p>
                 </div>
 
@@ -1025,7 +1088,7 @@
 
                             <p x-show="errorMessage" x-text="errorMessage" class="mt-1 text-xs text-rose-400"></p>
                             <p class="mt-2 text-xs text-slate-500">
-                                เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า Media Library แล้ว refresh หน้า
+                                เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า คลังสื่อ แล้ว refresh หน้า
                             </p>
                         </div>
 
@@ -1064,9 +1127,9 @@
 
                 <div class="space-y-3">
                     <div>
-                        <h3 class="text-sm font-semibold text-slate-200">รูปหน้าปกบทความ</h3>
+                        <h3 class="text-sm font-semibold text-slate-200">รูปหน้าปก</h3>
                         <p class="mt-1 text-xs text-slate-500">
-                            เลือกรูปเดียวสำหรับ card, หน้า list และหน้า detail ของบทความ
+                            เลือกรูปเดียวสำหรับ card, หน้า list และหน้ารายละเอียด ของ
                         </p>
                     </div>
 
@@ -1084,24 +1147,80 @@
         </section>
 
         {{-- Related Articles --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-            <div class="border-b border-white/10 px-6 py-4">
-                <h2 class="text-base font-semibold text-white">บทความที่เกี่ยวข้อง</h2>
+        <section
+            x-data="{
+                search: '',
+                selectedRelatedArticleIds: @js(array_map('strval', $selectedRelatedArticleIds)),
+                relatedArticles: @js($relatedArticles->map(fn ($relatedArticle) => [
+                    'id' => (string) $relatedArticle->id,
+                    'title' => $relatedArticle->content?->title ?? 'ไม่มีชื่อ',
+                    'slug' => $relatedArticle->content?->slug ?? '-',
+                    'search' => mb_strtolower(($relatedArticle->content?->title ?? '') . ' ' . ($relatedArticle->content?->slug ?? '') . ' ' . $relatedArticle->id),
+                ])->values()),
+                isSelected(id) {
+                    return this.selectedRelatedArticleIds.includes(String(id));
+                },
+                get filteredRelatedArticles() {
+                    const keyword = this.search.toLowerCase().trim();
+                    if (!keyword) {
+                        return this.relatedArticles;
+                    }
+                    return this.relatedArticles.filter((article) => article.search.includes(keyword));
+                }
+            }"
+            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
+        >
+            <div id="article-related" class="border-b border-white/10 px-6 py-4">
+                <h2 class="text-base font-semibold text-white">Related Content</h2>
             </div>
 
-            <div class="max-h-[420px] space-y-3 overflow-y-auto p-6 pr-3">
+            <div class="space-y-4 p-6">
+                <div>
+                    <label for="related_article_search" class="mb-1.5 block text-sm font-medium text-slate-300">
+                        ค้นหาที่เกี่ยวข้อง
+                    </label>
+                    <input
+                        id="related_article_search"
+                        type="search"
+                        x-model.debounce.100ms="search"
+                        placeholder="ค้นหาจากชื่อ slug หรือ ID"
+                        class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                </div>
+                <div class="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
+                    <p class="text-xs text-slate-400">
+                        เลือกแล้ว <span class="font-semibold text-blue-300" x-text="selectedRelatedArticleIds.length"></span> 
+                    </p>
+                    <button
+                        type="button"
+                        x-show="selectedRelatedArticleIds.length > 0"
+                        @click="selectedRelatedArticleIds = []"
+                        class="text-xs font-medium text-rose-300 transition hover:text-rose-200"
+                    >
+                        ล้างทั้งหมด
+                    </button>
+                </div>
+
+                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                 @forelse ($relatedArticles as $relatedArticle)
-                    <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                    <label
+                        x-show="filteredRelatedArticles.some((article) => article.id === '{{ $relatedArticle->id }}')"
+                        class="flex items-start gap-3 rounded-xl border p-4 transition"
+                        :class="isSelected('{{ $relatedArticle->id }}')
+                            ? 'border-blue-400/50 bg-blue-500/10 ring-1 ring-blue-500/20'
+                            : 'border-white/10 bg-slate-950/40 hover:border-blue-400/30 hover:bg-white/5'"
+                    >
                         <input
                             type="checkbox"
                             name="related_article_ids[]"
                             value="{{ $relatedArticle->id }}"
+                            x-model="selectedRelatedArticleIds"
                             @checked(in_array($relatedArticle->id, $selectedRelatedArticleIds))
                             class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
                         >
                         <div>
                             <div class="text-sm font-medium text-slate-200">
-                                {{ $relatedArticle->content?->title ?? 'ไม่มีชื่อบทความ' }}
+                                {{ $relatedArticle->content?->title ?? 'ไม่มีชื่อ' }}
                             </div>
                             <div class="text-xs text-slate-500">
                                 #{{ $relatedArticle->id }} | {{ $relatedArticle->content?->slug ?? '-' }}
@@ -1109,8 +1228,16 @@
                         </div>
                     </label>
                 @empty
-                    <p class="text-sm text-slate-500">ยังไม่มีบทความอื่นให้เลือกเป็นบทความที่เกี่ยวข้อง</p>
+                    <p class="text-sm text-slate-500">ยังไม่มีอื่นให้เลือกเป็นที่เกี่ยวข้อง</p>
                 @endforelse
+
+                    <div
+                        x-show="filteredRelatedArticles.length === 0"
+                        class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
+                    >
+                        ไม่พบที่ตรงกับคำค้นหา
+                    </div>
+                </div>
 
                 @error('related_article_ids')
                     <p class="text-sm text-rose-300">{{ $message }}</p>
@@ -1122,9 +1249,9 @@
         </section>
 
         {{-- Publishing --}}
-        <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+        <section class="article-panel article-panel-publish overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-publishing" class="border-b border-white/10 px-6 py-4">
-                <h2 class="text-base font-semibold text-white">การเผยแพร่</h2>
+                <h2 class="text-base font-semibold text-white">Publishing Settings</h2>
                 <p class="mt-1 text-xs text-slate-400">กำหนดสถานะ เวลาเผยแพร่ และการแสดงผลของบทความ</p>
             </div>
 
@@ -1208,8 +1335,8 @@
                             class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
                         >
                         <div>
-                            <div class="text-sm font-medium text-slate-200">บทความแนะนำ</div>
-                            <div class="text-xs text-slate-500">ใช้เน้นบทความในส่วนสำคัญของเว็บไซต์</div>
+                            <div class="text-sm font-medium text-slate-200">แนะนำ</div>
+                            <div class="text-xs text-slate-500">ใช้เน้นในส่วนสำคัญของเว็บไซต์</div>
                         </div>
                     </label>
 
@@ -1223,7 +1350,7 @@
                             class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
                         >
                         <div>
-                            <div class="text-sm font-medium text-slate-200">บทความยอดนิยม</div>
+                            <div class="text-sm font-medium text-slate-200">ยอดนิยม</div>
                             <div class="text-xs text-slate-500">กำหนดให้บทความนี้อยู่ในกลุ่มยอดนิยม</div>
                         </div>
                     </label>
@@ -1239,7 +1366,7 @@
                         >
                         <div>
                             <div class="text-sm font-medium text-slate-200">เปิดความคิดเห็น</div>
-                            <div class="text-xs text-slate-500">อนุญาตให้ผู้ใช้แสดงความคิดเห็นในบทความนี้</div>
+                            <div class="text-xs text-slate-500">อนุญาตให้ผู้ใช้แสดงความคิดเห็นในนี้</div>
                         </div>
                     </label>
 
@@ -1254,7 +1381,7 @@
                         >
                         <div>
                             <div class="text-sm font-medium text-slate-200">แสดงบนหน้าแรก</div>
-                            <div class="text-xs text-slate-500">นำบทความนี้ไปแสดงใน section ของหน้าแรก</div>
+                            <div class="text-xs text-slate-500">นำนี้ไปแสดงใน section ของหน้าแรก</div>
                         </div>
                     </label>
                 </div>
@@ -1279,7 +1406,7 @@
             }
         };
 
-        window.articleDraftValue = function (name, fallback = '') {
+        window.articleDraft = function (name, fallback = '') {
             if (hasServerErrors) {
                 return fallback;
             }
@@ -1301,7 +1428,7 @@
 
         window.articleDraftMediaId = function (name, fallback = '') {
             const fallbackIds = window.normalizeArticleMediaIds(fallback);
-            const draftIds = window.normalizeArticleMediaIds(window.articleDraftValue(name, fallback));
+            const draftIds = window.normalizeArticleMediaIds(window.articleDraft(name, fallback));
 
             return draftIds[0] ?? fallbackIds[0] ?? '';
         };
@@ -1441,7 +1568,7 @@
                     sourceEditor.value = input.value || '';
                 }
 
-                const dispatchValueChange = () => {
+                const dispatchChange = () => {
                     input.dispatchEvent(new Event('input', { bubbles: true }));
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                 };
@@ -1452,7 +1579,7 @@
                     }
                 };
 
-                const syncValue = () => {
+                const sync = () => {
                     const html = quill.root.innerHTML.trim();
                     input.value = html === '<p><br></p>' ? '' : html;
 
@@ -1461,16 +1588,16 @@
                     }
 
                     updateCounter();
-                    dispatchValueChange();
+                    dispatchChange();
                 };
 
-                quill.on('text-change', syncValue);
+                quill.on('text-change', sync);
                 updateCounter();
 
                 if (sourceEditor) {
                     sourceEditor.addEventListener('input', () => {
                         input.value = sourceEditor.value.trim();
-                        dispatchValueChange();
+                        dispatchChange();
                     });
                 }
 
@@ -1498,7 +1625,7 @@
                             modeLabel.textContent = 'Rich text';
                         }
                         updateCounter();
-                        dispatchValueChange();
+                        dispatchChange();
                     });
                 }
             });

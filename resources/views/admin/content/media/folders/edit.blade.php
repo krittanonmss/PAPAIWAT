@@ -1,9 +1,9 @@
-<x-layouts.admin title="Edit Media Folder" header="Edit Media Folder">
+<x-layouts.admin title="แก้ไขโฟลเดอร์สื่อ" header="แก้ไขโฟลเดอร์สื่อ">
     <div class="space-y-6 text-white">
         <div class="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 shadow-xl shadow-slate-950/30">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <p class="text-sm font-medium text-blue-300">Media Library</p>
+                    <p class="text-sm font-medium text-blue-300">คลังสื่อ</p>
                     <h1 class="mt-1 text-2xl font-bold text-white">แก้ไขโฟลเดอร์สื่อ</h1>
                     <p class="mt-2 text-sm text-slate-400">
                         อัปเดตข้อมูลโฟลเดอร์ ลำดับการแสดงผล และสถานะการใช้งาน

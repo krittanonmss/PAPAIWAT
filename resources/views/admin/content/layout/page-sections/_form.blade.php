@@ -14,11 +14,11 @@
     $initialContent = $decodeOldJson('content', $section->content ?? []);
     $initialSettings = $decodeOldJson('settings', $section->settings ?? []);
     $initialComponent = old('component_key', $section->component_key ?? 'hero');
-    $initialStatus = old('status', $section->status ?? 'active');
+    $initialสถานะ = old('status', $section->status ?? 'active');
     $initialVisible = (bool) old('is_visible', $section->is_visible ?? true);
-    $sectionName = old('name', $section->name ?? '');
+    $sectionชื่อ = old('name', $section->name ?? '');
     $sectionKey = old('section_key', $section->section_key ?? '');
-    $linkPages = $linkPages ?? collect();
+    $linkหน้า = $linkหน้า ?? collect();
     $bentoContents = $bentoContents ?? collect();
     $bentoLayoutPresets = [
         'feature_3' => ['label' => '3 กล่อง: Hero + 2 กล่องรอง', 'sizes' => ['large', 'wide', 'wide']],
@@ -73,19 +73,19 @@
         ->all();
 
     $blocks = [
-        'hero' => ['label' => 'Hero', 'description' => 'หัวหน้าใหญ่พร้อมปุ่ม'],
-        'banner' => ['label' => 'Banner', 'description' => 'แบนเนอร์กว้าง สัดส่วน 1920 x 540 ใช้การตั้งค่าเหมือน Hero'],
+        'hero' => ['label' => 'ฮีโร่', 'description' => 'หัวหน้าใหญ่พร้อมปุ่ม'],
+        'banner' => ['label' => 'แบนเนอร์', 'description' => 'แบนเนอร์กว้าง สัดส่วน 1920 x 540 ใช้การตั้งเหมือนฮีโร่'],
         'rich_text' => ['label' => 'ข้อความ', 'description' => 'หัวข้อและเนื้อหายาว'],
         'image_text' => ['label' => 'รูป + ข้อความ', 'description' => 'วางภาพคู่กับรายละเอียด'],
         'cta' => ['label' => 'ปุ่มเชิญชวน', 'description' => 'ข้อความสั้นพร้อมปุ่ม'],
-        'article_grid' => ['label' => 'รายการบทความ', 'description' => 'ดึงบทความมาแสดงอัตโนมัติ'],
-        'temple_grid' => ['label' => 'รายการวัด', 'description' => 'ดึงวัดมาแสดงอัตโนมัติ'],
-        'travel_discovery_bento' => ['label' => 'Travel Discovery Bento', 'description' => 'บล็อกแนะนำหมวดท่องเที่ยวแบบ bento grid'],
-        'favorites_list' => ['label' => 'รายการโปรด', 'description' => 'แสดงรายการโปรด แยกวัดและบทความ'],
-        'article_list_full' => ['label' => 'หน้ารวมบทความ', 'description' => 'list เต็มพร้อมค้นหาและแบ่งหน้า'],
-        'temple_list_full' => ['label' => 'หน้ารวมวัด', 'description' => 'list เต็มพร้อมตัวกรองและแบ่งหน้า'],
-        'gallery' => ['label' => 'แกลเลอรี', 'description' => 'รวมรูปหลายรูปจาก URL'],
-        'faq' => ['label' => 'FAQ', 'description' => 'คำถามคำตอบที่พบบ่อย'],
+        'article_grid' => ['label' => 'รายการ', 'description' => 'ดึงมาแสดงอัตโนมัติ'],
+        'temple_grid' => ['label' => 'รายการ', 'description' => 'ดึงมาแสดงอัตโนมัติ'],
+        'travel_discovery_bento' => ['label' => 'แนะนำทริปแบบ Bento', 'description' => 'เซกชันแนะนำหมวดท่องเที่ยวแบบ bento grid'],
+        'favorites_list' => ['label' => 'รายการโปรด', 'description' => 'แสดงรายการโปรด แยกและ'],
+        'article_list_full' => ['label' => 'หน้ารวม', 'description' => 'list เต็มพร้อมค้นหาและแบ่งหน้า'],
+        'temple_list_full' => ['label' => 'หน้ารวม', 'description' => 'list เต็มพร้อมตัวกรองและแบ่งหน้า'],
+        'gallery' => ['label' => 'แกลเลอรี', 'description' => 'รวมรูปหลายรูปจากคลังสื่อหรือ URL'],
+        'faq' => ['label' => 'คำถามที่พบบ่อย', 'description' => 'คำถามคำตอบที่พบบ่อย'],
         'stats' => ['label' => 'ตัวเลขสำคัญ', 'description' => 'สถิติหรือจุดเด่นแบบสั้น'],
         'contact' => ['label' => 'ข้อมูลติดต่อ', 'description' => 'ที่อยู่ เบอร์โทร และอีเมล'],
     ];
@@ -94,6 +94,7 @@
 <div
     class="space-y-6"
     x-data="{
+        activeTab: 'content',
         component: @js($initialComponent),
         content: {
             eyebrow: @js($initialContent['eyebrow'] ?? ''),
@@ -126,13 +127,13 @@
             address: @js($initialContent['address'] ?? ''),
             map_url: @js($initialContent['map_url'] ?? ''),
             empty_title: @js($initialContent['empty_title'] ?? 'ยังไม่มีรายการโปรด'),
-            empty_subtitle: @js($initialContent['empty_subtitle'] ?? 'กดปุ่มหัวใจในหน้าวัดหรือบทความเพื่อเพิ่มรายการโปรด'),
+            empty_subtitle: @js($initialContent['empty_subtitle'] ?? 'กดปุ่มหัวใจในหน้าหรือเพื่อเพิ่มรายการโปรด'),
             temple_eyebrow: @js($initialContent['temple_eyebrow'] ?? 'Temples'),
-            temple_title: @js($initialContent['temple_title'] ?? 'วัดที่บันทึกไว้'),
-            temple_card_label: @js($initialContent['temple_card_label'] ?? 'วัด'),
+            temple_title: @js($initialContent['temple_title'] ?? 'ที่บันทึกไว้'),
+            temple_card_label: @js($initialContent['temple_card_label'] ?? ''),
             article_eyebrow: @js($initialContent['article_eyebrow'] ?? 'Articles'),
-            article_title: @js($initialContent['article_title'] ?? 'บทความที่บันทึกไว้'),
-            article_card_label: @js($initialContent['article_card_label'] ?? 'บทความ'),
+            article_title: @js($initialContent['article_title'] ?? 'ที่บันทึกไว้'),
+            article_card_label: @js($initialContent['article_card_label'] ?? ''),
             section_count_suffix: @js($initialContent['section_count_suffix'] ?? 'รายการ'),
             favorite_count_suffix: @js($initialContent['favorite_count_suffix'] ?? 'รายการโปรด'),
             open_label: @js($initialContent['open_label'] ?? 'เปิดดู'),
@@ -145,10 +146,10 @@
             empty_text: @js($initialContent['empty_text'] ?? ''),
             empty_excerpt: @js($initialContent['empty_excerpt'] ?? 'ยังไม่มีคำโปรย'),
             empty_image_text: @js($initialContent['empty_image_text'] ?? ''),
-            article_meta_fallback: @js($initialContent['article_meta_fallback'] ?? 'Published'),
-            province_fallback: @js($initialContent['province_fallback'] ?? 'ไม่ระบุจังหวัด'),
+            article_meta_fallback: @js($initialContent['article_meta_fallback'] ?? 'เผยแพร่แล้ว'),
+            province_fallback: @js($initialContent['province_fallback'] ?? 'ไม่ระบุจังห'),
             total_label: @js($initialContent['total_label'] ?? 'ทั้งหมด'),
-            total_suffix: @js($initialContent['total_suffix'] ?? 'วัด'),
+            total_suffix: @js($initialContent['total_suffix'] ?? ''),
             all_option_label: @js($initialContent['all_option_label'] ?? 'ทั้งหมด'),
             category_filter_label: @js($initialContent['category_filter_label'] ?? 'หมวดหมู่'),
             tag_filter_label: @js($initialContent['tag_filter_label'] ?? 'แท็ก'),
@@ -159,7 +160,7 @@
             likes_option_label: @js($initialContent['likes_option_label'] ?? 'ถูกใจมากสุด'),
             oldest_option_label: @js($initialContent['oldest_option_label'] ?? 'เก่าสุด'),
             rating_option_label: @js($initialContent['rating_option_label'] ?? 'รีวิวดีที่สุด'),
-            province_all_label: @js($initialContent['province_all_label'] ?? 'ทุกจังหวัด'),
+            province_all_label: @js($initialContent['province_all_label'] ?? 'ทุกจังห'),
             category_all_label: @js($initialContent['category_all_label'] ?? 'ทุกหมวดหมู่'),
             sort_default_label: @js($initialContent['sort_default_label'] ?? 'เรียงตามระบบ'),
             phone_label: @js($initialContent['phone_label'] ?? 'โทร:'),
@@ -168,8 +169,8 @@
             show_phone: @js((bool) ($initialContent['show_phone'] ?? true)),
             show_email: @js((bool) ($initialContent['show_email'] ?? true)),
             show_map_button: @js((bool) ($initialContent['show_map_button'] ?? true)),
-            temple_stat_label: @js($initialContent['temple_stat_label'] ?? 'วัดทั้งหมด'),
-            article_stat_label: @js($initialContent['article_stat_label'] ?? 'บทความทั้งหมด'),
+            temple_stat_label: @js($initialContent['temple_stat_label'] ?? 'ทั้งหมด'),
+            article_stat_label: @js($initialContent['article_stat_label'] ?? 'ทั้งหมด'),
             view_stat_label: @js($initialContent['view_stat_label'] ?? 'ยอดผู้เข้าชม')
         },
         settings: {
@@ -186,23 +187,50 @@
             list_columns: @js((int) ($initialSettings['list_columns'] ?? 4)),
             banner_height: @js((int) ($initialSettings['banner_height'] ?? 540)),
             bento_variant: @js($initialBentoVariant),
-            bento_content_type: @js(($initialSettings['bento_content_type'] ?? 'article') === 'temple' ? 'temple' : 'article'),
+            bento_content_type: @js(($initialSettings['bento_content_type'] ?? '') === '' ? '' : ''),
             bento_layout: @js($initialSettings['bento_layout'] ?? 'mosaic_5'),
             bento_content_align: @js($initialBentoContentAlign),
             image_opacity: @js((int) ($initialSettings['image_opacity'] ?? 100)),
             image_fit: @js($initialSettings['image_fit'] ?? 'contain'),
             image_position: @js($initialSettings['image_position'] ?? 'center'),
             show_search_box: @js((bool) ($initialSettings['show_search_box'] ?? false)),
-            show_summary_stats: @js((bool) ($initialSettings['show_summary_stats'] ?? false))
+            show_summary_stats: @js((bool) ($initialSettings['show_summary_stats'] ?? false)),
+            text_color: @js($initialSettings['text_color'] ?? '#ffffff'),
+            font_size: @js($initialSettings['font_size'] ?? 'base'),
+            font_weight: @js($initialSettings['font_weight'] ?? 'normal'),
+            text_align: @js($initialSettings['text_align'] ?? 'inherit'),
+            spacing_padding: @js($initialSettings['spacing_padding'] ?? 'default'),
+            spacing_margin: @js($initialSettings['spacing_margin'] ?? 'none'),
+            button_style: @js($initialSettings['button_style'] ?? 'solid'),
+            button_radius: @js($initialSettings['button_radius'] ?? '2xl'),
+            border_radius: @js($initialSettings['border_radius'] ?? 'none'),
+            layout_width: @js($initialSettings['layout_width'] ?? '7xl'),
+            visibility: @js($initialSettings['visibility'] ?? 'all'),
+            animation_type: @js($initialSettings['animation_type'] ?? 'none'),
+            animation_duration: @js((int) ($initialSettings['animation_duration'] ?? 500)),
+            animation_delay: @js((int) ($initialSettings['animation_delay'] ?? 0)),
+            animation_class: @js($initialSettings['animation_class'] ?? ''),
+            custom_animation_css: @js($initialSettings['custom_animation_css'] ?? '')
         },
         bentoLayouts: @js($bentoLayoutPresets),
         bentoContentOptions: @js($bentoContents->mapWithKeys(fn ($content) => [
             (string) $content->id => [
                 'title' => $content->title,
-                'type' => $content->content_type === 'temple' ? 'วัด' : 'บทความ',
+                'type' => $content->content_type === '' ? '' : '',
                 'excerpt' => $content->excerpt,
             ],
         ])),
+        linkPageOptions: @js($linkหน้า->map(fn ($page) => [
+            'id' => (string) $page->id,
+            'title' => $page->title,
+            'label' => $page->title . ($page->is_homepage ? ' (หน้าแรก)' : ($page->slug ? ' (/' . $page->slug . ')' : '')) . ($page->status !== 'published' ? ' - ' . $page->status : ''),
+            'search' => mb_strtolower($page->title . ' ' . $page->slug . ' ' . $page->status . ' ' . $page->id),
+        ])->values()),
+        pageSearch: {
+            primary: '',
+            secondary: '',
+            all: '',
+        },
         bentoSearch: '',
         bentoTypeFilter: 'all',
         mediaSearch: '',
@@ -225,12 +253,12 @@
                     rich_text: 'หัวข้อเนื้อหา',
                     image_text: 'หัวข้อพร้อมรูปภาพ',
                     cta: 'พร้อมเริ่มต้นใช้งาน',
-                    article_grid: 'บทความแนะนำ',
-                    temple_grid: 'วัดแนะนำ',
-                    travel_discovery_bento: 'วางแผนเที่ยววัดในแบบของคุณ',
+                    article_grid: 'แนะนำ',
+                    temple_grid: 'แนะนำ',
+                    travel_discovery_bento: 'วางแผนเที่ยวในแบบของคุณ',
                     favorites_list: 'รายการโปรดของฉัน',
-                    article_list_full: 'บทความทั้งหมด',
-                    temple_list_full: 'รวมวัดทั่วไทย',
+                    article_list_full: 'ทั้งหมด',
+                    temple_list_full: 'รวมทั่วไทย',
                     gallery: 'แกลเลอรี',
                     faq: 'คำถามที่พบบ่อย',
                     stats: 'ตัวเลขสำคัญ',
@@ -302,7 +330,7 @@
 
             return `grid-area: ${areaNames[index] || 'i'};`;
         },
-        bentoContentTitle(contentId) {
+        bentoContentหัวข้อ(contentId) {
             return this.bentoContentOptions[contentId]?.title || 'ยังไม่ได้เลือก content';
         },
         bentoContentMeta(contentId) {
@@ -311,6 +339,19 @@
         },
         bentoContentExcerpt(contentId) {
             return this.bentoContentOptions[contentId]?.excerpt || 'ระบบจะแสดงคำโปรยหรือรายละเอียดเบื้องต้นของ content ตรงนี้';
+        },
+        filteredLinkหน้า(key, currentPageId = '') {
+            const search = (this.pageSearch[key] || '').toLowerCase().trim();
+
+            return this.linkPageOptions
+                .filter((page) => {
+                    if (currentPageId && page.id === String(currentPageId)) {
+                        return true;
+                    }
+
+                    return !search || page.search.includes(search);
+                })
+                .slice(0, 80);
         },
         filteredBentoOptions(currentContentId = '') {
             const search = this.bentoSearch.trim().toLowerCase();
@@ -456,49 +497,159 @@
     <input type="hidden" name="section_key" value="{{ $sectionKey }}">
     <input type="hidden" name="section_id" value="{{ $section->id ?? '' }}">
 
-    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
-        <div class="mb-5">
-            <p class="text-sm font-medium text-blue-300">Step 1</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">เลือกชนิด block</h2>
-            <p class="mt-1 text-sm text-slate-400">เลือกก่อนว่า section นี้จะแสดงอะไร ระบบจะแสดงเฉพาะช่องที่เกี่ยวข้องด้านล่าง</p>
-        </div>
-
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-300">ชนิด Section</label>
-                <select
-                    class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    :value="component"
-                    @change="pick($event.target.value)"
-                >
-                    @foreach($blocks as $key => $block)
-                        <option value="{{ $key }}" class="bg-slate-900">{{ $block['label'] }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                @foreach($blocks as $key => $block)
-                    <div x-show="component === @js($key)" x-cloak>
-                        <p class="text-sm font-semibold text-white">{{ $block['label'] }}</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">{{ $block['description'] }}</p>
+    <div class="space-y-6">
+        <section
+            class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-slate-950/30 backdrop-blur"
+            data-cms-section-preview
+            data-preview-url="{{ route('admin.content.pages.sections.preview', $page) }}"
+        >
+            <div class="border-b border-white/10 px-5 py-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Section Studio</p>
+                        <h2 class="mt-1 text-lg font-semibold text-white">ออกแบบเซกชัน</h2>
                     </div>
-                @endforeach
+                    <div
+                        class="hidden w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200"
+                        data-cms-section-preview-loading
+                    >
+                        กำลังอัปเดตตัวอย่าง...
+                    </div>
+                </div>
             </div>
-        </div>
 
-        @error('component_key')
-            <p class="mt-3 text-sm text-rose-300">{{ $message }}</p>
-        @enderror
-    </div>
+            <div class="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div class="min-w-0 border-b border-white/10 xl:border-b-0 xl:border-r">
+                    <div class="flex items-center justify-between gap-3 border-b border-white/10 bg-black/20 px-5 py-3">
+                        <div>
+                            <p class="text-sm font-semibold text-white">ตัวอย่างเซกชัน</p>
+                            <p class="mt-0.5 text-xs text-slate-500">อัปเดตอัตโนมัติเมื่อแก้ข้อมูล</p>
+                        </div>
+                    </div>
 
-    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="relative h-[320px] bg-slate-950 md:h-[420px]">
+                        <iframe
+                            title="ตัวอย่างเซกชันแบบเรียลไทม์"
+                            class="h-full w-full bg-slate-950"
+                            sandbox="allow-scripts allow-same-origin"
+                            data-cms-section-preview-frame
+                        ></iframe>
+                    </div>
+
+                    <div
+                        class="hidden border-t border-rose-400/20 bg-rose-500/10 px-5 py-3 text-sm text-rose-200"
+                        data-cms-section-preview-error
+                    ></div>
+                </div>
+
+                <aside class="space-y-5 bg-white/[0.03] p-5">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ชนิดเซกชัน</label>
+                        <select
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm font-semibold text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                            :value="component"
+                            @change="pick($event.target.value)"
+                        >
+                            @foreach($blocks as $key => $block)
+                                <option value="{{ $key }}" class="bg-slate-900">{{ $block['label'] }}</option>
+                            @endforeach
+                        </select>
+
+                        <div class="mt-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+                            @foreach($blocks as $key => $block)
+                                <div x-show="component === @js($key)" x-cloak>
+                                    <p class="text-sm font-semibold text-white">{{ $block['label'] }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-400">{{ $block['description'] }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @error('component_key')
+                            <p class="mt-2 text-sm text-rose-300">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        <div>
+                            <label for="status" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">สถานะ</label>
+                            <select id="status" name="status" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="active" class="bg-slate-900" @selected($initialสถานะ === 'active')>เปิดใช้งาน</option>
+                                <option value="inactive" class="bg-slate-900" @selected($initialสถานะ === 'inactive')>ปิดใช้งาน</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="sort_order" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ลำดับ</label>
+                            <input id="sort_order" type="number" name="sort_order" min="0" value="{{ old('sort_order', $section->sort_order ?? 0) }}" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            @error('sort_order')
+                                <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <label class="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                        <input id="is_visible" type="checkbox" name="is_visible" value="1" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20" @checked($initialVisible)>
+                        <span>
+                            <span class="block text-sm font-medium text-white">แสดงบนหน้าเว็บ</span>
+                            <span class="mt-1 block text-xs leading-5 text-slate-500">ปิดไว้ได้ถ้าต้องการเตรียมเซกชันโดยยังไม่เผยแพร่</span>
+                        </span>
+                    </label>
+
+                    <details class="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                        <summary class="cursor-pointer list-none text-sm font-semibold text-white">ตั้งค่าขั้นสูง</summary>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="name" class="mb-1.5 block text-sm font-medium text-slate-300">ชื่อเซกชันในระบบ</label>
+                                <input id="name" type="text" name="name" value="{{ $sectionชื่อ }}" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เว้นว่างได้">
+                            </div>
+                            <div>
+                                <label class="mb-1.5 block text-sm font-medium text-slate-300">รหัสเซกชัน</label>
+                                <input type="text" value="{{ $sectionKey ?: 'ระบบจะสร้างให้อัตโนมัติ' }}" disabled class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-500">
+                            </div>
+                        </div>
+                    </details>
+                </aside>
+            </div>
+        </section>
+
+        <div class="min-w-0 space-y-6">
+            <div class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <div class="grid gap-2 md:grid-cols-3">
+                    <button
+                        type="button"
+                        @click="activeTab = 'content'"
+                        :class="activeTab === 'content' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'"
+                        class="rounded-2xl border px-4 py-3 text-sm font-semibold transition"
+                    >
+                        เนื้อหา
+                    </button>
+                    <button
+                        type="button"
+                        @click="activeTab = 'media'"
+                        :class="activeTab === 'media' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'"
+                        class="rounded-2xl border px-4 py-3 text-sm font-semibold transition"
+                    >
+                        สื่อ
+                    </button>
+                    <button
+                        type="button"
+                        @click="activeTab = 'design'"
+                        :class="activeTab === 'design' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'"
+                        class="rounded-2xl border px-4 py-3 text-sm font-semibold transition"
+                    >
+                        หน้าตา แอนิเมชัน และการแสดงผล
+                    </button>
+                </div>
+            </div>
+
+    <div x-show="['content', 'media'].includes(activeTab)" x-cloak class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="mb-5">
-            <p class="text-sm font-medium text-blue-300">Step 2</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">เนื้อหาหลัก</h2>
-            <p class="mt-1 text-sm text-slate-400">จัดการหัวข้อ คำอธิบาย ข้อความ fallback และรายละเอียดเฉพาะ block</p>
+            <p class="text-sm font-medium text-blue-300" x-text="activeTab === 'media' ? 'ส่วนที่ 2' : 'ส่วนที่ 1'"></p>
+            <h2 class="mt-1 text-lg font-semibold text-white" x-text="activeTab === 'media' ? 'สื่อและรูปภาพ' : 'เนื้อหาหลัก'"></h2>
+            <p class="mt-1 text-sm text-slate-400" x-text="activeTab === 'media' ? 'อัปโหลด เลือกรูปภาพ จัดการแกลเลอรี และตั้งค่า URL รูปภาพสำรอง' : 'จัดการหัวข้อ คำอธิบาย ข้อความสำรอง และรายละเอียดเฉพาะเซกชัน'"></p>
         </div>
 
-        <div class="space-y-5">
+        <div class="space-y-5 cms-section-tab-body" :class="activeTab === 'media' ? 'cms-section-media-mode' : 'cms-section-content-mode'">
             <div x-show="['hero', 'banner', 'image_text', 'rich_text', 'cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'].includes(component)" x-cloak>
                 <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความเล็กด้านบน</label>
                 <input
@@ -531,7 +682,7 @@
 
             <div x-show="component === 'favorites_list'" x-cloak class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
                 <div>
-                    <h3 class="text-sm font-semibold text-white">ข้อความทั้งหมดใน Section รายการโปรด</h3>
+                    <h3 class="text-sm font-semibold text-white">ข้อความทั้งหมดในเซกชันรายการโปรด</h3>
                     <p class="mt-1 text-xs leading-5 text-slate-500">แก้ label ที่แสดงใน empty state, หัวข้อกลุ่ม, การ์ด และปุ่มได้จากตรงนี้</p>
                 </div>
 
@@ -548,30 +699,30 @@
 
                 <div class="grid gap-5 lg:grid-cols-3">
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความเล็กกลุ่มวัด</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความเล็กกลุ่ม</label>
                         <input type="text" x-model="content.temple_eyebrow" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หัวข้อกลุ่มวัด</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หัวข้อกลุ่ม</label>
                         <input type="text" x-model="content.temple_title" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายประเภทบนการ์ดวัด</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายประเภทบนการ์ด</label>
                         <input type="text" x-model="content.temple_card_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                 </div>
 
                 <div class="grid gap-5 lg:grid-cols-3">
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความเล็กกลุ่มบทความ</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความเล็กกลุ่ม</label>
                         <input type="text" x-model="content.article_eyebrow" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หัวข้อกลุ่มบทความ</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หัวข้อกลุ่ม</label>
                         <input type="text" x-model="content.article_title" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายประเภทบนการ์ดบทความ</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายประเภทบนการ์ด</label>
                         <input type="text" x-model="content.article_card_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                 </div>
@@ -602,7 +753,7 @@
             <div x-show="['article_grid', 'temple_grid', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'travel_discovery_bento', 'image_text'].includes(component)" x-cloak class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
                 <div>
                     <h3 class="text-sm font-semibold text-white">ข้อความสถานะว่างและข้อความสำรอง</h3>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">ใช้เมื่อลิสต์ไม่มีข้อมูล, ไม่มีรูป, หรือ content รายการนั้นไม่มีคำโปรย</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">ใช้เมื่อลิสต์ไม่มีข้อมูล ไม่มีรูป หรือรายการนั้นไม่มีคำโปรย</p>
                 </div>
 
                 <div class="grid gap-5 lg:grid-cols-3">
@@ -621,12 +772,12 @@
                 </div>
 
                 <div x-show="['article_grid', 'article_list_full'].includes(component)" x-cloak>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความวันที่ fallback บนการ์ดบทความ</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความวันที่สำรองบนการ์ด</label>
                     <input type="text" x-model="content.article_meta_fallback" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                 </div>
 
                 <div x-show="['temple_grid', 'temple_list_full'].includes(component)" x-cloak>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความจังหวัด fallback บนการ์ดวัด</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความจังหสำรองบนการ์ด</label>
                     <input type="text" x-model="content.province_fallback" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                 </div>
             </div>
@@ -639,7 +790,7 @@
 
                 <div class="grid gap-5 lg:grid-cols-3">
                     <div x-show="component === 'article_list_full'" x-cloak>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">Label ช่องค้นหา</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายกำกับช่องค้นหา</label>
                         <input type="text" x-model="content.search_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
@@ -671,11 +822,11 @@
                 </div>
 
                 <div x-show="component === 'temple_list_full'" x-cloak class="grid gap-5 lg:grid-cols-4">
-                    <input type="text" x-model="content.province_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกจังหวัด">
+                    <input type="text" x-model="content.province_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกจังห">
                     <input type="text" x-model="content.category_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกหมวดหมู่">
                     <input type="text" x-model="content.sort_default_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เรียงตามระบบ">
                     <input type="text" x-model="content.rating_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="รีวิวดีที่สุด">
-                    <input type="text" x-model="content.total_suffix" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="วัด">
+                    <input type="text" x-model="content.total_suffix" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="">
                 </div>
             </div>
 
@@ -689,10 +840,10 @@
                 ></textarea>
             </div>
 
-            <div x-show="['hero', 'banner', 'image_text'].includes(component)" x-cloak class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
+            <div x-show="['hero', 'banner', 'image_text'].includes(component)" x-cloak class="cms-media-panel space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
                 <div>
-                    <h3 class="text-sm font-semibold text-white">รูปภาพของ Block</h3>
-                    <p class="mt-1 text-xs text-slate-500">อัปโหลดรูปใหม่หรือเลือกรูปจาก Media Library เหมือนหน้า temple/article</p>
+                    <h3 class="text-sm font-semibold text-white">รูปภาพของเซกชัน</h3>
+                    <p class="mt-1 text-xs text-slate-500">อัปโหลดรูปใหม่หรือเลือกรูปจากคลังสื่อเหมือนหน้าและ</p>
                 </div>
 
                 <div class="rounded-2xl border border-dashed border-blue-400/30 bg-blue-500/5 p-4">
@@ -707,7 +858,7 @@
                                 class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-blue-600"
                             >
                             <p x-show="uploadError" x-text="uploadError" class="mt-1 text-xs text-rose-400"></p>
-                            <p class="mt-2 text-xs text-slate-500">เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้า Media Library แล้ว refresh หน้า</p>
+                            <p class="mt-2 text-xs text-slate-500">เลือกได้หลายรูป ขนาดไม่เกิน 5 MB ต่อรูป ระบบจะบันทึกเข้าคลังสื่อแล้วโหลดหน้าใหม่</p>
                         </div>
 
                         <button
@@ -735,7 +886,7 @@
 
                 <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
                     <p class="text-xs font-medium text-blue-200">รูปที่เลือกอยู่</p>
-                    <p class="mt-1 text-sm text-white" x-text="selectedImage ? `Media ID #${selectedImage}` : 'ไม่ใช้รูปจาก Media Library'"></p>
+                    <p class="mt-1 text-sm text-white" x-text="selectedImage ? `Media ID #${selectedImage}` : 'ไม่ใช้รูปจากคลังสื่อ'"></p>
                     <p class="mt-1 text-xs text-slate-400" x-show="content.image_url && !selectedImage">ใช้ URL สำรอง: <span x-text="content.image_url"></span></p>
                 </div>
 
@@ -746,11 +897,11 @@
                 ></div>
             </div>
 
-            <div x-show="component === 'gallery'" x-cloak class="space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
+            <div x-show="component === 'gallery'" x-cloak class="cms-media-panel space-y-5 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-white">รูปในแกลเลอรี</h3>
-                        <p class="mt-1 text-xs leading-5 text-slate-500">ติ๊กเลือกรูปจาก Media Library ได้เลย ระบบจะใช้ชื่อรูปเป็นคำอธิบายใต้ภาพ</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">ติ๊กเลือกรูปจากคลังสื่อได้เลย ระบบจะใช้ชื่อรูปเป็นคำอธิบายใต้ภาพ</p>
                     </div>
                     <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
                         เลือกอยู่ <span class="font-semibold" x-text="galleryImageIds().length"></span> รูป
@@ -846,7 +997,7 @@
                     x-model="content.stats_text"
                     rows="6"
                     class="max-h-80 w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm leading-7 text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="ใส่ 1 รายการต่อ 1 บรรทัด เช่น&#10;120+ | วัดในระบบ"
+                    placeholder="ใส่ 1 รายการต่อ 1 บรรทัด เช่น&#10;120+ | ในระบบ"
                 ></textarea>
                 <p class="mt-1 text-xs text-slate-500">รูปแบบ: ตัวเลข | คำอธิบาย</p>
             </div>
@@ -856,12 +1007,12 @@
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">รูปแบบ Bento</label>
                         <select x-model="settings.bento_variant" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="travel" class="bg-slate-900">Travel: เลือก content เอง</option>
-                            <option value="article_filter" class="bg-slate-900">Filter: สุ่มจากประเภท + หมวด</option>
+                            <option value="travel" class="bg-slate-900">เลือกเนื้อหาเอง</option>
+                            <option value="article_filter" class="bg-slate-900">สุ่มจากประเภทและหมวดหมู่</option>
                         </select>
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ตำแหน่งเนื้อหา block</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ตำแหน่งเนื้อหาเซกชัน</label>
                         <select x-model="settings.bento_content_align" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="left" class="bg-slate-900">ชิดซ้าย</option>
                             <option value="center" class="bg-slate-900">กึ่งกลาง</option>
@@ -876,20 +1027,20 @@
 
                 <div x-show="settings.bento_variant === 'article_filter'" x-cloak class="space-y-4">
                     <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                        <p class="text-sm font-medium text-blue-100">Blog filter bento</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">เลือกแหล่งข้อมูลเป็นวัดหรือบทความ แล้วหน้าเว็บจะแสดง filter จากหมวดหมู่ของ content ประเภทนั้นให้ user เลือกสายที่สนใจ</p>
+                        <p class="text-sm font-medium text-blue-100">Bento แบบตัวกรอง</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">เลือกแหล่งข้อมูลเป็นหรือ แล้วหน้าเว็บจะแสดงตัวกรองจากหมวดหมู่ของเนื้อหาประเภทนั้นให้ผู้ใช้เลือกสายที่สนใจ</p>
                     </div>
                     <div class="grid gap-4 lg:grid-cols-2">
                         <div>
                             <label class="mb-1.5 block text-xs font-medium text-slate-400">แหล่งข้อมูล</label>
                             <select x-model="settings.bento_content_type" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <option value="temple" class="bg-slate-900">วัด</option>
-                                <option value="article" class="bg-slate-900">บทความ</option>
+                                <option value="" class="bg-slate-900"></option>
+                                <option value="" class="bg-slate-900"></option>
                             </select>
-                            <p class="mt-1 text-xs leading-5 text-slate-500">ถ้าเลือกวัด filter จะเป็นหมวดหมู่วัด ถ้าเลือกบทความ filter จะเป็นหมวดหมู่บทความ</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">ถ้าเลือก filter จะเป็นหมวดหมู่ ถ้าเลือก filter จะเป็นหมวดหมู่</p>
                         </div>
                         <div>
-                            <label class="mb-1.5 block text-xs font-medium text-slate-400">Preset ขนาดกล่อง</label>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ชุดขนาดกล่อง</label>
                             <select @change="applyBentoLayout($event.target.value)" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                                 <template x-for="(layout, key) in bentoLayouts" :key="key">
                                     <option :value="key" class="bg-slate-900" x-text="layout.label" :selected="settings.bento_layout === key"></option>
@@ -902,7 +1053,7 @@
                 <div x-show="settings.bento_variant !== 'article_filter'" x-cloak class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-white">รายการใน Bento Grid</h3>
-                        <p class="mt-1 text-xs leading-5 text-slate-500">กดเพิ่มกล่องได้เอง สูงสุด 9 กล่อง แต่ละกล่องเลือก content และสัดส่วนได้</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">กดเพิ่มกล่องได้เอง สูงสุด 9 กล่อง แต่ละกล่องเลือกเนื้อหาและสัดส่วนได้</p>
                     </div>
                     <button
                         type="button"
@@ -916,11 +1067,11 @@
 
                 <div x-show="settings.bento_variant !== 'article_filter'" x-cloak class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
                     <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                        <p class="text-sm font-medium text-blue-100">เลือก content ที่จะใส่ในแต่ละกล่อง</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">ระบบจะใช้ชื่อ คำโปรย รูป cover และลิงก์ detail ของ content นั้นอัตโนมัติ</p>
+                        <p class="text-sm font-medium text-blue-100">เลือกเนื้อหาที่จะใส่ในแต่ละกล่อง</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">ระบบจะใช้ชื่อ คำโปรย รูปปก และลิงก์รายละเอียดของเนื้อหานั้นอัตโนมัติ</p>
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ใช้ preset เริ่มต้น</label>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ใช้ชุดเริ่มต้น</label>
                         <select @change="applyBentoLayout($event.target.value)" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <template x-for="(layout, key) in bentoLayouts" :key="key">
                                 <option :value="key" class="bg-slate-900" x-text="layout.label" :selected="settings.bento_layout === key"></option>
@@ -931,7 +1082,7 @@
 
                 <div x-show="settings.bento_variant !== 'article_filter'" x-cloak class="grid gap-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 lg:grid-cols-[minmax(0,1fr)_180px]">
                     <div>
-                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา content</label>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาเนื้อหา</label>
                         <input
                             type="search"
                             x-model.debounce.150ms="bentoSearch"
@@ -943,8 +1094,8 @@
                         <label class="mb-1.5 block text-xs font-medium text-slate-400">ประเภท</label>
                         <select x-model="bentoTypeFilter" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="all" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="วัด" class="bg-slate-900">วัด</option>
-                            <option value="บทความ" class="bg-slate-900">บทความ</option>
+                            <option value="" class="bg-slate-900"></option>
+                            <option value="" class="bg-slate-900"></option>
                         </select>
                     </div>
                 </div>
@@ -962,9 +1113,9 @@
                             </div>
                             <div class="space-y-3">
                                 <div>
-                                    <label class="mb-1.5 block text-xs font-medium text-slate-500">Content</label>
+                                    <label class="mb-1.5 block text-xs font-medium text-slate-500">เนื้อหา</label>
                                     <select x-model="slot.content_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                        <option value="" class="bg-slate-900">เลือก content</option>
+                                        <option value="" class="bg-slate-900">เลือกเนื้อหา</option>
                                         <template x-for="option in filteredBentoOptions(slot.content_id)" :key="option.id">
                                             <option :value="option.id" class="bg-slate-900" x-text="`[${option.type}] ${option.title}`"></option>
                                         </template>
@@ -986,14 +1137,14 @@
                 </div>
 
                 <div x-show="settings.bento_variant !== 'article_filter' && content.bento_slots.length === 0" x-cloak class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-6 text-center text-sm text-slate-400">
-                    ยังไม่มีกล่อง กด “เพิ่มกล่อง” เพื่อเลือก content
+                    ยังไม่มีกล่อง กด “เพิ่มกล่อง” เพื่อเลือกเนื้อหา
                 </div>
 
                 <div x-show="settings.bento_variant !== 'article_filter' && content.bento_slots.length > 0" x-cloak class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
                         <div>
-                            <h4 class="text-sm font-semibold text-white">Preview Bento</h4>
-                            <p class="mt-1 text-xs text-slate-500">ตัวอย่างสัดส่วนและตำแหน่งโดยประมาณบน desktop</p>
+                            <h4 class="text-sm font-semibold text-white">ตัวอย่าง Bento</h4>
+                            <p class="mt-1 text-xs text-slate-500">ตัวอย่างสัดส่วนและตำแหน่งโดยประมาณบนเดสก์ท็อป</p>
                         </div>
                         <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-slate-400">
                             <span x-text="content.bento_slots.length"></span>/9 กล่อง
@@ -1010,7 +1161,7 @@
                                         <span class="rounded-full bg-black/20 px-2.5 py-1 text-[11px] text-white/70" x-text="bentoSizeLabel(slot.size)"></span>
                                     </div>
                                     <div>
-                                        <p class="line-clamp-2 text-sm font-semibold text-white" x-text="bentoContentTitle(slot.content_id)"></p>
+                                        <p class="line-clamp-2 text-sm font-semibold text-white" x-text="bentoContentหัวข้อ(slot.content_id)"></p>
                                         <p class="mt-2 line-clamp-2 text-xs leading-5 text-slate-300" x-text="bentoContentExcerpt(slot.content_id)"></p>
                                     </div>
                                 </div>
@@ -1049,7 +1200,7 @@
                     <input type="text" x-model="content.map_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="https://maps.google.com/...">
                 </div>
                 <div class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/30 p-4 lg:col-span-2">
-                    <h3 class="text-sm font-semibold text-white">Label และการแสดงผล</h3>
+                    <h3 class="text-sm font-semibold text-white">ป้ายกำกับและการแสดงผล</h3>
                     <div class="grid gap-5 lg:grid-cols-3">
                         <label class="flex items-start gap-3">
                             <input type="checkbox" x-model="content.show_phone" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20">
@@ -1072,7 +1223,7 @@
                 </div>
             </div>
 
-            <div x-show="['hero', 'banner', 'image_text'].includes(component)" x-cloak>
+            <div x-show="['hero', 'banner', 'image_text'].includes(component)" x-cloak class="cms-media-panel">
                 <label class="mb-1.5 block text-sm font-medium text-slate-300">URL รูปภาพสำรอง</label>
                 <input
                     type="text"
@@ -1080,6 +1231,15 @@
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                     placeholder="https://... หรือ /storage/..."
                 >
+            </div>
+
+            <div
+                x-show="!['hero', 'banner', 'image_text', 'gallery'].includes(component)"
+                x-cloak
+                class="cms-media-panel rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-8 text-center"
+            >
+                <p class="text-sm font-semibold text-white">เซกชันนี้ไม่มีสื่อให้ตั้งค่า</p>
+                <p class="mt-2 text-sm leading-6 text-slate-400">ถ้าเลือกชนิดฮีโร่ แบนเนอร์ รูป + ข้อความ หรือแกลเลอรี ระบบจะแสดงตัวเลือกรูปภาพในแท็บนี้</p>
             </div>
 
             <div x-show="['hero', 'banner', 'image_text', 'cta', 'travel_discovery_bento'].includes(component)" x-cloak class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/30 p-5">
@@ -1094,18 +1254,19 @@
                             <input type="checkbox" x-model="content.primary_enabled" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20">
                             <span>
                                 <span class="block text-sm font-medium text-white">แสดงปุ่มหลัก</span>
-                                <span class="block text-xs text-slate-500">ใช้เป็น action สำคัญของ section</span>
+                                <span class="block text-xs text-slate-500">ใช้เป็นปุ่มสำคัญของเซกชัน</span>
                             </span>
                         </label>
-                        <div x-show="content.primary_enabled" x-cloak class="space-y-3">
-                            <input type="text" x-model="content.primary_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ข้อความปุ่มหลัก">
-                            <select x-model="content.primary_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <option value="" class="bg-slate-900">ไม่เลือกหน้า ใช้ URL ด้านล่าง</option>
-                                @foreach($linkPages as $linkPage)
-                                    <option value="{{ $linkPage->id }}" class="bg-slate-900">{{ $linkPage->title }} @if($linkPage->is_homepage)(หน้าแรก)@elseif($linkPage->slug)(/{{ $linkPage->slug }})@endif</option>
-                                @endforeach
-                            </select>
-                            <input type="text" x-model="content.primary_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="URL สำรอง เช่น /temple-list หรือ https://...">
+	                        <div x-show="content.primary_enabled" x-cloak class="space-y-3">
+	                            <input type="text" x-model="content.primary_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ข้อความปุ่มหลัก">
+	                            <input type="search" x-model.debounce.100ms="pageSearch.primary" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหาหน้าปลายทาง...">
+	                            <select x-model="content.primary_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+	                                <option value="" class="bg-slate-900">ไม่เลือกหน้า ใช้ URL ด้านล่าง</option>
+	                                <template x-for="page in filteredLinkหน้า('primary', content.primary_page_id)" :key="page.id">
+	                                    <option :value="page.id" class="bg-slate-900" x-text="page.label"></option>
+	                                </template>
+	                            </select>
+                            <input type="text" x-model="content.primary_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="URL สำรอง เช่น /-list หรือ https://...">
                         </div>
                     </div>
 
@@ -1117,15 +1278,16 @@
                                 <span class="block text-xs text-slate-500">เหมาะกับลิงก์เสริม</span>
                             </span>
                         </label>
-                        <div x-show="content.secondary_enabled" x-cloak class="space-y-3">
-                            <input type="text" x-model="content.secondary_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ข้อความปุ่มรอง">
-                            <select x-model="content.secondary_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <option value="" class="bg-slate-900">ไม่เลือกหน้า ใช้ URL ด้านล่าง</option>
-                                @foreach($linkPages as $linkPage)
-                                    <option value="{{ $linkPage->id }}" class="bg-slate-900">{{ $linkPage->title }} @if($linkPage->is_homepage)(หน้าแรก)@elseif($linkPage->slug)(/{{ $linkPage->slug }})@endif</option>
-                                @endforeach
-                            </select>
-                            <input type="text" x-model="content.secondary_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="URL สำรอง เช่น /article-list หรือ https://...">
+	                        <div x-show="content.secondary_enabled" x-cloak class="space-y-3">
+	                            <input type="text" x-model="content.secondary_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ข้อความปุ่มรอง">
+	                            <input type="search" x-model.debounce.100ms="pageSearch.secondary" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหาหน้าปลายทาง...">
+	                            <select x-model="content.secondary_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+	                                <option value="" class="bg-slate-900">ไม่เลือกหน้า ใช้ URL ด้านล่าง</option>
+	                                <template x-for="page in filteredLinkหน้า('secondary', content.secondary_page_id)" :key="page.id">
+	                                    <option :value="page.id" class="bg-slate-900" x-text="page.label"></option>
+	                                </template>
+	                            </select>
+                            <input type="text" x-model="content.secondary_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="URL สำรอง เช่น /-list หรือ https://...">
                         </div>
                     </div>
                 </div>
@@ -1136,7 +1298,7 @@
                     <input id="all_button_enabled" type="checkbox" x-model="content.all_button_enabled" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20">
                     <div>
                         <label for="all_button_enabled" class="text-sm font-medium text-white">แสดงปุ่มดูทั้งหมด</label>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">ใช้กำหนดปุ่มด้านขวาของหัวข้อ section รายการวัดหรือรายการบทความ</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">ใช้กำหนดปุ่มด้านขวาของหัวข้อเซกชันรายการหรือรายการ</p>
                     </div>
                 </div>
 
@@ -1145,44 +1307,35 @@
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">ข้อความปุ่มดูทั้งหมด</label>
                         <input type="text" x-model="content.all_button_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เช่น ดูทั้งหมด">
                     </div>
-                    <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หน้าปลายทาง</label>
-                        <select x-model="content.all_button_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="" class="bg-slate-900">ใช้หน้ารวมค่าเริ่มต้น</option>
-                            @foreach($linkPages as $linkPage)
-                                <option value="{{ $linkPage->id }}" class="bg-slate-900">
-                                    {{ $linkPage->title }}
-                                    @if($linkPage->is_homepage)
-                                        (หน้าแรก)
-                                    @elseif($linkPage->slug)
-                                        (/{{ $linkPage->slug }})
-                                    @endif
-                                    @if($linkPage->status !== 'published')
-                                        - {{ $linkPage->status }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
+	                    <div>
+	                        <label class="mb-1.5 block text-sm font-medium text-slate-300">หน้าปลายทาง</label>
+	                        <input type="search" x-model.debounce.100ms="pageSearch.all" class="mb-2 w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหาหน้าปลายทาง...">
+	                        <select x-model="content.all_button_page_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+	                            <option value="" class="bg-slate-900">ใช้หน้ารวมเริ่มต้น</option>
+	                            <template x-for="page in filteredLinkหน้า('all', content.all_button_page_id)" :key="page.id">
+	                                <option :value="page.id" class="bg-slate-900" x-text="page.label"></option>
+	                            </template>
+	                        </select>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">URL สำรอง</label>
-                        <input type="text" x-model="content.all_button_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="/temple-list หรือ https://...">
+                        <input type="text" x-model="content.all_button_url" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="/-list หรือ https://...">
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+    <div x-show="activeTab === 'design'" x-cloak class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="mb-5">
-            <p class="text-sm font-medium text-blue-300">Step 3</p>
+            <p class="text-sm font-medium text-blue-300">ส่วนที่ 2</p>
             <h2 class="mt-1 text-lg font-semibold text-white">การแสดงผลและสถานะ</h2>
-            <p class="mt-1 text-sm text-slate-400">ตั้งค่าพื้นหลัง รูปภาพ แหล่งข้อมูล จำนวนรายการ และสถานะการเผยแพร่</p>
+            <p class="mt-1 text-sm text-slate-400">ตั้งพื้นหลัง รูปภาพ แหล่งข้อมูล จำนวนรายการ และสถานะการเผยแพร่</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
             <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-300">สีพื้นหลัง Section</label>
+                <label class="mb-1.5 block text-sm font-medium text-slate-300">สีพื้นหลังเซกชัน</label>
                 <div class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block">
@@ -1223,6 +1376,169 @@
                 </div>
             </div>
 
+            <div class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/30 p-5 lg:col-span-2">
+                <div>
+                    <h3 class="text-sm font-semibold text-white">ตั้งหน้าตา</h3>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">ปรับสี ตัวอักษร ระยะห่าง ปุ่ม ขนาด layout และ animation แบบปลอดภัยโดยไม่ใช้ JavaScript ดิบ</p>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความ</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.text_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ขนาดตัวอักษร</span>
+                        <select x-model="settings.font_size" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="sm" class="bg-slate-900">เล็ก</option>
+                            <option value="base" class="bg-slate-900">มาตรฐาน</option>
+                            <option value="lg" class="bg-slate-900">ใหญ่</option>
+                            <option value="xl" class="bg-slate-900">ใหญ่มาก</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">น้ำหนักตัวอักษร</span>
+                        <select x-model="settings.font_weight" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="normal" class="bg-slate-900">ปกติ</option>
+                            <option value="medium" class="bg-slate-900">กลาง</option>
+                            <option value="semibold" class="bg-slate-900">กึ่งหนา</option>
+                            <option value="bold" class="bg-slate-900">หนา</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">จัดแนวข้อความ</span>
+                        <select x-model="settings.text_align" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="inherit" class="bg-slate-900">ตาม template</option>
+                            <option value="left" class="bg-slate-900">ซ้าย</option>
+                            <option value="center" class="bg-slate-900">กลาง</option>
+                            <option value="right" class="bg-slate-900">ขวา</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะขอบด้านใน</span>
+                        <select x-model="settings.spacing_padding" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="default" class="bg-slate-900">มาตรฐาน</option>
+                            <option value="compact" class="bg-slate-900">กระชับ</option>
+                            <option value="spacious" class="bg-slate-900">โปร่ง</option>
+                            <option value="none" class="bg-slate-900">ไม่มี</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะห่างด้านนอก</span>
+                        <select x-model="settings.spacing_margin" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="none" class="bg-slate-900">ไม่มี</option>
+                            <option value="sm" class="bg-slate-900">เล็ก</option>
+                            <option value="md" class="bg-slate-900">กลาง</option>
+                            <option value="lg" class="bg-slate-900">ใหญ่</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สไตล์ปุ่ม</span>
+                        <select x-model="settings.button_style" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="solid" class="bg-slate-900">ทึบ</option>
+                            <option value="outline" class="bg-slate-900">เส้นขอบ</option>
+                            <option value="ghost" class="bg-slate-900">โปร่ง</option>
+                            <option value="glass" class="bg-slate-900">กระจก</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งปุ่ม</span>
+                        <select x-model="settings.button_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="lg" class="bg-slate-900">โค้งเล็ก</option>
+                            <option value="2xl" class="bg-slate-900">2XL</option>
+                            <option value="full" class="bg-slate-900">เม็ดยา</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งกรอบ</span>
+                        <select x-model="settings.border_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="none" class="bg-slate-900">ไม่มี</option>
+                            <option value="xl" class="bg-slate-900">XL</option>
+                            <option value="2xl" class="bg-slate-900">2XL</option>
+                            <option value="3xl" class="bg-slate-900">3XL</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ความกว้างเนื้อหา</span>
+                        <select x-model="settings.layout_width" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="4xl" class="bg-slate-900">แคบ</option>
+                            <option value="5xl" class="bg-slate-900">กลาง</option>
+                            <option value="7xl" class="bg-slate-900">กว้าง</option>
+                            <option value="full" class="bg-slate-900">เต็มพื้นที่</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">การแสดงผลตามอุปกรณ์</span>
+                        <select x-model="settings.visibility" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="all" class="bg-slate-900">ทุกอุปกรณ์</option>
+                            <option value="desktop" class="bg-slate-900">เฉพาะเดสก์ท็อป</option>
+                            <option value="mobile" class="bg-slate-900">เฉพาะมือถือ</option>
+                            <option value="hidden" class="bg-slate-900">ซ่อน</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">แอนิเมชัน</span>
+                        <select x-model="settings.animation_type" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="none" class="bg-slate-900">ไม่มี</option>
+                            <option value="fade" class="bg-slate-900">ค่อย ๆ แสดง</option>
+                            <option value="fade-up" class="bg-slate-900">เลื่อนขึ้นพร้อมเฟด</option>
+                            <option value="fade-down" class="bg-slate-900">เลื่อนลงพร้อมเฟด</option>
+                            <option value="slide-left" class="bg-slate-900">เลื่อนจากซ้าย</option>
+                            <option value="slide-right" class="bg-slate-900">เลื่อนจากขวา</option>
+                            <option value="zoom-in" class="bg-slate-900">ซูมเข้า</option>
+                            <option value="zoom-out" class="bg-slate-900">ซูมออก</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะเวลาแอนิเมชัน (ms)</span>
+                        <input type="number" min="100" max="3000" step="50" x-model.number="settings.animation_duration" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                    </label>
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">หน่วงเวลาแอนิเมชัน (ms)</span>
+                        <input type="number" min="0" max="3000" step="50" x-model.number="settings.animation_delay" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                    </label>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-white">CSS แอนิเมชันเพิ่มเติม</label>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            ต้องมี <span class="font-mono text-blue-200">{section}</span> อย่างน้อย 1 จุดเพื่อ scope CSS เฉพาะเซกชันนี้ ระบบไม่รับ JavaScript, @import และ url()
+                        </p>
+                    </div>
+                    <textarea
+                        x-model="settings.custom_animation_css"
+                        rows="9"
+                        class="max-h-80 w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 font-mono text-xs leading-6 text-white placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                        placeholder="@keyframes mySectionIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+{section} {
+  animation: mySectionIn 800ms ease both;
+}"
+                    ></textarea>
+                </div>
+            </div>
+
             <div x-show="component === 'image_text'" x-cloak>
                 <label class="mb-1.5 block text-sm font-medium text-slate-300">ตำแหน่งรูป</label>
                 <select x-model="settings.layout" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
@@ -1232,7 +1548,7 @@
             </div>
 
             <div x-show="component === 'banner'" x-cloak>
-                <label class="mb-1.5 block text-sm font-medium text-slate-300">ขนาด Banner</label>
+                <label class="mb-1.5 block text-sm font-medium text-slate-300">ขนาดแบนเนอร์</label>
                 <select x-model.number="settings.banner_height" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     <option :value="540" class="bg-slate-900">1920 x 540</option>
                     <option :value="720" class="bg-slate-900">1920 x 720</option>
@@ -1274,28 +1590,28 @@
                     <input id="show_search_box" type="checkbox" x-model="settings.show_search_box" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20">
                     <div>
                         <label for="show_search_box" class="text-sm font-medium text-white">แสดงกล่องค้นหา</label>
-                        <p x-show="['hero', 'banner'].includes(component)" class="mt-1 text-xs leading-5 text-slate-400">แสดง search box ค้นหารวมทั้งวัดและบทความบนหน้าเว็บไซต์</p>
-                        <p x-show="component === 'travel_discovery_bento'" class="mt-1 text-xs leading-5 text-slate-400">แสดง search box เพื่อค้นหาวัด โดยส่งไปหน้ารวมวัด</p>
+                        <p x-show="['hero', 'banner'].includes(component)" class="mt-1 text-xs leading-5 text-slate-400">แสดงกล่องค้นหารวมทั้งและบนหน้าเว็บไซต์</p>
+                        <p x-show="component === 'travel_discovery_bento'" class="mt-1 text-xs leading-5 text-slate-400">แสดงกล่องค้นหา โดยส่งไปหน้ารวม</p>
                     </div>
                 </div>
                 <div x-show="['hero', 'banner'].includes(component)" x-cloak class="flex items-start gap-3">
                     <input id="show_summary_stats" type="checkbox" x-model="settings.show_summary_stats" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20">
                     <div>
                         <label for="show_summary_stats" class="text-sm font-medium text-white">แสดงตัวเลขสรุป</label>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">แสดงจำนวนวัดทั้งหมด จำนวนบทความทั้งหมด และยอดผู้เข้าชมทั้งหมดใต้หัวข้อ</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">แสดงจำนวนทั้งหมด จำนวนทั้งหมด และยอดผู้เข้าชมทั้งหมดใต้หัวข้อ</p>
                     </div>
                 </div>
                 <div x-show="['hero', 'banner'].includes(component) && settings.show_summary_stats" x-cloak class="grid gap-5 lg:grid-cols-3">
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">Label สถิติวัด</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายกำกับสถิติ</label>
                         <input type="text" x-model="content.temple_stat_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">Label สถิติบทความ</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายกำกับสถิติ</label>
                         <input type="text" x-model="content.article_stat_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">Label สถิติผู้เข้าชม</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายกำกับสถิติผู้เข้าชม</label>
                         <input type="text" x-model="content.view_stat_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                 </div>
@@ -1316,10 +1632,10 @@
             </div>
 
             <div x-show="['article_grid', 'temple_grid'].includes(component)" x-cloak class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                <label class="mb-1.5 block text-sm font-medium text-slate-300">เริ่มใช้ Slide เมื่อเกิน</label>
+                <label class="mb-1.5 block text-sm font-medium text-slate-300">เริ่มใช้สไลด์เมื่อเกิน</label>
                 <input type="number" min="1" max="12" x-model.number="settings.slider_threshold" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                 <p class="mt-2 text-xs leading-5 text-slate-500">
-                    ถ้าจำนวนรายการจริงมากกว่าค่านี้ หน้าเว็บจะเปลี่ยนจาก grid เป็น slide อัตโนมัติ
+                    ถ้าจำนวนรายการจริงมากกว่านี้ หน้าเว็บจะเปลี่ยนจากกริดเป็นสไลด์อัตโนมัติ
                 </p>
             </div>
 
@@ -1335,7 +1651,7 @@
                         <input type="number" min="1" max="12" x-model.number="settings.list_rows" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-slate-300">จำนวนคอลัมน์บน desktop</label>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">จำนวนคอลัมน์บนเดสก์ท็อป</label>
                         <input type="number" min="1" max="6" x-model.number="settings.list_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
                 </div>
@@ -1345,84 +1661,25 @@
                 </p>
             </div>
 
-            <div>
-                <label for="sort_order" class="mb-1.5 block text-sm font-medium text-slate-300">ลำดับบนหน้า</label>
-                <input id="sort_order" type="number" name="sort_order" min="0" value="{{ old('sort_order', $section->sort_order ?? 0) }}" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                @error('sort_order')
-                    <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
-                <label for="status" class="mb-1.5 block text-sm font-medium text-slate-300">สถานะ</label>
-                <select id="status" name="status" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                    <option value="active" class="bg-slate-900" @selected($initialStatus === 'active')>เปิดใช้งาน</option>
-                    <option value="inactive" class="bg-slate-900" @selected($initialStatus === 'inactive')>ปิดใช้งาน</option>
-                </select>
-            </div>
-
             <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4 lg:col-span-2">
-                <div class="flex items-start gap-3">
-                    <input id="is_visible" type="checkbox" name="is_visible" value="1" class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-4 focus:ring-blue-500/20" @checked($initialVisible)>
-                    <div>
-                        <label for="is_visible" class="text-sm font-medium text-white">แสดง block นี้บนหน้าเว็บ</label>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">ถ้าปิดไว้ block นี้จะยังอยู่ในระบบ แต่ไม่แสดงบนหน้า frontend</p>
-                    </div>
-                </div>
+                <p class="text-sm font-medium text-blue-100">สถานะ ลำดับ และชื่อในระบบอยู่ในแผงควบคุมด้านขวาของ preview</p>
+                <p class="mt-1 text-xs leading-5 text-slate-400">พื้นที่นี้โฟกัสเฉพาะเนื้อหาของเซกชัน เพื่อให้แก้ข้อความและสื่อได้ต่อเนื่องโดยไม่ต้องเลื่อนหาช่องเผยแพร่</p>
             </div>
         </div>
-
-        <details class="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <summary class="cursor-pointer text-sm font-medium text-slate-300">ตั้งค่าขั้นสูง</summary>
-            <div class="mt-4 grid gap-5 lg:grid-cols-2">
-                <div>
-                    <label for="name" class="mb-1.5 block text-sm font-medium text-slate-300">ชื่อ block ในระบบ</label>
-                    <input id="name" type="text" name="name" value="{{ $sectionName }}" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เว้นว่างได้">
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-300">รหัส block</label>
-                    <input type="text" value="{{ $sectionKey ?: 'ระบบจะสร้างให้อัตโนมัติ' }}" disabled class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-slate-500">
-                </div>
-            </div>
-        </details>
     </div>
 
-    <div
-        class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
-        data-cms-section-preview
-        data-preview-url="{{ route('admin.content.pages.sections.preview', $page) }}"
-    >
-        <div class="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <p class="text-sm font-medium text-blue-300">Realtime Section Preview</p>
-                <h2 class="mt-1 text-lg font-semibold text-white">ตัวอย่าง Section นี้</h2>
-            </div>
-
-            <div
-                class="hidden rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200"
-                data-cms-section-preview-loading
-            >
-                กำลังอัปเดต...
-            </div>
         </div>
-
-        <div class="relative h-[560px] bg-slate-950/60">
-            <iframe
-                title="CMS section realtime preview"
-                class="h-full w-full bg-slate-950"
-                sandbox="allow-scripts allow-same-origin"
-                data-cms-section-preview-frame
-            ></iframe>
-        </div>
-
-        <div
-            class="hidden border-t border-rose-400/20 bg-rose-500/10 px-5 py-3 text-sm text-rose-200"
-            data-cms-section-preview-error
-        ></div>
     </div>
 </div>
 
 @once
+    <style>
+        .cms-section-tab-body.cms-section-content-mode > .cms-media-panel,
+        .cms-section-tab-body.cms-section-media-mode > :not(.cms-media-panel) {
+            display: none !important;
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-cms-section-preview]').forEach((preview) => {
@@ -1451,7 +1708,7 @@
                     error.classList.toggle('hidden', !message);
                 };
 
-                const renderPreview = async () => {
+                const แสดงผลPreview = async () => {
                     controller?.abort();
                     controller = new AbortController();
 
@@ -1472,7 +1729,7 @@
                         });
 
                         if (!response.ok) {
-                            throw new Error(`Preview request failed (${response.status})`);
+                            throw new Error(`โหลดตัวอย่างไม่สำเร็จ (${response.status})`);
                         }
 
                         const payload = await response.json();
@@ -1488,12 +1745,12 @@
 
                 const schedulePreview = () => {
                     window.clearTimeout(timer);
-                    timer = window.setTimeout(renderPreview, 350);
+                    timer = window.setTimeout(แสดงผลPreview, 350);
                 };
 
                 form.addEventListener('input', schedulePreview);
                 form.addEventListener('change', schedulePreview);
-                renderPreview();
+                แสดงผลPreview();
             });
         });
     </script>

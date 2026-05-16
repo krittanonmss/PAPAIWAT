@@ -1,4 +1,4 @@
-<x-layouts.admin :title="$title" header="จัดการข้อมูลวัด">
+<x-layouts.admin :title="$title" header="จัดการข้อมูล">
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -8,9 +8,9 @@
                     <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
                         Temple Management
                     </p>
-                    <h1 class="text-2xl font-bold text-white">จัดการข้อมูลวัด</h1>
+                    <h1 class="text-2xl font-bold text-white">จัดการข้อมูล</h1>
                     <p class="mt-1 text-sm text-slate-400">
-                        จัดการข้อมูลวัด หมวดหมู่ สถานะการเผยแพร่ และข้อมูลสำหรับแสดงผลหน้าเว็บไซต์
+                        จัดการข้อมูล หมวดหมู่ สถานะการเผยแพร่ และข้อมูลสำหรับแสดงผลหน้าเว็บไซต์
                     </p>
                 </div>
 
@@ -19,7 +19,7 @@
                     class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                 >
                     <span class="text-lg leading-none">+</span>
-                    เพิ่มข้อมูลวัด
+                    เพิ่มข้อมูล
                 </a>
             </div>
         </div>
@@ -41,13 +41,13 @@
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <form method="GET" action="{{ route('admin.temples.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-4">
-                    <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาข้อมูลวัด</label>
+                    <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาข้อมูล</label>
                     <input
                         type="text"
                         id="search"
                         name="search"
                         value="{{ request('search') }}"
-                        placeholder="ชื่อวัด / slug / รายละเอียด"
+                        placeholder="ชื่อ / slug / รายละเอียด"
                         class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
                 </div>
@@ -70,18 +70,21 @@
 
                 <div class="lg:col-span-2">
                     <label for="category_id" class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่</label>
-                    <select
-                        id="category_id"
-                        name="category_id"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทุกหมวดหมู่</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}" class="bg-slate-900" @selected((string) request('category_id') === (string) $category->id)>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'category_id',
+                        'name' => 'category_id',
+                        'selected' => request('category_id'),
+                        'emptyLabel' => 'ทุกหมวดหมู่',
+                        'placeholder' => 'เลือกหมวดหมู่',
+                        'searchPlaceholder' => 'ค้นหาหมวดหมู่...',
+                        'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                        'options' => $categories->map(fn ($category) => [
+                            'value' => $category->id,
+                            'label' => $category->name,
+                            'meta' => $category->parent_id ? 'Parent #' . $category->parent_id : '',
+                            'search' => $category->name . ' ' . $category->id,
+                        ]),
+                    ])
                 </div>
 
                 <div class="lg:col-span-2">
@@ -119,7 +122,7 @@
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-base font-semibold text-white">รายการข้อมูลวัด</h2>
+                    <h2 class="text-base font-semibold text-white">รายการข้อมูล</h2>
                     <p class="text-sm text-slate-400">
                         จำนวน {{ $temples->total() }} รายการ
                     </p>
@@ -130,7 +133,7 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3 text-left">ข้อมูลวัด</th>
+                            <th class="px-4 py-3 text-left">ข้อมูล</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่หลัก</th>
                             <th class="px-4 py-3 text-left">สถานะ</th>
                             <th class="px-4 py-3 text-left">สถิติ</th>
@@ -265,7 +268,7 @@
                                             แก้ไข
                                         </a>
 
-                                        <form method="POST" action="{{ route('admin.temples.destroy', $temple) }}" onsubmit="return confirm('ยืนยันการลบข้อมูลวัดนี้?')">
+                                        <form method="POST" action="{{ route('admin.temples.destroy', $temple) }}" onsubmit="return confirm('ยืนยันการลบข้อมูลนี้?')">
                                             @csrf
                                             @method('DELETE')
 
@@ -282,9 +285,9 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="px-5 py-10 text-center">
-                                    <p class="text-base font-medium text-slate-300">ยังไม่มีข้อมูลวัด</p>
+                                    <p class="text-base font-medium text-slate-300">ยังไม่มีข้อมูล</p>
                                     <p class="mt-1 text-sm text-slate-500">
-                                        เริ่มเพิ่มข้อมูลวัดแรกเพื่อใช้แสดงผลบนหน้าเว็บไซต์
+                                        เริ่มเพิ่มข้อมูลแรกเพื่อใช้แสดงผลบนหน้าเว็บไซต์
                                     </p>
 
                                     <a
@@ -292,7 +295,7 @@
                                         class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                                     >
                                         <span class="text-lg leading-none">+</span>
-                                        เพิ่มข้อมูลวัด
+                                        เพิ่มข้อมูล
                                     </a>
                                 </td>
                             </tr>

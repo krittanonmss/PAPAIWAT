@@ -35,6 +35,6 @@ class RolePermissionController extends Controller
 
         return redirect()
             ->route('admin.roles.permissions.edit', $role)
-            ->with('success', 'Permissions updated successfully.');
+            ->with('success', 'อัปเดตสิทธิ์ของบทบาทเรียบร้อยแล้ว');
     }
 }

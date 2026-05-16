@@ -1,11 +1,11 @@
-<x-layouts.admin title="Media Management" header="Media Management">
+<x-layouts.admin title="จัดการคลังสื่อ" header="จัดการคลังสื่อ">
     <div class="space-y-6 text-white">
         {{-- Header --}}
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="border-b border-white/10 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 px-6 py-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p class="text-sm font-medium text-blue-300">Media Library</p>
+                        <p class="text-sm font-medium text-blue-300">คลังสื่อ</p>
                         <h1 class="mt-1 text-2xl font-bold text-white">จัดการคลังสื่อ</h1>
                         <p class="mt-2 max-w-3xl text-sm text-slate-400">
                             จัดการรูปภาพ เอกสาร และไฟล์ประกอบทั้งหมด โดยเลือกโฟลเดอร์ด้านซ้ายเพื่อกรองไฟล์เฉพาะกลุ่ม
@@ -195,8 +195,8 @@
                                 class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                             >
                                 <option value="" class="bg-slate-900">ทั้งหมด</option>
-                                <option value="public" class="bg-slate-900" @selected($filters['visibility'] === 'public')>Public</option>
-                                <option value="private" class="bg-slate-900" @selected($filters['visibility'] === 'private')>Private</option>
+                                <option value="public" class="bg-slate-900" @selected($filters['visibility'] === 'public')>สาธารณะ</option>
+                                <option value="private" class="bg-slate-900" @selected($filters['visibility'] === 'private')>ส่วนตัว</option>
                             </select>
                         </div>
 
@@ -228,7 +228,7 @@
                                     $previewPath = $thumbnail?->path ?? $media->path;
                                 @endphp
 
-                                <article class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
+                                < class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
                                     <div class="relative aspect-[4/3] bg-slate-950">
                                         @if ($media->media_type === 'image')
                                             <img
@@ -338,7 +338,7 @@
                                             </form>
                                         </div>
                                     </div>
-                                </article>
+                                </>
                             @endforeach
                         </div>
 

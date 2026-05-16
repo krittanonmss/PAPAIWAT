@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Article Management
+                        จัดการบทความ
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">สร้างบทความใหม่</h1>
@@ -59,40 +59,42 @@
         >
             @csrf
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div x-data="{ activeTab: 'content' }" :class="`article-studio-tab-${activeTab}`" class="space-y-6">
+                <section class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="grid xl:grid-cols-[minmax(0,1fr)_340px]">
+                        <div class="border-b border-white/10 p-5 xl:border-b-0 xl:border-r">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Article Studio</p>
+                            <h2 class="mt-1 text-lg font-semibold text-white">จัดการบทความ</h2>
+                            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">แก้เนื้อหา สื่อ SEO และการเผยแพร่ผ่าน tabs ด้านล่าง โดยยังใช้ข้อมูลชุดเดิมครบถ้วน</p>
+                        </div>
+                        <aside class="space-y-3 bg-white/[0.03] p-5">
+                            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ภาพรวม</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">เนื้อหา</span>
+                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">หมวดหมู่</span>
+                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">สื่อ</span>
+                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">เผยแพร่</span>
+                            </div>
+                        </aside>
+                    </div>
+                </section>
 
-                {{-- Main Form --}}
+                <div class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="grid gap-2 md:grid-cols-5">
+                        <button type="button" @click="activeTab = 'content'" :class="activeTab === 'content' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">เนื้อหา</button>
+                        <button type="button" @click="activeTab = 'taxonomy'" :class="activeTab === 'taxonomy' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">หมวดหมู่</button>
+                        <button type="button" @click="activeTab = 'media'" :class="activeTab === 'media' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">สื่อ</button>
+                        <button type="button" @click="activeTab = 'seo'" :class="activeTab === 'seo' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">SEO</button>
+                        <button type="button" @click="activeTab = 'publish'" :class="activeTab === 'publish' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'" class="rounded-2xl border px-4 py-3 text-sm font-semibold transition">เผยแพร่</button>
+                    </div>
+                </div>
+
                 <div class="space-y-6">
                     @include('admin.content.articles._form')
                 </div>
-
-                {{-- Side Panel --}}
-                <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">ลำดับการกรอกข้อมูล</h3>
-
-                        <div class="mt-4 space-y-2 text-sm">
-                            <a href="#article-main" class="block rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3 text-blue-200 hover:bg-blue-500/20">
-                                1. เนื้อหาและ editor
-                            </a>
-                            <a href="#article-media" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
-                                2. หมวดหมู่ แท็ก และรูปปก
-                            </a>
-                            <a href="#article-publishing" class="block rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-300 hover:bg-white/[0.06]">
-                                3. การเผยแพร่
-                            </a>
-                        </div>
-
-                        <div class="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
-                            <p class="text-xs leading-5 text-amber-100">
-                                ช่องเนื้อหาบทความใช้ rich text editor แล้ว และบันทึกเป็น HTML เพื่อแสดงผลบนหน้า detail
-                            </p>
-                        </div>
-                    </div>
-                </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

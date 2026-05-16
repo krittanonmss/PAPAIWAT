@@ -1,4 +1,4 @@
-<x-layouts.admin title="Admin Dashboard" header="Dashboard">
+<x-layouts.admin title="แดชบอร์ดผู้ดูแล" header="Dashboard">
     @php
         $statusStyles = [
             'published' => 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300',
@@ -9,10 +9,10 @@
         ];
 
         $metricCards = [
-            ['label' => 'วัดทั้งหมด', 'value' => $stats['temples'], 'hint' => 'ข้อมูล temple ในระบบ'],
+            ['label' => 'วัดทั้งหมด', 'value' => $stats['temples'], 'hint' => 'ข้อมูลวัดในระบบ'],
             ['label' => 'บทความ', 'value' => $stats['articles'], 'hint' => 'บทความทั้งหมด'],
             ['label' => 'หน้าเว็บไซต์', 'value' => $stats['pages'], 'hint' => 'pages ที่จัดการได้'],
-            ['label' => 'ไฟล์สื่อ', 'value' => $stats['media'], 'hint' => 'media library ทั้งหมด'],
+            ['label' => 'ไฟล์สื่อ', 'value' => $stats['media'], 'hint' => 'คลังสื่อ ทั้งหมด'],
         ];
     @endphp
 
@@ -21,7 +21,7 @@
             <div class="border-b border-white/10 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 px-6 py-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p class="text-sm font-medium text-blue-300">Admin Dashboard</p>
+                        <p class="text-sm font-medium text-blue-300">แดชบอร์ดผู้ดูแล</p>
                         <h1 class="mt-1 text-2xl font-bold text-white">ภาพรวมระบบผู้ดูแล</h1>
                         <p class="mt-2 max-w-3xl text-sm text-slate-400">
                             สรุปสถานะเนื้อหา คลังสื่อ ความเคลื่อนไหว และความปลอดภัยล่าสุดที่ผู้ดูแลควรเห็นก่อนเริ่มงาน
@@ -86,11 +86,11 @@
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">ความปลอดภัย 24 ชั่วโมง</p>
                 <div class="mt-4 grid grid-cols-2 gap-3">
                     <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
-                        <p class="text-xs text-emerald-300">Login สำเร็จ</p>
+                        <p class="text-xs text-emerald-300">เข้าสู่ระบบสำเร็จ</p>
                         <p class="mt-1 text-2xl font-bold text-emerald-300">{{ number_format($stats['successful_logins_24h']) }}</p>
                     </div>
                     <div class="rounded-2xl border border-red-400/20 bg-red-500/10 p-4">
-                        <p class="text-xs text-red-300">Login ไม่สำเร็จ</p>
+                        <p class="text-xs text-red-300">เข้าสู่ระบบไม่สำเร็จ</p>
                         <p class="mt-1 text-2xl font-bold text-red-300">{{ number_format($stats['failed_logins_24h']) }}</p>
                     </div>
                 </div>
@@ -100,11 +100,11 @@
                 <p class="text-xs font-medium uppercase tracking-wide text-slate-500">ผู้ดูแลระบบ</p>
                 <div class="mt-4 grid grid-cols-2 gap-3">
                     <div class="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                        <p class="text-xs text-slate-400">Admin ทั้งหมด</p>
+                        <p class="text-xs text-slate-400">ผู้ดูแลทั้งหมด</p>
                         <p class="mt-1 text-2xl font-bold text-white">{{ number_format($stats['admins']) }}</p>
                     </div>
                     <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                        <p class="text-xs text-blue-300">Session ใช้งาน</p>
+                        <p class="text-xs text-blue-300">เซสชันที่ใช้งาน</p>
                         <p class="mt-1 text-2xl font-bold text-blue-300">{{ number_format($stats['active_sessions']) }}</p>
                     </div>
                 </div>
@@ -166,7 +166,7 @@
                 <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
                     <div class="border-b border-white/10 px-5 py-4">
                         <h2 class="text-base font-semibold text-white">สื่อล่าสุด</h2>
-                        <p class="text-sm text-slate-400">ไฟล์ที่อัปโหลดล่าสุดใน media library</p>
+                        <p class="text-sm text-slate-400">ไฟล์ที่อัปโหลดล่าสุดใน คลังสื่อ</p>
                     </div>
                     <div class="grid grid-cols-2 gap-3 p-4">
                         @forelse ($recentMedia as $media)

@@ -6,13 +6,13 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Template Detail
+                        รายละเอียดเทมเพลต
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">{{ $template->name }}</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        รายละเอียด Template และการใช้งานกับหน้าเว็บไซต์
+                        รายละเอียด เทมเพลต และการใช้งานกับหน้าเว็บไซต์
                     </p>
                 </div>
 
@@ -28,7 +28,7 @@
                         href="{{ route('admin.content.templates.index') }}"
                         class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                     >
-                        กลับไปรายการ Template
+                        กลับไปรายการ เทมเพลต
                     </a>
                 </div>
             </div>
@@ -51,7 +51,7 @@
             <div class="space-y-6 xl:col-span-2">
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">Description</h2>
+                        <h2 class="text-base font-semibold text-white">คำอธิบาย</h2>
                     </div>
 
                     <div class="p-6">
@@ -63,19 +63,19 @@
 
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">Usage Note</h2>
+                        <h2 class="text-base font-semibold text-white">หมายเหตุการใช้งาน</h2>
                     </div>
 
                     <div class="space-y-4 p-6 text-sm leading-6 text-slate-300">
                         <p>
-                            View Path ต้องชี้ไปยัง Blade view ที่มีอยู่จริง เช่น
-                            <code class="rounded-lg border border-white/10 bg-slate-950/40 px-2 py-1 text-xs text-blue-300">frontend.pages.default</code>
+                            พาธ ดูรายละเอียด ต้องชี้ไปยัง Blade view ที่มีอยู่จริง เช่น
+                            <code class="rounded-lg border border-white/10 bg-slate-950/40 px-2 py-1 text-xs text-blue-300">หน้าเว็บจริง.pages.default</code>
                         </p>
 
                         <p>
-                            เมื่อ Page เลือก Template นี้ ฝั่ง frontend renderer จะใช้ค่า
+                            เมื่อ Page เลือก เทมเพลต นี้ ฝั่ง หน้าเว็บจริง แสดงผลer จะใช้
                             <code class="rounded-lg border border-white/10 bg-slate-950/40 px-2 py-1 text-xs text-blue-300">view_path</code>
-                            เพื่อ render หน้า
+                            เพื่อ แสดงผล หน้า
                         </p>
                     </div>
                 </section>
@@ -85,12 +85,12 @@
             <div class="space-y-6">
                 <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">Template Detail</h2>
+                        <h2 class="text-base font-semibold text-white">รายละเอียดเทมเพลต</h2>
                     </div>
 
                     <div class="divide-y divide-white/10">
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Name</p>
+                            <p class="text-xs text-slate-500">ชื่อ</p>
                             <p class="mt-0.5 break-words text-sm font-medium text-slate-200">{{ $template->name }}</p>
                         </div>
 
@@ -104,7 +104,7 @@
                         </div>
 
                         <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">View Path</p>
+                            <p class="text-xs text-slate-500">พาธ ดูรายละเอียด</p>
                             <div class="mt-1">
                                 <code class="inline-flex max-w-full break-all rounded-xl border border-white/10 bg-slate-950/40 px-2.5 py-1 text-xs text-blue-300">
                                     {{ $template->view_path }}
@@ -113,20 +113,20 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Pages</span>
+                            <span class="text-sm text-slate-400">หน้า</span>
                             <span class="text-sm font-medium text-slate-200">{{ $template->pages_count }}</span>
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Sort Order</span>
+                            <span class="text-sm text-slate-400">ลำดับ</span>
                             <span class="text-sm font-medium text-slate-200">{{ $template->sort_order }}</span>
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Default</span>
+                            <span class="text-sm text-slate-400">เริ่มต้น</span>
                             @if($template->is_default)
                                 <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">
-                                    Default
+                                    เริ่มต้น
                                 </span>
                             @else
                                 <span class="text-sm text-slate-500">No</span>
@@ -134,7 +134,7 @@
                         </div>
 
                         <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">Status</span>
+                            <span class="text-sm text-slate-400">สถานะ</span>
                             <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium {{ $statusClass }}">
                                 {{ ucfirst($template->status) }}
                             </span>
@@ -144,18 +144,18 @@
 
                 <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
                     <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">Danger Zone</h2>
+                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
                     </div>
 
                     <div class="p-6">
                         <p class="mb-4 text-sm text-rose-200/80">
-                            ลบ Template นี้ออกจากระบบ
+                            ลบ เทมเพลต นี้ออกจากระบบ
                         </p>
 
                         <form
                             method="POST"
                             action="{{ route('admin.content.templates.destroy', $template) }}"
-                            onsubmit="return confirm('ยืนยันการลบ Template นี้?')"
+                            onsubmit="return confirm('ยืนยันการลบ เทมเพลต นี้?')"
                         >
                             @csrf
                             @method('DELETE')
@@ -164,7 +164,7 @@
                                 type="submit"
                                 class="w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20"
                             >
-                                Delete Template
+                                ลบเทมเพลต
                             </button>
                         </form>
                     </div>

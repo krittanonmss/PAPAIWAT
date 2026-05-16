@@ -102,7 +102,7 @@
                     >
 
                     <p class="mt-1 text-xs text-slate-500">
-                        ค่าน้อยจะแสดงก่อน
+                        น้อยจะแสดงก่อน
                     </p>
 
                     @error('sort_order')
@@ -167,7 +167,7 @@
 </div>
 
 <script>
-    const folderNameInput = document.getElementById('name');
+    const folderชื่อInput = document.getElementById('name');
     const slugPreviewInput = document.getElementById('slug_preview');
 
     function makeSlug(value) {
@@ -180,9 +180,9 @@
     }
 
     function updateSlugPreview() {
-        slugPreviewInput.value = makeSlug(folderNameInput.value);
+        slugPreviewInput.value = makeSlug(folderชื่อInput.value);
     }
 
-    folderNameInput.addEventListener('input', updateSlugPreview);
+    folderชื่อInput.addEventListener('input', updateSlugPreview);
     updateSlugPreview();
 </script>

@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Pages'">
+<x-layouts.admin :title="'หน้า'">
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
-                        Page Management
+                        จัดการหน้าเว็บไซต์
                     </p>
                     <h1 class="text-2xl font-bold text-white">จัดการหน้าเว็บไซต์</h1>
                     <p class="mt-1 text-sm text-slate-400">
@@ -39,13 +39,13 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3 text-left">Page</th>
+                            <th class="px-4 py-3 text-left">หน้า</th>
                             <th class="px-4 py-3 text-left">Slug</th>
-                            <th class="px-4 py-3 text-left">Template</th>
-                            <th class="px-4 py-3 text-left">Type</th>
-                            <th class="px-4 py-3 text-left">Homepage</th>
-                            <th class="px-4 py-3 text-left">Status</th>
-                            <th class="px-4 py-3 text-right">Action</th>
+                            <th class="px-4 py-3 text-left">เทมเพลต</th>
+                            <th class="px-4 py-3 text-left">ประเภท</th>
+                            <th class="px-4 py-3 text-left">หน้าแรก</th>
+                            <th class="px-4 py-3 text-left">สถานะ</th>
+                            <th class="px-4 py-3 text-right">การจัดการ</th>
                         </tr>
                     </thead>
 
@@ -91,7 +91,7 @@
                                 <td class="px-4 py-3">
                                     @if($page->is_homepage)
                                         <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
-                                            Homepage
+                                            หน้าแรก
                                         </span>
                                     @else
                                         <span class="text-xs text-slate-500">-</span>
@@ -102,17 +102,17 @@
                                     @if($page->status === 'published')
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
-                                            Published
+                                            เผยแพร่
                                         </span>
                                     @elseif($page->status === 'draft')
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-yellow-300"></span>
-                                            Draft
+                                            ฉบับร่าง
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
-                                            Archived
+                                            เก็บถาวร
                                         </span>
                                     @endif
                                 </td>

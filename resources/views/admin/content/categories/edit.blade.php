@@ -92,7 +92,7 @@
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">การแสดงผล</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบสถานะ ลำดับ และการตั้งค่าแนะนำก่อนเผยแพร่
+                                    ตรวจสอบสถานะ ลำดับ และการตั้งแนะนำก่อนเผยแพร่
                                 </p>
                             </div>
                         </div>
@@ -100,7 +100,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

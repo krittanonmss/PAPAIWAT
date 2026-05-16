@@ -108,7 +108,7 @@
 
     {{-- Section: Advanced Settings --}}
     <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
-        <h3 class="text-sm font-semibold text-white">ตั้งค่าเพิ่มเติม</h3>
+        <h3 class="text-sm font-semibold text-white">ตั้งเพิ่มเติม</h3>
 
         <div class="mt-4 grid gap-6 lg:grid-cols-2">
             <div>
@@ -139,7 +139,7 @@
                 >
                 <div class="ml-3">
                     <label for="is_default" class="text-sm font-medium text-yellow-200">
-                        ตั้งเป็นเมนูหลัก (Default)
+                        ตั้งเป็นเมนูหลัก (เริ่มต้น)
                     </label>
                     <p class="text-xs text-yellow-300/70">
                         ถ้าเลือกเมนูนี้ เมนู default เดิมจะถูกยกเลิกอัตโนมัติ
@@ -149,7 +149,7 @@
         </div>
     </div>
 
-    {{-- Section: Description --}}
+    {{-- Section: คำอธิบาย --}}
     <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
         <h3 class="text-sm font-semibold text-white">คำอธิบาย</h3>
 

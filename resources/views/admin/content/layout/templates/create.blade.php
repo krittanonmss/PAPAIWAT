@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Create Template'">
+<x-layouts.admin :title="'สร้างเทมเพลต'">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,13 +6,13 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Template Management
+                        จัดการเทมเพลต
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">Create Template</h1>
+                    <h1 class="text-2xl font-bold text-white">สร้างเทมเพลต</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        สร้าง Template สำหรับกำหนดรูปแบบการแสดงผลของหน้าเว็บไซต์
+                        สร้าง เทมเพลต สำหรับกำหนดรูปแบบการแสดงผลของหน้าเว็บไซต์
                     </p>
                 </div>
 
@@ -20,7 +20,7 @@
                     href="{{ route('admin.content.templates.index') }}"
                     class="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                 >
-                    กลับไปรายการ Template
+                    กลับไปรายการ เทมเพลต
                 </a>
             </div>
         </div>
@@ -76,14 +76,14 @@
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">ชื่อและ Key</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ตรวจสอบชื่อ Template และ key ให้สื่อถึงรูปแบบการใช้งาน
+                                    ตรวจสอบชื่อ เทมเพลต และ key ให้สื่อถึงรูปแบบการใช้งาน
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">View Path</p>
+                                <p class="text-sm font-medium text-slate-200">พาธ ดูรายละเอียด</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    ระบุ path ของ Blade view ให้ตรงกับไฟล์ที่ใช้ render หน้าเว็บไซต์
+                                    ระบุ path ของ Blade view ให้ตรงกับไฟล์ที่ใช้ แสดงผล หน้าเว็บไซต์
                                 </p>
                             </div>
 
@@ -98,11 +98,11 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">
-                        ตรวจสอบข้อมูล Template ก่อนกดบันทึก
+                        ตรวจสอบข้อมูล เทมเพลต ก่อนกดบันทึก
                     </p>
 
                     <div class="flex items-center justify-end gap-3">
@@ -117,7 +117,7 @@
                             type="submit"
                             class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
                         >
-                            สร้าง Template
+                            สร้าง เทมเพลต
                         </button>
                     </div>
                 </div>

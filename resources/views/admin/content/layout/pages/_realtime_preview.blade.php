@@ -61,7 +61,7 @@
                     error.classList.toggle('hidden', !message);
                 };
 
-                const renderPreview = async () => {
+                const แสดงผลPreview = async () => {
                     controller?.abort();
                     controller = new AbortController();
                     const formData = new FormData(form);
@@ -82,7 +82,7 @@
                         });
 
                         if (!response.ok) {
-                            throw new Error(`Preview request failed (${response.status})`);
+                            throw new Error(`โหลดตัวอย่างไม่สำเร็จ (${response.status})`);
                         }
 
                         const payload = await response.json();
@@ -98,12 +98,12 @@
 
                 const schedulePreview = () => {
                     window.clearTimeout(timer);
-                    timer = window.setTimeout(renderPreview, 350);
+                    timer = window.setTimeout(แสดงผลPreview, 350);
                 };
 
                 form.addEventListener('input', schedulePreview);
                 form.addEventListener('change', schedulePreview);
-                renderPreview();
+                แสดงผลPreview();
             });
         });
     </script>

@@ -45,7 +45,7 @@ class PageSectionController extends Controller
             'section_key' => $request->input('section_key') ?: 'preview-section',
             'component_key' => $componentKey,
             'content' => $this->prepareSectionContent($request->input('content')) ?? [],
-            'settings' => $this->decodeJson($request->input('settings')) ?? [],
+            'settings' => $this->sanitizeSectionSettings($this->decodeJson($request->input('settings')) ?? []),
             'status' => 'active',
             'is_visible' => true,
             'sort_order' => (int) $request->input('sort_order', 0),
@@ -62,7 +62,7 @@ class PageSectionController extends Controller
             report($exception);
 
             $html = view('frontend.templates.previews.admin-iframe', [
-                'previewTitle' => 'Section preview error',
+                'previewTitle' => 'ตัวอย่างเซกชันมีข้อผิดพลาด',
                 'previewMessage' => $exception->getMessage(),
             ])->render();
         }
@@ -86,7 +86,7 @@ class PageSectionController extends Controller
         ]);
 
         $validated['page_id'] = $page->id;
-        $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
+        $validated['settings'] = $this->sanitizeSectionSettings($this->decodeJson($validated['settings'] ?? null) ?? []);
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . now()->format('His'));
@@ -127,7 +127,7 @@ class PageSectionController extends Controller
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $validated['settings'] = $this->decodeJson($validated['settings'] ?? null);
+        $validated['settings'] = $this->sanitizeSectionSettings($this->decodeJson($validated['settings'] ?? null) ?? []);
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . $section->id);
@@ -242,6 +242,111 @@ class PageSectionController extends Controller
         }
 
         return $content;
+    }
+
+    private function sanitizeSectionSettings(array $settings): array
+    {
+        $safe = $settings;
+
+        $safe['background_color'] = $this->sanitizeHexColor($settings['background_color'] ?? null, '#020617');
+        $safe['background_color_end'] = $this->sanitizeHexColor($settings['background_color_end'] ?? null, $safe['background_color']);
+        $safe['text_color'] = $this->sanitizeHexColor($settings['text_color'] ?? null, '#ffffff');
+        $safe['background_gradient'] = (bool) ($settings['background_gradient'] ?? false);
+        $safe['show_search_box'] = (bool) ($settings['show_search_box'] ?? false);
+        $safe['show_summary_stats'] = (bool) ($settings['show_summary_stats'] ?? false);
+
+        $safe['background_gradient_direction'] = $this->allowedValue($settings['background_gradient_direction'] ?? null, [
+            'to bottom',
+            'to top',
+            'to right',
+            'to left',
+            '135deg',
+        ], 'to bottom');
+
+        $safe['align'] = $this->allowedValue($settings['align'] ?? null, ['left', 'center', 'right'], 'center');
+        $safe['layout'] = $this->allowedValue($settings['layout'] ?? null, ['image_right', 'image_left'], 'image_right');
+        $safe['source'] = $this->allowedValue($settings['source'] ?? null, ['featured', 'popular', 'all'], 'featured');
+        $safe['bento_variant'] = $this->allowedValue($settings['bento_variant'] ?? null, ['travel', 'article_filter'], 'travel');
+        $safe['bento_content_type'] = $this->allowedValue($settings['bento_content_type'] ?? null, ['article', 'temple'], 'article');
+        $safe['bento_layout'] = $this->allowedValue($settings['bento_layout'] ?? null, ['feature_3', 'balanced_4', 'mosaic_5', 'editorial_6', 'compact_7', 'full_9'], 'mosaic_5');
+        $safe['bento_content_align'] = $this->allowedValue($settings['bento_content_align'] ?? null, ['left', 'center', 'right'], 'left');
+        $safe['image_fit'] = $this->allowedValue($settings['image_fit'] ?? null, ['contain', 'cover'], 'contain');
+        $safe['image_position'] = $this->allowedValue($settings['image_position'] ?? null, ['center', 'top', 'bottom', 'left', 'right'], 'center');
+        $safe['font_size'] = $this->allowedValue($settings['font_size'] ?? null, ['sm', 'base', 'lg', 'xl'], 'base');
+        $safe['font_weight'] = $this->allowedValue($settings['font_weight'] ?? null, ['normal', 'medium', 'semibold', 'bold'], 'normal');
+        $safe['text_align'] = $this->allowedValue($settings['text_align'] ?? null, ['inherit', 'left', 'center', 'right'], 'inherit');
+        $safe['spacing_padding'] = $this->allowedValue($settings['spacing_padding'] ?? null, ['none', 'compact', 'default', 'spacious'], 'default');
+        $safe['spacing_margin'] = $this->allowedValue($settings['spacing_margin'] ?? null, ['none', 'sm', 'md', 'lg'], 'none');
+        $safe['button_style'] = $this->allowedValue($settings['button_style'] ?? null, ['solid', 'outline', 'ghost', 'glass'], 'solid');
+        $safe['button_radius'] = $this->allowedValue($settings['button_radius'] ?? null, ['lg', '2xl', 'full'], '2xl');
+        $safe['border_radius'] = $this->allowedValue($settings['border_radius'] ?? null, ['none', 'xl', '2xl', '3xl'], 'none');
+        $safe['layout_width'] = $this->allowedValue($settings['layout_width'] ?? null, ['4xl', '5xl', '7xl', 'full'], '7xl');
+        $safe['visibility'] = $this->allowedValue($settings['visibility'] ?? null, ['all', 'desktop', 'mobile', 'hidden'], 'all');
+        $safe['animation_type'] = $this->allowedValue($settings['animation_type'] ?? null, ['none', 'fade', 'fade-up', 'fade-down', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out'], 'none');
+        $safe['animation_duration'] = max(100, min((int) ($settings['animation_duration'] ?? 500), 3000));
+        $safe['animation_delay'] = max(0, min((int) ($settings['animation_delay'] ?? 0), 3000));
+        $safe['animation_class'] = preg_match('/^[a-zA-Z0-9_-]{0,64}$/', (string) ($settings['animation_class'] ?? ''))
+            ? (string) ($settings['animation_class'] ?? '')
+            : '';
+        $safe['custom_animation_css'] = $this->sanitizeCustomAnimationCss($settings['custom_animation_css'] ?? '');
+
+        $safe['limit'] = max(1, min((int) ($settings['limit'] ?? 4), 12));
+        $safe['slider_threshold'] = max(1, min((int) ($settings['slider_threshold'] ?? 4), 12));
+        $safe['list_rows'] = max(1, min((int) ($settings['list_rows'] ?? 4), 12));
+        $safe['list_columns'] = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
+        $safe['banner_height'] = in_array((int) ($settings['banner_height'] ?? 540), [540, 720], true)
+            ? (int) ($settings['banner_height'] ?? 540)
+            : 540;
+        $safe['image_opacity'] = max(10, min((int) ($settings['image_opacity'] ?? 100), 100));
+
+        return $safe;
+    }
+
+    private function sanitizeHexColor(mixed $value, string $fallback): string
+    {
+        $value = trim((string) $value);
+
+        return preg_match('/^#[0-9a-fA-F]{6}$/', $value) ? $value : $fallback;
+    }
+
+    private function allowedValue(mixed $value, array $allowed, string $fallback): string
+    {
+        $value = (string) $value;
+
+        return in_array($value, $allowed, true) ? $value : $fallback;
+    }
+
+    private function sanitizeCustomAnimationCss(mixed $value): string
+    {
+        $css = str_replace("\0", '', (string) $value);
+        $css = trim(mb_substr($css, 0, 8000));
+
+        if ($css === '') {
+            return '';
+        }
+
+        if (! str_contains($css, '{section}')) {
+            return '';
+        }
+
+        $blockedPatterns = [
+            '/<\/?\s*style\b/i',
+            '/<\/?\s*script\b/i',
+            '/@import\b/i',
+            '/url\s*\(/i',
+            '/expression\s*\(/i',
+            '/javascript\s*:/i',
+            '/behavior\s*:/i',
+            '/-moz-binding\s*:/i',
+        ];
+
+        foreach ($blockedPatterns as $pattern) {
+            if (preg_match($pattern, $css)) {
+                return '';
+            }
+        }
+
+        return $css;
     }
 
     private function defaultSectionName(string $componentKey): string

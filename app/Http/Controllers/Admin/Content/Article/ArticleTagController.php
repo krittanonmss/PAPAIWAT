@@ -57,7 +57,7 @@ class ArticleTagController extends Controller
 
         return redirect()
             ->route('admin.content.article-tags.index')
-            ->with('success', 'Article tag created successfully.');
+            ->with('success', 'สร้างแท็กบทความเรียบร้อยแล้ว');
     }
 
     public function edit(ArticleTag $articleTag): View
@@ -78,7 +78,7 @@ class ArticleTagController extends Controller
 
         return redirect()
             ->route('admin.content.article-tags.index')
-            ->with('success', 'Article tag updated successfully.');
+            ->with('success', 'อัปเดตแท็กบทความเรียบร้อยแล้ว');
     }
 
     public function destroy(ArticleTag $articleTag): RedirectResponse
@@ -87,7 +87,7 @@ class ArticleTagController extends Controller
 
         return redirect()
             ->route('admin.content.article-tags.index')
-            ->with('success', 'Article tag deleted successfully.');
+            ->with('success', 'ลบแท็กบทความเรียบร้อยแล้ว');
     }
 
     private function generateUniqueSlug(string $value, ?int $ignoreId = null): string

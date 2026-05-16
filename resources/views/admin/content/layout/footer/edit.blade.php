@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Footer Settings'" header="ตั้งค่า Footer">
+<x-layouts.admin :title="'Footer Settings'" header="ตั้ง Footer">
     <div class="space-y-6 text-white">
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 shadow-xl shadow-slate-950/30">
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -7,7 +7,7 @@
                         Footer Customization
                     </div>
 
-                    <h1 class="text-2xl font-bold text-white">ตั้งค่า Footer</h1>
+                    <h1 class="text-2xl font-bold text-white">ตั้ง Footer</h1>
                     <p class="mt-2 text-sm leading-6 text-slate-400">
                         ปรับข้อความ แบรนด์ รูปแบบพื้นหลัง และการแสดงผล footer ส่วนคอลัมน์ลิงก์จัดการผ่าน Footer Menu
                     </p>

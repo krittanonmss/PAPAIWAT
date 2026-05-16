@@ -27,7 +27,7 @@
                 @csrf
                 @method('PUT')
 
-                {{-- Name --}}
+                {{-- ชื่อ --}}
                 <div>
                     <label for="name" class="mb-1.5 block text-sm font-medium text-slate-400">
                         ชื่อบทบาท
@@ -47,7 +47,7 @@
 
                 <div class="hidden lg:block"></div>
 
-                {{-- Description --}}
+                {{-- คำอธิบาย --}}
                 <div class="lg:col-span-2">
                     <label for="description" class="mb-1.5 block text-sm font-medium text-slate-400">
                         รายละเอียด
@@ -64,7 +64,7 @@
                     @enderror
                 </div>
 
-                {{-- Actions --}}
+                {{-- การจัดการs --}}
                 <div class="flex justify-end gap-3 pt-2 lg:col-span-2">
                     <a
                         href="{{ route('admin.roles.index') }}"

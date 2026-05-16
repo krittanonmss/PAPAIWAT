@@ -49,7 +49,7 @@ class RoleController extends Controller
 
         return redirect()
             ->route('admin.roles.index')
-            ->with('success', 'Role created successfully.');
+            ->with('success', 'สร้างบทบาทเรียบร้อยแล้ว');
     }
 
     public function edit(Role $role): View
@@ -71,7 +71,7 @@ class RoleController extends Controller
 
         return redirect()
             ->route('admin.roles.index')
-            ->with('success', 'Role updated successfully.');
+            ->with('success', 'อัปเดตบทบาทเรียบร้อยแล้ว');
     }
 
     public function destroy(Role $role): RedirectResponse

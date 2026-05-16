@@ -1,4 +1,4 @@
-<x-layouts.admin title="Create Media Folder" header="Create Media Folder">
+<x-layouts.admin title="สร้างโฟลเดอร์สื่อ" header="สร้างโฟลเดอร์สื่อ">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,7 +6,7 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Media Library
+                        คลังสื่อ
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">สร้างโฟลเดอร์สื่อ</h1>
@@ -88,7 +88,7 @@
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                                 <p class="text-sm font-medium text-slate-200">สถานะการใช้งาน</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
-                                    เปิดใช้งานเมื่อโฟลเดอร์พร้อมใช้ใน Media Library
+                                    เปิดใช้งานเมื่อโฟลเดอร์พร้อมใช้ใน คลังสื่อ
                                 </p>
                             </div>
                         </div>
@@ -96,7 +96,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">

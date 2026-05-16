@@ -1,4 +1,4 @@
-<x-layouts.admin title="จัดการบทความ" header="จัดการบทความ">
+<x-layouts.admin title="จัดการ" header="จัดการ">
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -8,9 +8,9 @@
                     <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">
                         Article Management
                     </p>
-                    <h1 class="text-2xl font-bold text-white">จัดการบทความ</h1>
+                    <h1 class="text-2xl font-bold text-white">จัดการ</h1>
                     <p class="mt-1 text-sm text-slate-400">
-                        จัดการเนื้อหาบทความ หมวดหมู่ แท็ก SEO และสถานะการเผยแพร่
+                        จัดการเนื้อหา หมวดหมู่ แท็ก SEO และสถานะการเผยแพร่
                     </p>
                 </div>
 
@@ -19,7 +19,7 @@
                     class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                 >
                     <span class="text-lg leading-none">+</span>
-                    เพิ่มบทความใหม่
+                    เพิ่มใหม่
                 </a>
             </div>
         </div>
@@ -36,7 +36,7 @@
             <form method="GET" action="{{ route('admin.content.articles.index') }}" class="space-y-3">
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <div class="lg:col-span-4">
-                        <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาบทความ</label>
+                        <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา</label>
                         <input
                             type="text"
                             id="search"
@@ -107,34 +107,40 @@
                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
                     <div>
                         <label for="category_id" class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่</label>
-                        <select
-                            id="category_id"
-                            name="category_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทุกหมวดหมู่</option>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" class="bg-slate-900" @selected((string) request('category_id') === (string) $category->id)>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'category_id',
+                            'name' => 'category_id',
+                            'selected' => request('category_id'),
+                            'emptyLabel' => 'ทุกหมวดหมู่',
+                            'placeholder' => 'เลือกหมวดหมู่',
+                            'searchPlaceholder' => 'ค้นหาหมวดหมู่...',
+                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            'options' => $categories->map(fn ($category) => [
+                                'value' => $category->id,
+                                'label' => $category->name,
+                                'meta' => $category->slug ?? '',
+                                'search' => $category->name . ' ' . ($category->slug ?? '') . ' ' . $category->id,
+                            ]),
+                        ])
                     </div>
 
                     <div>
                         <label for="tag_id" class="mb-1.5 block text-xs font-medium text-slate-400">แท็ก</label>
-                        <select
-                            id="tag_id"
-                            name="tag_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทุกแท็ก</option>
-                            @foreach ($tags as $tag)
-                                <option value="{{ $tag->id }}" class="bg-slate-900" @selected((string) request('tag_id') === (string) $tag->id)>
-                                    {{ $tag->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'tag_id',
+                            'name' => 'tag_id',
+                            'selected' => request('tag_id'),
+                            'emptyLabel' => 'ทุกแท็ก',
+                            'placeholder' => 'เลือกแท็ก',
+                            'searchPlaceholder' => 'ค้นหาแท็ก...',
+                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            'options' => $tags->map(fn ($tag) => [
+                                'value' => $tag->id,
+                                'label' => $tag->name,
+                                'meta' => $tag->slug,
+                                'search' => $tag->name . ' ' . $tag->slug . ' ' . $tag->id,
+                            ]),
+                        ])
                     </div>
 
                     <div>
@@ -164,7 +170,7 @@
                     </div>
 
                     <div>
-                        <label for="is_featured" class="mb-1.5 block text-xs font-medium text-slate-400">บทความแนะนำ</label>
+                        <label for="is_featured" class="mb-1.5 block text-xs font-medium text-slate-400">แนะนำ</label>
                         <select
                             id="is_featured"
                             name="is_featured"
@@ -196,9 +202,9 @@
         <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-base font-semibold text-white">รายการบทความ</h2>
+                    <h2 class="text-base font-semibold text-white">รายการ</h2>
                     <p class="text-sm text-slate-400">
-                        แสดงข้อมูลบทความ สถานะ หมวดหมู่ แท็ก และสถิติการใช้งาน
+                        แสดงข้อมูล สถานะ หมวดหมู่ แท็ก และสถิติการใช้งาน
                     </p>
                 </div>
 
@@ -211,7 +217,7 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3 text-left">บทความ</th>
+                            <th class="px-4 py-3 text-left"></th>
                             <th class="px-4 py-3 text-left">สถานะ</th>
                             <th class="px-4 py-3 text-left">ผู้เขียน</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่</th>
@@ -377,7 +383,7 @@
                                         <form
                                             method="POST"
                                             action="{{ route('admin.content.articles.destroy', $article) }}"
-                                            onsubmit="return confirm('ยืนยันการลบบทความนี้หรือไม่?');"
+                                            onsubmit="return confirm('ยืนยันการลบนี้หรือไม่?');"
                                         >
                                             @csrf
                                             @method('DELETE')
@@ -395,9 +401,9 @@
                         @empty
                             <tr>
                                 <td colspan="8" class="px-5 py-10 text-center">
-                                    <p class="text-base font-medium text-slate-300">ไม่พบบทความ</p>
+                                    <p class="text-base font-medium text-slate-300">ไม่พบ</p>
                                     <p class="mt-1 text-sm text-slate-500">
-                                        ยังไม่มีบทความในระบบ หรือไม่มีข้อมูลที่ตรงกับตัวกรอง
+                                        ยังไม่มีในระบบ หรือไม่มีข้อมูลที่ตรงกับตัวกรอง
                                     </p>
 
                                     <a
@@ -405,7 +411,7 @@
                                         class="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
                                     >
                                         <span class="text-lg leading-none">+</span>
-                                        เพิ่มบทความใหม่
+                                        เพิ่มใหม่
                                     </a>
                                 </td>
                             </tr>

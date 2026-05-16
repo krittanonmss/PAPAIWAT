@@ -28,6 +28,9 @@ Route::prefix('admin')
         Route::get('/content/{type}/template-preview', [ContentTemplatePreviewController::class, 'sample'])
             ->name('content.template-preview.sample');
 
+        Route::post('/content/{type}/template-preview/live', [ContentTemplatePreviewController::class, 'live'])
+            ->name('content.template-preview.live');
+
         Route::get('/content/{type}/{content}/template-preview', ContentTemplatePreviewController::class)
             ->name('content.template-preview');
 

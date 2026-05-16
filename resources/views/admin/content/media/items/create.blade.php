@@ -1,4 +1,4 @@
-<x-layouts.admin title="Upload Media" header="Upload Media">
+<x-layouts.admin title="อัปโหลดสื่อ" header="อัปโหลดสื่อ">
     <div class="space-y-6 text-white">
 
         {{-- Page Header --}}
@@ -6,13 +6,13 @@
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
                     <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        Media Library
+                        คลังสื่อ
                     </div>
 
                     <h1 class="text-2xl font-bold text-white">อัปโหลดไฟล์สื่อ</h1>
 
                     <p class="mt-2 text-sm leading-6 text-slate-400">
-                        เพิ่มไฟล์ใหม่เข้าสู่ Media Library พร้อมข้อมูลสำหรับการแสดงผล การค้นหา และ Accessibility
+                        เพิ่มไฟล์ใหม่เข้าสู่คลังสื่อ พร้อมข้อมูลสำหรับการแสดงผล การค้นหา และการเข้าถึง
                     </p>
                 </div>
 
@@ -84,14 +84,14 @@
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">Image Variants</p>
+                                <p class="text-sm font-medium text-slate-200">ขนาดรูปภาพที่สร้างอัตโนมัติ</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     หลังอัปโหลด ระบบจะสร้าง thumbnail, medium และ large สำหรับรูปภาพโดยอัตโนมัติ
                                 </p>
                             </div>
 
                             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                                <p class="text-sm font-medium text-slate-200">Accessibility</p>
+                                <p class="text-sm font-medium text-slate-200">การเข้าถึง</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     ใช้ alt text ที่อธิบายภาพได้ชัดเจน เพื่อรองรับการใช้งานตามมาตรฐาน WCAG
                                 </p>
@@ -101,7 +101,7 @@
                 </aside>
             </div>
 
-            {{-- Sticky Action Bar --}}
+            {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">
