@@ -119,6 +119,7 @@
                         <option value="" class="bg-slate-900">ทั้งหมด</option>
                         <option value="active" class="bg-slate-900" @selected(request('status') === 'active')>ใช้งานอยู่</option>
                         <option value="inactive" class="bg-slate-900" @selected(request('status') === 'inactive')>ไม่ใช้งาน</option>
+                        <option value="deleted" class="bg-slate-900" @selected(request('status') === 'deleted')>ถูกลบแล้ว</option>
                     </select>
                 </div>
 
@@ -182,6 +183,15 @@
                             เปลี่ยนบทบาท
                         </button>
                     </div>
+
+                    <input
+                        type="password"
+                        name="current_password"
+                        autocomplete="current-password"
+                        placeholder="รหัสผ่านปัจจุบันของคุณ"
+                        class="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        required
+                    >
                 </form>
 
                 <form
@@ -213,6 +223,15 @@
                             เปลี่ยนสถานะ
                         </button>
                     </div>
+
+                    <input
+                        type="password"
+                        name="current_password"
+                        autocomplete="current-password"
+                        placeholder="รหัสผ่านปัจจุบันของคุณ"
+                        class="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        required
+                    >
                 </form>
             </div>
         </div>
@@ -250,7 +269,7 @@
                         @forelse ($admins as $admin)
                             <tr class="transition hover:bg-white/[0.06]">
                                 <td class="px-4 py-3 text-center">
-                                    @if ($admin->id !== $currentAdminId)
+                                    @if (! $admin->trashed() && $admin->id !== $currentAdminId)
                                         <input
                                             type="checkbox"
                                             value="{{ $admin->id }}"
@@ -285,7 +304,12 @@
                                 </td>
 
                                 <td class="px-4 py-3">
-                                    @if ($admin->status === 'active')
+                                    @if ($admin->trashed())
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-400/20 bg-slate-500/10 px-3 py-1 text-xs font-medium text-slate-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
+                                            ถูกลบแล้ว
+                                        </span>
+                                    @elseif ($admin->status === 'active')
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                             ใช้งานอยู่
@@ -304,24 +328,56 @@
 
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        <a
-                                            href="{{ route('admin.users.show', $admin) }}"
-                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-                                        >
-                                            ดู
-                                        </a>
+                                        @unless ($admin->trashed())
+                                            <a
+                                                href="{{ route('admin.users.show', $admin) }}"
+                                                class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                            >
+                                                ดู
+                                            </a>
+                                        @endunless
 
-                                        <a
-                                            href="{{ route('admin.users.edit', $admin) }}"
-                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-                                        >
-                                            แก้ไข
-                                        </a>
+                                        @if ($admin->trashed())
+                                            <form method="POST" action="{{ route('admin.users.restore', $admin->id) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input
+                                                    type="password"
+                                                    name="current_password"
+                                                    placeholder="รหัสผ่าน"
+                                                    autocomplete="current-password"
+                                                    class="w-28 rounded-xl border border-white/10 bg-slate-950/40 px-2 py-1.5 text-xs text-white placeholder-slate-500"
+                                                    required
+                                                >
+                                                <button
+                                                    type="submit"
+                                                    onclick="return confirm('กู้คืนผู้ใช้นี้หรือไม่?')"
+                                                    class="rounded-xl border border-emerald-400/20 px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/10"
+                                                >
+                                                    กู้คืน
+                                                </button>
+                                            </form>
+                                        @else
+                                            <a
+                                                href="{{ route('admin.users.edit', $admin) }}"
+                                                class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                            >
+                                                แก้ไข
+                                            </a>
+                                        @endif
 
-                                        @if ($admin->id !== $currentAdminId)
+                                        @if (! $admin->trashed() && $admin->id !== $currentAdminId)
                                             <form method="POST" action="{{ route('admin.users.destroy', $admin) }}">
                                                 @csrf
                                                 @method('DELETE')
+                                                <input
+                                                    type="password"
+                                                    name="current_password"
+                                                    placeholder="รหัสผ่าน"
+                                                    autocomplete="current-password"
+                                                    class="w-28 rounded-xl border border-white/10 bg-slate-950/40 px-2 py-1.5 text-xs text-white placeholder-slate-500"
+                                                    required
+                                                >
                                                 <button
                                                     type="submit"
                                                     onclick="return confirm('ลบผู้ใช้นี้หรือไม่?')"
@@ -408,7 +464,7 @@
                         .map((checkbox) => checkbox.value);
 
                     if (selectedIds.length === 0) {
-                        event.preventเริ่มต้น();
+                        event.preventDefault();
                         alert('กรุณาเลือกผู้ใช้งานอย่างน้อย 1 คน');
                         return;
                     }
@@ -416,7 +472,7 @@
                     const confirmMessage = form.dataset.confirmMessage || 'ยืนยันการทำรายการ?';
 
                     if (! confirm(confirmMessage)) {
-                        event.preventเริ่มต้น();
+                        event.preventDefault();
                         return;
                     }
 

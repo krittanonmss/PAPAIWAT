@@ -80,7 +80,12 @@ class Admin extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role?->name === 'super_admin';
+        return $this->role?->isSuperAdmin() === true;
+    }
+
+    public function roleLevel(): int
+    {
+        return (int) ($this->role?->level ?? 0);
     }
 
     public function hasPermission(string $permissionKey): bool

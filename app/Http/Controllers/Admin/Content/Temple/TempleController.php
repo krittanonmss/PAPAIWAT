@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin\Content\Temple;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Temple\StoreTempleRequest;
 use App\Http\Requests\Admin\Content\Temple\UpdateTempleRequest;
+use App\Models\Admin\AuditLog;
 use App\Models\Content\Category;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use App\Services\Admin\Content\Temple\TempleDataSyncService;
+use App\Services\Admin\Content\Temple\TempleValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,12 +21,13 @@ class TempleController extends Controller
 {
     private const STATUS_OPTIONS = [
         'draft',
-        'published',
+        'review',
         'archived',
     ];
 
     public function __construct(
-        private readonly TempleDataSyncService $templeDataSyncService
+        private readonly TempleDataSyncService $templeDataSyncService,
+        private readonly TempleValidationService $templeValidationService,
     ) {
     }
 
@@ -100,24 +103,27 @@ class TempleController extends Controller
         return view('admin.content.temples.create', [
             'title' => 'Create Temple',
             'statusOptions' => self::STATUS_OPTIONS,
-            'categories' => $this->templeCategories(),
+            'categories' => collect(),
             'coverMediaItems' => $this->coverMediaItems(),
             'galleryMediaItems' => $this->galleryMediaItems(),
-            'facilities' => $this->facilities(),
+            'facilities' => collect(),
             'detailTemplates' => $this->detailTemplates('temple'),
             'templatePreviewUrl' => route('admin.content.template-preview.sample', ['type' => 'temple']),
             'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'temple']),
-            'nearbyTemples' => Temple::query()
-                ->with('content:id,title')
-                ->whereHas('content')
-                ->orderByDesc('id')
-                ->get(),
+            'nearbyTemples' => collect(),
         ]);
     }
 
     public function store(StoreTempleRequest $request): RedirectResponse
     {
-        $this->templeDataSyncService->create($request->validated());
+        $validated = $request->validated();
+
+        $this->templeValidationService->validateForSave($validated);
+
+        $temple = $this->templeDataSyncService->create($validated);
+        $temple->load('content.mediaUsages');
+
+        $this->writeAuditLog($request, 'temple.created', $temple, null, $this->templeAuditData($temple));
 
         return redirect()
             ->route('admin.temples.index')
@@ -154,51 +160,94 @@ class TempleController extends Controller
             'address',
             'openingHours',
             'fees',
-            'facilityItems',
+            'facilityItems.facility',
             'highlights',
             'visitRules',
             'travelInfos',
-            'nearbyPlaces',
+            'nearbyPlaces.nearbyTemple.content',
         ]);
 
         return view('admin.content.temples.edit', [
             'title' => 'Edit Temple',
             'temple' => $temple,
             'statusOptions' => self::STATUS_OPTIONS,
-            'categories' => $this->templeCategories(),
+            'categories' => $temple->content?->categories ?? collect(),
             'coverMediaItems' => $this->coverMediaItems([
                 $temple->content?->mediaUsages?->firstWhere('role_key', 'cover')?->media_id,
             ]),
             'galleryMediaItems' => $this->galleryMediaItems(
                 $temple->content?->mediaUsages?->where('role_key', 'gallery')->pluck('media_id')->all() ?? []
             ),
-            'facilities' => $this->facilities(),
+            'facilities' => collect(),
             'detailTemplates' => $this->detailTemplates('temple'),
             'templatePreviewUrl' => $temple->content
                 ? route('admin.content.template-preview', ['type' => 'temple', 'content' => $temple->content])
                 : route('admin.content.template-preview.sample', ['type' => 'temple']),
             'templatePreviewLiveUrl' => route('admin.content.template-preview.live', ['type' => 'temple']),
-            'nearbyTemples' => Temple::query()
-                ->with('content:id,title')
-                ->where('id', '!=', $temple->id)
-                ->whereHas('content')
-                ->orderByDesc('id')
-                ->get(),
+            'nearbyTemples' => collect(),
         ]);
     }
 
     public function update(UpdateTempleRequest $request, Temple $temple): RedirectResponse
     {
-        $this->templeDataSyncService->update($temple, $request->validated());
+        $validated = $request->validated();
+
+        $temple->load('content.mediaUsages');
+        $oldData = $this->templeAuditData($temple);
+
+        $this->templeValidationService->validateForSave($validated, $temple);
+        $this->templeDataSyncService->update($temple, $validated);
+
+        $temple->refresh()->load('content.mediaUsages');
+        $newData = $this->templeAuditData($temple);
+
+        $this->writeAuditLog($request, 'temple.updated', $temple, $oldData, $newData);
+
+        if (($oldData['status'] ?? null) !== ($newData['status'] ?? null)) {
+            $this->writeAuditLog($request, 'temple.status_changed', $temple, ['status' => $oldData['status']], ['status' => $newData['status']]);
+        }
+
+        if (($oldData['template_id'] ?? null) !== ($newData['template_id'] ?? null)) {
+            $this->writeAuditLog($request, 'temple.template_changed', $temple, ['template_id' => $oldData['template_id']], ['template_id' => $newData['template_id']]);
+        }
 
         return redirect()
             ->route('admin.temples.edit', $temple)
             ->with('success', 'อัปเดตข้อมูลวัดเรียบร้อยแล้ว');
     }
 
-    public function destroy(Temple $temple): RedirectResponse
+    public function publish(Request $request, Temple $temple): RedirectResponse
     {
+        $temple->load('content.mediaUsages', 'content.categories', 'openingHours');
+        $oldData = $this->templeAuditData($temple);
+
+        $this->templeValidationService->validateForPublish($temple);
+
+        $temple->content->forceFill([
+            'status' => 'published',
+            'published_at' => $temple->content->published_at ?? now(),
+            'updated_by_admin_id' => auth('admin')->id(),
+        ])->save();
+
+        $this->templeDataSyncService->createVersion($temple, 'published');
+
+        $temple->refresh()->load('content.mediaUsages');
+        $newData = $this->templeAuditData($temple);
+
+        $this->writeAuditLog($request, 'temple.published', $temple, $oldData, $newData);
+
+        return redirect()
+            ->route('admin.temples.edit', $temple)
+            ->with('success', 'เผยแพร่ข้อมูลวัดเรียบร้อยแล้ว');
+    }
+
+    public function destroy(Request $request, Temple $temple): RedirectResponse
+    {
+        $temple->load('content.mediaUsages');
+        $oldData = $this->templeAuditData($temple);
+
         $this->templeDataSyncService->delete($temple);
+        $this->writeAuditLog($request, 'temple.deleted', $temple, $oldData, ['deleted' => true]);
 
         return redirect()
             ->route('admin.temples.index')
@@ -208,14 +257,14 @@ class TempleController extends Controller
     public function coverMediaPicker(Request $request): View
     {
         return view('admin.content.temples.partials._cover_media_grid', [
-            'mediaItems' => $this->coverMediaItems(),
+            'mediaItems' => $this->coverMediaItems(search: $request->string('q')->toString()),
         ]);
     }
 
     public function galleryMediaPicker(Request $request): View
     {
         return view('admin.content.temples.partials._gallery_media_grid', [
-            'mediaItems' => $this->galleryMediaItems(),
+            'mediaItems' => $this->galleryMediaItems(search: $request->string('q')->toString()),
         ]);
     }
 
@@ -227,38 +276,49 @@ class TempleController extends Controller
             ->get(['id', 'name', 'parent_id']);
     }
 
-    private function coverMediaItems(array $selectedMediaIds = [])
+    private function coverMediaItems(array $selectedMediaIds = [], string $search = '')
     {
         return $this->paginatedMediaItems(
             pageName: 'cover_media_page',
             path: route('admin.temples.media-picker.cover'),
             perPage: 7,
-            selectedMediaIds: $selectedMediaIds
+            selectedMediaIds: $selectedMediaIds,
+            search: $search
         );
     }
 
-    private function galleryMediaItems(array $selectedMediaIds = [])
+    private function galleryMediaItems(array $selectedMediaIds = [], string $search = '')
     {
         return $this->paginatedMediaItems(
             pageName: 'gallery_media_page',
             path: route('admin.temples.media-picker.gallery'),
             perPage: 8,
-            selectedMediaIds: $selectedMediaIds
+            selectedMediaIds: $selectedMediaIds,
+            search: $search
         );
     }
 
-    private function paginatedMediaItems(string $pageName, string $path, int $perPage, array $selectedMediaIds = [])
+    private function paginatedMediaItems(string $pageName, string $path, int $perPage, array $selectedMediaIds = [], string $search = '')
     {
         $mediaItems = Media::query()
             ->where('upload_status', 'completed')
             ->where('media_type', 'image')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('original_filename', 'like', '%' . $search . '%')
+                        ->orWhere('filename', 'like', '%' . $search . '%')
+                        ->orWhere('id', $search);
+                });
+            })
             ->orderByDesc('id')
             ->paginate(
                 perPage: $perPage,
                 columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
                 pageName: $pageName
             )
-            ->withPath($path);
+            ->withPath($path)
+            ->appends(array_filter(['q' => $search]));
 
         $selectedMediaIds = collect($selectedMediaIds)
             ->filter(fn ($id) => is_numeric($id))
@@ -308,13 +368,44 @@ class TempleController extends Controller
     {
         return Template::query()
             ->active()
-            ->where('view_path', 'like', 'frontend.templates.details.%')
-            ->where(function ($query) use ($contentType) {
-                $query->where('key', $contentType . '-detail')
-                    ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
-            })
+            ->where('template_type', 'detail')
+            ->where('content_type', $contentType)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+    }
+
+    private function templeAuditData(Temple $temple): array
+    {
+        $content = $temple->content;
+
+        return [
+            'temple_id' => $temple->id,
+            'content_id' => $temple->content_id,
+            'title' => $content?->title,
+            'slug' => $content?->slug,
+            'template_id' => $content?->template_id,
+            'status' => $content?->status,
+            'published_at' => $content?->published_at?->toDateTimeString(),
+            'cover_media_id' => $content?->mediaUsages?->firstWhere('role_key', 'cover')?->media_id,
+            'gallery_media_ids' => $content?->mediaUsages?->where('role_key', 'gallery')->pluck('media_id')->values()->all() ?? [],
+            'is_featured' => $content?->is_featured,
+            'is_popular' => $content?->is_popular,
+        ];
+    }
+
+    private function writeAuditLog(Request $request, string $action, Temple $temple, ?array $oldData, ?array $newData): void
+    {
+        AuditLog::query()->create([
+            'action' => $action,
+            'table_name' => 'temples',
+            'record_id' => $temple->id,
+            'old_data' => $oldData,
+            'new_data' => $newData,
+            'performed_by' => auth('admin')->id(),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
     }
 }

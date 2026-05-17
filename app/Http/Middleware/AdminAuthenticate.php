@@ -16,6 +16,11 @@ class AdminAuthenticate
             return redirect()->route('admin.login');
         }
 
+        AdminSession::query()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->delete();
+
         $admin = Auth::guard('admin')->user();
         $sessionTokenHash = hash('sha256', $request->session()->getId());
         $session = AdminSession::query()
@@ -27,21 +32,7 @@ class AdminAuthenticate
             })
             ->first();
 
-        if (! $session && Auth::guard('admin')->viaRemember()) {
-            AdminSession::query()->create([
-                'admin_id' => $admin->id,
-                'session_token_hash' => $sessionTokenHash,
-                'ip_address' => $request->ip() ?? '',
-                'user_agent' => $request->userAgent(),
-                'last_seen_at' => now(),
-                'expires_at' => now()->addMinutes((int) config('session.lifetime')),
-                'created_at' => now(),
-            ]);
-
-            return $next($request);
-        }
-
-        if (! $session) {
+        if (! $session || ! $this->requestMatchesTrackedSession($session, $request)) {
             Auth::guard('admin')->logout();
 
             $request->session()->invalidate();
@@ -49,10 +40,16 @@ class AdminAuthenticate
 
             return redirect()->route('admin.login')
                 ->withErrors([
-                    'email' => 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่',
+                    'email' => 'Session ไม่ปลอดภัยหรือหมดอายุ กรุณาเข้าสู่ระบบใหม่',
                 ]);
         }
 
         return $next($request);
+    }
+
+    private function requestMatchesTrackedSession(AdminSession $session, Request $request): bool
+    {
+        return hash_equals($session->ip_address, $request->ip() ?? '')
+            && hash_equals((string) $session->user_agent, (string) $request->userAgent());
     }
 }

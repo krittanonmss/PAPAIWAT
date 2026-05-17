@@ -1,6 +1,15 @@
 @php
     $category = $category ?? null;
     $selectedType = old('type_key', $category?->type_key);
+    $selectedParent = $category?->parent;
+    $selectedParentId = old('parent_id', $category?->parent_id);
+    $lookupParams = [
+        'max_level' => \App\Models\Content\Category::MAX_LEVEL - 1,
+    ];
+
+    if ($category) {
+        $lookupParams['exclude_id'] = $category->id;
+    }
 @endphp
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -17,25 +26,23 @@
                         หมวดหมู่แม่
                     </label>
 
-                    <select
-                        id="parent_id"
-                        name="parent_id"
-                        class="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="">-- ไม่มี (Root Category) --</option>
-                        @foreach ($parents as $parent)
-                            <option
-                                value="{{ $parent->id }}"
-                                data-type-key="{{ $parent->type_key }}"
-                                @selected(old('parent_id', $category?->parent_id) == $parent->id)
-                            >
-                                {{ str_repeat('— ', (int) $parent->level) }}{{ $parent->name }} ({{ $parent->type_key }})
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._async_select', [
+                        'id' => 'parent_id',
+                        'name' => 'parent_id',
+                        'selected' => $selectedParentId,
+                        'selectedOption' => $selectedParent ? [
+                            'id' => $selectedParent->id,
+                            'label' => $selectedParent->name,
+                            'meta' => $selectedParent->type_key.' | Level '.$selectedParent->level.' | #'.$selectedParent->id,
+                        ] : null,
+                        'searchUrl' => route('admin.lookups.categories', $lookupParams),
+                        'placeholder' => 'ค้นหาหมวดหมู่แม่',
+                        'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                        'emptyLabel' => '-- ไม่มี (Root Category) --',
+                    ])
 
                     <p class="mt-1 text-xs text-slate-500">
-                        ใช้จัดโครงสร้างหมวดหมู่แบบลำดับชั้น เช่น จังห� → �
+                        ใช้จัดโครงสร้างหมวดหมู่แบบลำดับชั้น สูงสุด {{ \App\Models\Content\Category::MAX_LEVEL + 1 }} ชั้น
                     </p>
 
                     @error('parent_id')

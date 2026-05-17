@@ -5,6 +5,7 @@ namespace App\Models\Content\Layout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PageSection extends Model
 {
@@ -30,6 +31,11 @@ class PageSection extends Model
     public function page(): BelongsTo
     {
         return $this->belongsTo(Page::class);
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(PageSectionVersion::class);
     }
 
     public function scopeVisible(Builder $query): Builder

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin\Content;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Category\StoreCategoryRequest;
 use App\Http\Requests\Admin\Content\Category\UpdateCategoryRequest;
+use App\Models\Admin\AuditLog;
 use App\Models\Content\Category;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -26,6 +28,12 @@ class CategoryController extends Controller
             ->orderBy('level')
             ->orderBy('sort_order')
             ->orderBy('name');
+
+        if ($request->string('deleted')->toString() === 'only') {
+            $query->onlyTrashed();
+        } elseif ($request->string('deleted')->toString() === 'with') {
+            $query->withTrashed();
+        }
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
@@ -55,27 +63,24 @@ class CategoryController extends Controller
 
         $categories = $query->paginate(15)->withQueryString();
 
-        $parents = Category::query()
-            ->orderBy('name')
-            ->get(['id', 'name', 'type_key', 'level']);
+        $selectedParent = null;
+
+        if ($request->filled('parent_id') && $request->string('parent_id')->toString() !== 'root') {
+            $selectedParent = Category::query()->find((int) $request->input('parent_id'));
+        }
 
         return view('admin.content.categories.index', [
             'title' => 'Category Management',
             'categories' => $categories,
-            'parents' => $parents,
+            'selectedParent' => $selectedParent,
             'types' => self::TYPE_OPTIONS,
         ]);
     }
 
     public function create(): View
     {
-        $parents = Category::query()
-            ->orderBy('name')
-            ->get(['id', 'name', 'type_key', 'level']);
-
         return view('admin.content.categories.create', [
             'title' => 'Create Category',
-            'parents' => $parents,
             'types' => self::TYPE_OPTIONS,
         ]);
     }
@@ -90,25 +95,31 @@ class CategoryController extends Controller
             $parent = Category::query()->find($validated['parent_id']);
         }
 
-        Category::query()->create([
-            'parent_id' => $validated['parent_id'] ?? null,
-            'name' => $validated['name'],
-            'slug' => $this->makeUniqueSlug(
-                $validated['name'],
-                $validated['parent_id'] ?? null,
-                $validated['type_key']
-            ),
-            'description' => $validated['description'] ?? null,
-            'type_key' => $validated['type_key'],
-            'level' => $parent ? ($parent->level + 1) : 0,
-            'sort_order' => $validated['sort_order'] ?? 0,
-            'status' => $validated['status'],
-            'is_featured' => (bool) ($validated['is_featured'] ?? false),
-            'meta_title' => $validated['meta_title'] ?? null,
-            'meta_description' => $validated['meta_description'] ?? null,
-            'created_by_admin_id' => auth('admin')->id(),
-            'updated_by_admin_id' => auth('admin')->id(),
-        ]);
+        $category = DB::transaction(function () use ($request, $validated, $parent): Category {
+            $category = Category::query()->create([
+                'parent_id' => $validated['parent_id'] ?? null,
+                'name' => $validated['name'],
+                'slug' => $this->makeUniqueSlug(
+                    $validated['name'],
+                    $validated['parent_id'] ?? null,
+                    $validated['type_key']
+                ),
+                'description' => $validated['description'] ?? null,
+                'type_key' => $validated['type_key'],
+                'level' => $parent ? ($parent->level + 1) : 0,
+                'sort_order' => $validated['sort_order'] ?? 0,
+                'status' => $validated['status'],
+                'is_featured' => (bool) ($validated['is_featured'] ?? false),
+                'meta_title' => $validated['meta_title'] ?? null,
+                'meta_description' => $validated['meta_description'] ?? null,
+                'created_by_admin_id' => auth('admin')->id(),
+                'updated_by_admin_id' => auth('admin')->id(),
+            ]);
+
+            $this->writeAuditLog($request, 'category.created', $category, null, $this->categoryAuditData($category));
+
+            return $category;
+        });
 
         return redirect()
             ->route('admin.categories.index')
@@ -117,19 +128,9 @@ class CategoryController extends Controller
 
     public function edit(Category $category): View
     {
-        $excludedParentIds = $this->descendantIds($category)
-            ->push($category->id)
-            ->all();
-
-        $parents = Category::query()
-            ->whereNotIn('id', $excludedParentIds)
-            ->orderBy('name')
-            ->get(['id', 'name', 'type_key', 'level']);
-
         return view('admin.content.categories.edit', [
             'title' => 'Edit Category',
             'category' => $category,
-            'parents' => $parents,
             'types' => self::TYPE_OPTIONS,
         ]);
     }
@@ -144,32 +145,54 @@ class CategoryController extends Controller
             $parent = Category::query()->find($validated['parent_id']);
         }
 
-        $category->update([
-            'parent_id' => $validated['parent_id'] ?? null,
-            'name' => $validated['name'],
-            'slug' => $this->makeUniqueSlug(
-                $validated['name'],
-                $validated['parent_id'] ?? null,
-                $validated['type_key'],
-                $category
-            ),
-            'description' => $validated['description'] ?? null,
-            'type_key' => $validated['type_key'],
-            'level' => $parent ? ($parent->level + 1) : 0,
-            'sort_order' => $validated['sort_order'] ?? 0,
-            'status' => $validated['status'],
-            'is_featured' => (bool) ($validated['is_featured'] ?? false),
-            'meta_title' => $validated['meta_title'] ?? null,
-            'meta_description' => $validated['meta_description'] ?? null,
-            'updated_by_admin_id' => auth('admin')->id(),
-        ]);
+        DB::transaction(function () use ($request, $category, $validated, $parent): void {
+            $oldData = $this->categoryAuditData($category);
+            $oldParentId = $category->parent_id;
+            $oldLevel = $category->level;
+
+            $category->update([
+                'parent_id' => $validated['parent_id'] ?? null,
+                'name' => $validated['name'],
+                'slug' => $this->makeUniqueSlug(
+                    $validated['name'],
+                    $validated['parent_id'] ?? null,
+                    $validated['type_key'],
+                    $category
+                ),
+                'description' => $validated['description'] ?? null,
+                'type_key' => $validated['type_key'],
+                'level' => $parent ? ($parent->level + 1) : 0,
+                'sort_order' => $validated['sort_order'] ?? 0,
+                'status' => $validated['status'],
+                'is_featured' => (bool) ($validated['is_featured'] ?? false),
+                'meta_title' => $validated['meta_title'] ?? null,
+                'meta_description' => $validated['meta_description'] ?? null,
+                'updated_by_admin_id' => auth('admin')->id(),
+            ]);
+
+            $this->recalculateSubtreeLevels($category);
+            $category->refresh();
+
+            $newData = $this->categoryAuditData($category);
+            $this->writeAuditLog($request, 'category.updated', $category, $oldData, $newData);
+
+            if ($oldParentId !== $category->parent_id || $oldLevel !== $category->level) {
+                $this->writeAuditLog($request, 'category.moved', $category, [
+                    'parent_id' => $oldParentId,
+                    'level' => $oldLevel,
+                ], [
+                    'parent_id' => $category->parent_id,
+                    'level' => $category->level,
+                ]);
+            }
+        });
 
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'อัปเดตหมวดหมู่เรียบร้อยแล้ว');
     }
 
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(Request $request, Category $category): RedirectResponse
     {
         if ($category->children()->exists()) {
             return redirect()
@@ -177,11 +200,44 @@ class CategoryController extends Controller
                 ->with('error', 'ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากยังมีหมวดหมู่ย่อยผูกอยู่');
         }
 
-        $category->delete();
+        if ($category->contents()->exists()) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากยังมีเนื้อหาใช้งานอยู่');
+        }
+
+        DB::transaction(function () use ($request, $category): void {
+            $oldData = $this->categoryAuditData($category);
+            $category->delete();
+
+            $this->writeAuditLog($request, 'category.deleted', $category, $oldData, ['deleted' => true]);
+        });
 
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'ลบหมวดหมู่เรียบร้อยแล้ว');
+    }
+
+    public function restore(Request $request, int $category): RedirectResponse
+    {
+        $category = Category::withTrashed()->findOrFail($category);
+
+        if (! $category->trashed()) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'หมวดหมู่นี้ยังไม่ได้ถูกลบ');
+        }
+
+        DB::transaction(function () use ($request, $category): void {
+            $category->restore();
+            $category->update(['updated_by_admin_id' => auth('admin')->id()]);
+
+            $this->writeAuditLog($request, 'category.restored', $category, ['deleted' => true], $this->categoryAuditData($category));
+        });
+
+        return redirect()
+            ->route('admin.categories.index', ['deleted' => 'with'])
+            ->with('success', 'กู้คืนหมวดหมู่เรียบร้อยแล้ว');
     }
 
     private function makeUniqueSlug(
@@ -225,15 +281,44 @@ class CategoryController extends Controller
             ->exists();
     }
 
-    private function descendantIds(Category $category)
+    private function recalculateSubtreeLevels(Category $category): void
     {
-        $ids = collect();
+        $category->children()->each(function (Category $child) use ($category): void {
+            $child->forceFill([
+                'level' => $category->level + 1,
+                'updated_by_admin_id' => auth('admin')->id(),
+            ])->save();
 
-        foreach ($category->children()->get(['id']) as $child) {
-            $ids->push($child->id);
-            $ids = $ids->merge($this->descendantIds($child));
-        }
+            $this->recalculateSubtreeLevels($child);
+        });
+    }
 
-        return $ids;
+    private function categoryAuditData(Category $category): array
+    {
+        return [
+            'id' => $category->id,
+            'parent_id' => $category->parent_id,
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'type_key' => $category->type_key,
+            'level' => $category->level,
+            'status' => $category->status,
+            'sort_order' => $category->sort_order,
+            'is_featured' => $category->is_featured,
+        ];
+    }
+
+    private function writeAuditLog(Request $request, string $action, Category $category, ?array $oldData, ?array $newData): void
+    {
+        AuditLog::query()->create([
+            'action' => $action,
+            'table_name' => 'categories',
+            'record_id' => $category->id,
+            'old_data' => $oldData,
+            'new_data' => $newData,
+            'performed_by' => auth('admin')->id(),
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
     }
 }

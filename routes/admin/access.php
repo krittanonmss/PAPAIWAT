@@ -17,6 +17,7 @@ Route::prefix('users')->name('users.')->group(function () {
     Route::get('/{admin}', [UserManagementController::class, 'show'])->middleware('admin.permission:users.view')->name('show');
     Route::get('/{admin}/edit', [UserManagementController::class, 'edit'])->middleware('admin.permission:users.update')->name('edit');
     Route::put('/{admin}', [UserManagementController::class, 'update'])->middleware('admin.permission:users.update')->name('update');
+    Route::patch('/{admin}/restore', [UserManagementController::class, 'restore'])->middleware('admin.permission:users.update')->name('restore');
     Route::delete('/{admin}', [UserManagementController::class, 'destroy'])->middleware('admin.permission:users.delete')->name('destroy');
 });
 

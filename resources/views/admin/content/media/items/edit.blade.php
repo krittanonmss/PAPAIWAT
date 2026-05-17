@@ -69,12 +69,20 @@
         <form
             action="{{ route('admin.media.update', $media) }}"
             method="POST"
+            enctype="multipart/form-data"
             class="space-y-6"
         >
             @csrf
             @method('PUT')
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div
+                class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]"
+                x-data="mediaEditPreview({
+                    currentUrl: @js($media->visibility === 'private' ? route('admin.media.file', $media) : asset('storage/' . $media->path)),
+                    currentType: @js($media->media_type),
+                    currentExtension: @js(strtoupper($media->extension ?: 'FILE')),
+                })"
+            >
 
                 {{-- Main Form --}}
                 <div class="space-y-6">
@@ -86,7 +94,26 @@
                             </p>
                         </div>
 
-                        <div class="space-y-5 p-6">
+                        <div class="grid gap-5 p-6 lg:grid-cols-2">
+                            <div class="rounded-2xl border border-dashed border-blue-400/30 bg-blue-500/5 p-4">
+                                <label for="file" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                    เปลี่ยนไฟล์
+                                </label>
+                                <input
+                                    id="file"
+                                    type="file"
+                                    name="file"
+                                    @change="previewFile($event)"
+                                    class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-slate-300 outline-none transition file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                <p class="mt-2 text-xs leading-5 text-slate-500">
+                                    เว้นว่างไว้ถ้าต้องการแก้เฉพาะข้อมูลประกอบ ขนาดไฟล์ใหม่ไม่เกิน 10 MB
+                                </p>
+                                @error('file')
+                                    <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <div>
                                 <label for="title" class="mb-1.5 block text-sm font-medium text-slate-300">
                                     ชื่อแสดงผล
@@ -103,7 +130,7 @@
                                 @enderror
                             </div>
 
-                            <div>
+                            <div class="lg:col-span-2">
                                 <label for="alt_text" class="mb-1.5 block text-sm font-medium text-slate-300">
                                     Alt Text
                                 </label>
@@ -153,27 +180,25 @@
                                 @enderror
                             </div>
 
-                            <div class="grid gap-5 md:grid-cols-2">
+                            <div class="grid gap-5 lg:col-span-2 md:grid-cols-2">
                                 <div>
                                     <label for="media_folder_id" class="mb-1.5 block text-sm font-medium text-slate-300">
                                         โฟลเดอร์
                                     </label>
-                                    <select
-                                        id="media_folder_id"
-                                        name="media_folder_id"
-                                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                    >
-                                        <option value="" class="bg-slate-900">ไม่มีโฟลเดอร์</option>
-                                        @foreach ($folders as $folder)
-                                            <option
-                                                value="{{ $folder->id }}"
-                                                class="bg-slate-900"
-                                                @selected((string) old('media_folder_id', $media->media_folder_id) === (string) $folder->id)
-                                            >
-                                                {{ $folder->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    @include('admin.content.partials._async_select', [
+                                        'id' => 'media_folder_id',
+                                        'name' => 'media_folder_id',
+                                        'selected' => old('media_folder_id', $media->media_folder_id),
+                                        'selectedOption' => $media->folder ? [
+                                            'id' => $media->folder->id,
+                                            'label' => $media->folder->name,
+                                            'meta' => ($media->folder->slug ?: 'folder').' #'.$media->folder->id,
+                                        ] : null,
+                                        'searchUrl' => route('admin.lookups.media-folders'),
+                                        'placeholder' => 'ค้นหาโฟลเดอร์',
+                                        'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                                        'emptyLabel' => 'ไม่มีโฟลเดอร์',
+                                    ])
                                     @error('media_folder_id')
                                         <p class="mt-1 text-sm text-red-300">{{ $message }}</p>
                                     @enderror
@@ -211,19 +236,24 @@
 
                         <div class="mt-4 space-y-4">
                             <div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-950">
-                                @if ($media->media_type === 'image')
+                                <template x-if="preview.isImage">
                                     <img
-                                        src="{{ asset('storage/' . $media->path) }}"
+                                        :src="preview.url"
                                         alt="{{ $media->alt_text ?: $media->title ?: $media->original_filename }}"
-                                        class="h-auto w-full object-cover"
+                                        class="aspect-[4/3] w-full object-contain"
                                     >
-                                @else
+                                </template>
+                                <template x-if="!preview.isImage">
                                     <div class="flex aspect-[4/3] items-center justify-center">
-                                        <span class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-300">
-                                            {{ strtoupper($media->extension ?: 'FILE') }}
-                                        </span>
+                                        <span class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-slate-300" x-text="preview.extension"></span>
                                     </div>
-                                @endif
+                                </template>
+                            </div>
+
+                            <div x-show="preview.isReplacement" class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">ไฟล์ใหม่</p>
+                                <p class="mt-1 truncate text-sm text-blue-100" x-text="preview.name"></p>
+                                <p class="mt-1 text-xs text-blue-200/80" x-text="preview.size"></p>
                             </div>
 
                             @if ($media->media_type === 'image')
@@ -236,24 +266,24 @@
                                 </button>
                             @endif
 
-                            <div class="space-y-3">
-                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                     <p class="text-xs text-slate-500">ชื่อไฟล์เดิม</p>
                                     <p class="mt-1 break-words text-sm text-slate-300">{{ $media->original_filename }}</p>
                                 </div>
 
-                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                     <p class="text-xs text-slate-500">MIME Type</p>
                                     <p class="mt-1 text-sm text-slate-300">{{ $media->mime_type }}</p>
                                 </div>
 
-                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                     <p class="text-xs text-slate-500">ขนาดไฟล์</p>
                                     <p class="mt-1 text-sm text-slate-300">{{ number_format($media->file_size / 1024, 1) }} KB</p>
                                 </div>
 
                                 @if ($media->width || $media->height)
-                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                         <p class="text-xs text-slate-500">ขนาดรูปภาพ</p>
                                         <p class="mt-1 text-sm text-slate-300">
                                             {{ $media->width ?? '-' }} × {{ $media->height ?? '-' }} px
@@ -261,7 +291,7 @@
                                     </div>
                                 @endif
 
-                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                     <p class="text-xs text-slate-500">Visibility</p>
                                     <p class="mt-1">
                                         <span class="{{ $media->visibility === 'public' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-300' }} rounded-full border px-2.5 py-1 text-xs">
@@ -271,10 +301,10 @@
                                 </div>
 
                                 @if ($media->variants->isNotEmpty())
-                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
                                         <p class="text-xs text-slate-500">Image Variants</p>
 
-                                        <div class="mt-3 space-y-2">
+                                        <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                                             @foreach ($media->variants as $variant)
                                                 <div class="rounded-xl border border-white/10 bg-white/[0.04] p-3">
                                                     <div class="flex items-center justify-between gap-3">
@@ -306,10 +336,45 @@
                                         </div>
                                     </div>
                                 @else
-                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-4">
+                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-4 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
                                         <p class="text-sm text-slate-400">ยังไม่มี variants สำหรับไฟล์นี้</p>
                                     </div>
                                 @endif
+
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p class="text-sm font-semibold text-white">ไฟล์นี้ถูกใช้ที่ไหน</p>
+                                            <p class="mt-1 text-xs text-slate-500">{{ $media->usages->count() }} รายการที่ผูกกับไฟล์นี้</p>
+                                        </div>
+                                    </div>
+
+                                    @if ($media->usages->isNotEmpty())
+                                        <div class="mt-3 space-y-2">
+                                            @foreach ($media->usages as $usage)
+                                                <div class="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <p class="truncate text-sm font-medium text-slate-200">
+                                                                {{ class_basename($usage->entity_type) }} #{{ $usage->entity_id }}
+                                                            </p>
+                                                            <p class="mt-1 text-xs text-slate-500">
+                                                                role: {{ $usage->role_key }} · sort: {{ $usage->sort_order }}
+                                                            </p>
+                                                        </div>
+                                                        <span class="shrink-0 rounded-full border border-blue-400/20 bg-blue-500/10 px-2 py-0.5 text-xs text-blue-300">
+                                                            ใช้งานอยู่
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="mt-3 rounded-xl border border-dashed border-white/10 bg-slate-950/40 p-3 text-sm text-slate-500">
+                                            ยังไม่มีเนื้อหาใดใช้ไฟล์นี้
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -342,4 +407,62 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function mediaEditPreview(config) {
+            return {
+                preview: {
+                    url: config.currentUrl,
+                    isImage: config.currentType === 'image',
+                    extension: config.currentExtension,
+                    isReplacement: false,
+                    name: '',
+                    size: '',
+                },
+
+                formatSize(bytes) {
+                    if (!bytes) {
+                        return '0 KB';
+                    }
+
+                    if (bytes >= 1024 * 1024) {
+                        return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+                    }
+
+                    return `${(bytes / 1024).toFixed(1)} KB`;
+                },
+
+                previewFile(event) {
+                    const file = event.target.files?.[0];
+
+                    if (!file) {
+                        this.preview = {
+                            url: config.currentUrl,
+                            isImage: config.currentType === 'image',
+                            extension: config.currentExtension,
+                            isReplacement: false,
+                            name: '',
+                            size: '',
+                        };
+                        return;
+                    }
+
+                    if (this.preview.isReplacement && this.preview.url) {
+                        URL.revokeObjectURL(this.preview.url);
+                    }
+
+                    const isImage = file.type.startsWith('image/');
+
+                    this.preview = {
+                        url: isImage ? URL.createObjectURL(file) : '',
+                        isImage,
+                        extension: (file.name.split('.').pop() || 'FILE').toUpperCase(),
+                        isReplacement: true,
+                        name: file.name,
+                        size: this.formatSize(file.size),
+                    };
+                },
+            };
+        }
+    </script>
 </x-layouts.admin>

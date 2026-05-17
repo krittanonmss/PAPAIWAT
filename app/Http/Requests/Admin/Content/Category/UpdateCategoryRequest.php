@@ -52,8 +52,17 @@ class UpdateCategoryRequest extends FormRequest
                 if ($parentId) {
                     $parent = Category::query()->find($parentId);
 
+                    if (! $parent) {
+                        $validator->errors()->add('parent_id', 'ไม่พบหมวดหมู่แม่ที่เปิดใช้งานอยู่');
+                        return;
+                    }
+
                     if ($parent && $parent->type_key !== $this->input('type_key')) {
                         $validator->errors()->add('parent_id', 'หมวดหมู่แม่ต้องเป็นประเภทเดียวกัน');
+                    }
+
+                    if ($parent && ($parent->level + 1 + $this->subtreeHeight($category)) > Category::MAX_LEVEL) {
+                        $validator->errors()->add('parent_id', 'หมวดหมู่มีลำดับชั้นได้สูงสุด '.(Category::MAX_LEVEL + 1).' ชั้น');
                     }
                 }
 
@@ -75,5 +84,16 @@ class UpdateCategoryRequest extends FormRequest
         }
 
         return $ids;
+    }
+
+    private function subtreeHeight(Category $category): int
+    {
+        $maxHeight = 0;
+
+        foreach ($category->children()->get(['id']) as $child) {
+            $maxHeight = max($maxHeight, 1 + $this->subtreeHeight($child));
+        }
+
+        return $maxHeight;
     }
 }

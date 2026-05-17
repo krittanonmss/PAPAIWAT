@@ -48,12 +48,14 @@ class SystemAccessSeeder extends Seeder
                 'temples.view' => 'ดูข้อมูลวัด',
                 'temples.create' => 'สร้างข้อมูลวัด',
                 'temples.update' => 'แก้ไขข้อมูลวัด',
+                'temples.publish' => 'เผยแพร่ข้อมูลวัด',
                 'temples.delete' => 'ลบข้อมูลวัด',
             ],
             'articles' => [
                 'articles.view' => 'ดูบทความ',
                 'articles.create' => 'สร้างบทความ',
                 'articles.update' => 'แก้ไขบทความ',
+                'articles.publish' => 'เผยแพร่บทความ',
                 'articles.delete' => 'ลบบทความ',
             ],
             'categories' => [
@@ -74,17 +76,32 @@ class SystemAccessSeeder extends Seeder
                 'menus.update' => 'แก้ไขเมนู',
                 'menus.delete' => 'ลบเมนู',
             ],
+            'menu-items' => [
+                'menu-items.view' => 'ดูรายการเมนู',
+                'menu-items.create' => 'สร้างรายการเมนู',
+                'menu-items.update' => 'แก้ไขรายการเมนู',
+                'menu-items.delete' => 'ลบรายการเมนู',
+            ],
             'pages' => [
                 'pages.view' => 'ดูหน้าเว็บ',
                 'pages.create' => 'สร้างหน้าเว็บ',
                 'pages.update' => 'แก้ไขหน้าเว็บ',
                 'pages.delete' => 'ลบหน้าเว็บ',
             ],
+            'sections' => [
+                'sections.view' => 'ดู Page Section',
+                'sections.create' => 'สร้าง Page Section',
+                'sections.update' => 'แก้ไข Page Section',
+                'sections.delete' => 'ลบ Page Section',
+            ],
             'templates' => [
                 'templates.view' => 'ดู Template',
                 'templates.create' => 'สร้าง Template',
                 'templates.update' => 'แก้ไข Template',
                 'templates.delete' => 'ลบ Template',
+            ],
+            'preview' => [
+                'preview.view' => 'ดู Preview',
             ],
             'interactions' => [
                 'interactions.view' => 'ดูรีวิวและความคิดเห็น',
@@ -115,22 +132,30 @@ class SystemAccessSeeder extends Seeder
         $definitions = [
             'super_admin' => [
                 'name' => 'Super Admin',
+                'role_key' => 'super_admin',
                 'description' => 'เข้าถึงและจัดการได้ทุกส่วนของระบบ',
+                'level' => 100,
                 'is_system' => true,
             ],
             'admin' => [
                 'name' => 'Admin',
+                'role_key' => 'admin',
                 'description' => 'จัดการเนื้อหา หน้าเว็บ เมนู และผู้ดูแลระบบทั่วไป',
+                'level' => 80,
                 'is_system' => true,
             ],
             'editor' => [
                 'name' => 'Editor',
+                'role_key' => 'editor',
                 'description' => 'จัดการเนื้อหา บทความ วัด หน้าเว็บ และ Media',
+                'level' => 50,
                 'is_system' => true,
             ],
             'viewer' => [
                 'name' => 'Viewer',
+                'role_key' => 'viewer',
                 'description' => 'ดูข้อมูลในระบบได้อย่างเดียว',
+                'level' => 10,
                 'is_system' => true,
             ],
         ];
@@ -138,10 +163,18 @@ class SystemAccessSeeder extends Seeder
         $roles = [];
 
         foreach ($definitions as $key => $definition) {
-            $roles[$key] = Role::updateOrCreate(
-                ['name' => $definition['name']],
-                $definition
-            );
+            $role = Role::query()
+                ->where('role_key', $definition['role_key'])
+                ->orWhere('name', $definition['name'])
+                ->first();
+
+            if ($role) {
+                $role->update($definition);
+            } else {
+                $role = Role::query()->create($definition);
+            }
+
+            $roles[$key] = $role;
         }
 
         return $roles;
@@ -165,8 +198,11 @@ class SystemAccessSeeder extends Seeder
             'categories.*',
             'media.*',
             'menus.*',
+            'menu-items.*',
             'pages.*',
-            'templates.view',
+            'templates.*',
+            'sections.*',
+            'preview.view',
             'interactions.*',
         ]));
 
@@ -183,10 +219,17 @@ class SystemAccessSeeder extends Seeder
             'media.create',
             'media.update',
             'menus.view',
+            'menu-items.create',
+            'menu-items.update',
+            'menu-items.delete',
             'pages.view',
             'pages.create',
             'pages.update',
+            'sections.view',
+            'sections.create',
+            'sections.update',
             'templates.view',
+            'preview.view',
             'interactions.view',
             'interactions.manage',
         ]));

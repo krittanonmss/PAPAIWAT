@@ -26,14 +26,7 @@
     );
 
     $detailTemplates = $detailTemplates ?? collect();
-    $selectedTemplateId = old('template_id', $content?->template_id);
     $templatePreviewUrl = $templatePreviewUrl ?? null;
-    $templatePreviewSrc = $templatePreviewUrl
-        ? $templatePreviewUrl . '?' . http_build_query(array_filter([
-            'template_id' => $selectedTemplateId,
-            '_preview_ts' => time(),
-        ]))
-        : null;
     $bodyEditorValue = $article->body ?? '';
 
     if (($article->body_format ?? 'html') === 'markdown' && $bodyEditorValue !== '') {
@@ -367,125 +360,6 @@
                     <p class="mt-1.5 text-xs text-slate-500">
                         ถ้าไม่เลือก ระบบจะใช้เทมเพลต article-detail ที่เปิดใช้งานอยู่
                     </p>
-
-                    @if ($templatePreviewSrc)
-                        <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70" data-template-preview-live-url="{{ $templatePreviewLiveUrl ?? '' }}">
-                            <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-200">ตัวอย่างเทมเพลต</p>
-                                    <p class="mt-0.5 text-xs text-slate-500">แสดงข้อมูลจากฟอร์มที่กำลังแก้แบบ realtime ก่อนบันทึกจริง</p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        data-template-preview-refresh
-                                        class="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10"
-                                    >
-                                        รีเฟรช preview
-                                    </button>
-                                    <a
-                                        href="{{ $templatePreviewSrc }}"
-                                        target="_blank"
-                                        rel="noopener"
-                                        data-template-preview-open
-                                        class="rounded-lg border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20"
-                                    >
-                                        เปิดเต็มหน้า
-                                    </a>
-                                </div>
-                            </div>
-                            <iframe
-                                id="article-template-preview"
-                                src="{{ $templatePreviewSrc }}"
-                                class="h-[520px] w-full bg-slate-950"
-                                loading="lazy"
-                            ></iframe>
-                        </div>
-
-                        <script>
-                            document.querySelectorAll('[data-template-preview-select]').forEach((select) => {
-                                if (select.dataset.previewBound === '1') {
-                                    return;
-                                }
-
-                                select.dataset.previewBound = '1';
-                                const form = select.closest('form');
-                                const frame = document.getElementById(select.dataset.previewTarget);
-                                const previewBox = frame?.closest('[data-template-preview-live-url]');
-                                const liveUrl = previewBox?.dataset.templatePreviewLiveUrl;
-                                let previewTimer = null;
-                                let previewController = null;
-
-                                const updateStaticUrl = () => {
-                                    const baseUrl = select.dataset.previewBase;
-                                    const openLink = previewBox?.querySelector('[data-template-preview-open]');
-
-                                    if (!baseUrl || !frame) {
-                                        return;
-                                    }
-
-                                    const url = new URL(baseUrl, window.location.origin);
-
-                                    if (select.value) {
-                                        url.searchParams.set('template_id', select.value);
-                                    }
-
-                                    if (openLink) {
-                                        openLink.href = url.toString();
-                                    }
-                                };
-
-                                const แสดงผลLivePreview = async () => {
-                                    updateStaticUrl();
-
-                                    if (!form || !frame || !liveUrl) {
-                                        return;
-                                    }
-
-                                    previewController?.abort();
-                                    previewController = new AbortController();
-
-                                    const formData = new FormData(form);
-                                    formData.delete('_method');
-
-                                    try {
-                                        const response = await fetch(liveUrl, {
-                                            method: 'POST',
-                                            body: formData,
-                                            headers: {
-                                                Accept: 'application/json',
-                                                'X-Requested-With': 'XMLHttpRequest',
-                                            },
-                                            signal: previewController.signal,
-                                        });
-
-                                        const payload = await response.json();
-                                        frame.srcdoc = payload.html || '';
-                                    } catch (error) {
-                                        if (error.name !== 'AbortError') {
-                                            frame.srcdoc = '<div style="font-family: sans-serif; padding: 2rem; color: white; background: #020617;">Preview failed</div>';
-                                        }
-                                    }
-                                };
-
-                                const scheduleLivePreview = () => {
-                                    window.clearTimeout(previewTimer);
-                                    previewTimer = window.setTimeout(แสดงผลLivePreview, 350);
-                                };
-
-                                select.addEventListener('change', scheduleLivePreview);
-
-                                form?.addEventListener('input', scheduleLivePreview, true);
-                                form?.addEventListener('change', scheduleLivePreview, true);
-
-                                previewBox
-                                    ?.querySelector('[data-template-preview-refresh]')
-                                    ?.addEventListener('click', แสดงผลLivePreview);
-
-                                แสดงผลLivePreview();
-                            });
-                        </script>
-                    @endif
                 </div>
 
                 <div class="md:col-span-2">
@@ -714,49 +588,7 @@
 
     <div class="space-y-6">
         {{-- Categories --}}
-        <section
-            x-data="{
-                search: '',
-                selectedCategoryIds: @js(array_map('strval', $selectedCategoryIds)),
-                categories: [
-                    @foreach ($categories as $category)
-                        {
-                            id: '{{ $category->id }}',
-                            name: @js($category->name),
-                            typeKey: @js($category->type_key),
-                            sortOrder: '{{ $category->sort_order }}',
-                        },
-                    @endforeach
-                ],
-                isSelected(id) {
-                    return this.selectedCategoryIds.includes(String(id));
-                },
-                toggle(id) {
-                    id = String(id);
-
-                    if (this.isSelected(id)) {
-                        this.selectedCategoryIds = this.selectedCategoryIds.filter((item) => item !== id);
-                        return;
-                    }
-
-                    this.selectedCategoryIds.push(id);
-                },
-                get filteredCategories() {
-                    const keyword = this.search.toLowerCase().trim();
-
-                    if (!keyword) {
-                        return this.categories;
-                    }
-
-                    return this.categories.filter((category) => {
-                        return category.name.toLowerCase().includes(keyword)
-                            || category.typeKey.toLowerCase().includes(keyword)
-                            || String(category.id).includes(keyword);
-                    });
-                },
-            }"
-            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
-        >
+        <section class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-categories" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">Categories / Tags</h2>
@@ -775,86 +607,21 @@
             </div>
 
             <div class="space-y-4 p-6">
-                <div>
-                    <label for="category_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ค้นหาหมวดหมู่
-                    </label>
-                    <input
-                        type="text"
-                        id="category_search"
-                        x-model="search"
-                        placeholder="ค้นหาจากชื่อหมวดหมู่ ประเภท หรือ ID"
-                        class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                </div>
-
-                <div class="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-                    <p class="text-xs text-slate-400">
-                        เลือกแล้ว
-                        <span class="font-semibold text-blue-300" x-text="selectedCategoryIds.length"></span>
-                        หมวดหมู่
-                    </p>
-
-                    <button
-                        type="button"
-                        x-show="selectedCategoryIds.length > 0"
-                        @click="selectedCategoryIds = []"
-                        class="text-xs font-medium text-rose-300 transition hover:text-rose-200"
-                    >
-                        ล้างทั้งหมด
-                    </button>
-                </div>
-
-                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                    @foreach ($categories as $category)
-                        <label
-                            x-show="filteredCategories.some((item) => String(item.id) === '{{ $category->id }}')"
-                            class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-                            :class="isSelected('{{ $category->id }}')
-                                ? 'border-blue-400/50 bg-blue-500/10 ring-1 ring-blue-500/20'
-                                : 'border-white/10 bg-slate-950/40 hover:border-blue-400/30 hover:bg-white/5'"
-                        >
-                            <input
-                                type="checkbox"
-                                name="category_ids[]"
-                                value="{{ $category->id }}"
-                                x-model="selectedCategoryIds"
-                                class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                            >
-
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div class="text-sm font-medium text-slate-200">
-                                            {{ $category->name }}
-                                        </div>
-                                        <div class="mt-1 text-xs text-slate-500">
-                                            Type: {{ $category->type_key }} | Sort: {{ $category->sort_order }}
-                                        </div>
-                                    </div>
-
-                                    <span
-                                        x-show="isSelected('{{ $category->id }}')"
-                                        class="shrink-0 rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300"
-                                    >
-                                        เลือกแล้ว
-                                    </span>
-                                </div>
-                            </div>
-                        </label>
-                    @endforeach
-
-                    <div
-                        x-show="filteredCategories.length === 0"
-                        class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
-                    >
-                        ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา
-                    </div>
-
-                    @if ($categories->isEmpty())
-                        <p class="text-sm text-slate-500">ไม่พบหมวดหมู่ที่เปิดใช้งาน</p>
-                    @endif
-                </div>
+                @include('admin.content.partials._async_multi_select', [
+                    'id' => 'article_categories',
+                    'name' => 'category_ids',
+                    'label' => 'ค้นหาหมวดหมู่',
+                    'placeholder' => 'ค้นหาจากชื่อหมวดหมู่ slug หรือ ID',
+                    'emptyText' => 'ยังไม่ได้เลือกหมวดหมู่',
+                    'noResultsText' => 'ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา',
+                    'searchUrl' => route('admin.lookups.categories', ['type' => 'article', 'status' => 'active']),
+                    'selectedIds' => $selectedCategoryIds,
+                    'selectedOptions' => $categories->map(fn ($category) => [
+                        'id' => $category->id,
+                        'label' => $category->name,
+                        'meta' => $category->type_key . ' #' . $category->id,
+                    ]),
+                ])
 
                 @error('category_ids')
                     <p class="text-sm text-rose-300">{{ $message }}</p>
@@ -866,38 +633,7 @@
         </section>
 
         {{-- Tags --}}
-        <section
-            x-data="{
-                search: '',
-                selectedTagIds: @js(array_map('strval', $selectedTagIds)),
-                tags: [
-                    @foreach ($tags as $tag)
-                        {
-                            id: '{{ $tag->id }}',
-                            name: @js($tag->name),
-                            slug: @js($tag->slug),
-                        },
-                    @endforeach
-                ],
-                isSelected(id) {
-                    return this.selectedTagIds.includes(String(id));
-                },
-                get filteredTags() {
-                    const keyword = this.search.toLowerCase().trim();
-
-                    if (!keyword) {
-                        return this.tags;
-                    }
-
-                    return this.tags.filter((tag) => {
-                        return tag.name.toLowerCase().includes(keyword)
-                            || tag.slug.toLowerCase().includes(keyword)
-                            || String(tag.id).includes(keyword);
-                    });
-                },
-            }"
-            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
-        >
+        <section class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-tags" class="flex flex-col gap-3 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">แท็ก</h2>
@@ -916,86 +652,21 @@
             </div>
 
             <div class="space-y-4 p-6">
-                <div>
-                    <label for="tag_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ค้นหาแท็ก
-                    </label>
-                    <input
-                        type="text"
-                        id="tag_search"
-                        x-model="search"
-                        placeholder="ค้นหาจากชื่อแท็ก slug หรือ ID"
-                        class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                </div>
-
-                <div class="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-                    <p class="text-xs text-slate-400">
-                        เลือกแล้ว
-                        <span class="font-semibold text-blue-300" x-text="selectedTagIds.length"></span>
-                        แท็ก
-                    </p>
-
-                    <button
-                        type="button"
-                        x-show="selectedTagIds.length > 0"
-                        @click="selectedTagIds = []"
-                        class="text-xs font-medium text-rose-300 transition hover:text-rose-200"
-                    >
-                        ล้างทั้งหมด
-                    </button>
-                </div>
-
-                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                    @foreach ($tags as $tag)
-                        <label
-                            x-show="filteredTags.some((item) => String(item.id) === '{{ $tag->id }}')"
-                            class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-                            :class="isSelected('{{ $tag->id }}')
-                                ? 'border-blue-400/50 bg-blue-500/10 ring-1 ring-blue-500/20'
-                                : 'border-white/10 bg-slate-950/40 hover:border-blue-400/30 hover:bg-white/5'"
-                        >
-                            <input
-                                type="checkbox"
-                                name="tag_ids[]"
-                                value="{{ $tag->id }}"
-                                x-model="selectedTagIds"
-                                class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                            >
-
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div class="text-sm font-medium text-slate-200">
-                                            {{ $tag->name }}
-                                        </div>
-                                        <div class="mt-1 text-xs text-slate-500">
-                                            Slug: {{ $tag->slug }}
-                                        </div>
-                                    </div>
-
-                                    <span
-                                        x-show="isSelected('{{ $tag->id }}')"
-                                        class="shrink-0 rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300"
-                                    >
-                                        เลือกแล้ว
-                                    </span>
-                                </div>
-                            </div>
-                        </label>
-                    @endforeach
-
-                    <div
-                        x-show="filteredTags.length === 0"
-                        class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
-                    >
-                        ไม่พบแท็กที่ตรงกับคำค้นหา
-                    </div>
-
-                    @if ($tags->isEmpty())
-                        <p class="text-sm text-slate-500">ไม่พบแท็กที่เปิดใช้งาน</p>
-                    @endif
-                </div>
+                @include('admin.content.partials._async_multi_select', [
+                    'id' => 'article_tags',
+                    'name' => 'tag_ids',
+                    'label' => 'ค้นหาแท็ก',
+                    'placeholder' => 'ค้นหาจากชื่อแท็ก slug หรือ ID',
+                    'emptyText' => 'ยังไม่ได้เลือกแท็ก',
+                    'noResultsText' => 'ไม่พบแท็กที่ตรงกับคำค้นหา',
+                    'searchUrl' => route('admin.lookups.article-tags'),
+                    'selectedIds' => $selectedTagIds,
+                    'selectedOptions' => $tags->map(fn ($tag) => [
+                        'id' => $tag->id,
+                        'label' => $tag->name,
+                        'meta' => $tag->slug,
+                    ]),
+                ])
 
                 @error('tag_ids')
                     <p class="text-sm text-rose-300">{{ $message }}</p>
@@ -1010,25 +681,36 @@
         <section
             x-data="{
                 mediaSearch: '',
+                coverPickerUrl: @js(route('admin.content.articles.media-picker.cover')),
                 selectedCover: window.articleDraftMediaId('cover_media_id', @js((string) $selectedCoverMediaId)),
                 coverHtml: @js(view('admin.content.articles.partials._cover_media_grid', [
                     'mediaItems' => $coverMediaItems ?? $mediaItems,
                 ])->render()),
+                mediaSearchTimer: null,
 
                 init() {
                     this.$watch('selectedCover', () => this.$nextTick(() => window.saveArticleDraft?.()));
                 },
 
-                async loadCoverPage(event) {
-                    const link = event.target.closest('a');
+                coverUrl(url = this.coverPickerUrl) {
+                    const nextUrl = new URL(url, window.location.origin);
 
-                    if (!link) {
-                        return;
+                    if (this.mediaSearch.trim()) {
+                        nextUrl.searchParams.set('q', this.mediaSearch.trim());
+                    } else {
+                        nextUrl.searchParams.delete('q');
                     }
 
-                    event.preventDefault();
+                    return nextUrl.toString();
+                },
 
-                    const response = await fetch(link.href, {
+                scheduleCoverSearch() {
+                    window.clearTimeout(this.mediaSearchTimer);
+                    this.mediaSearchTimer = window.setTimeout(() => this.loadCoverUrl(), 300);
+                },
+
+                async loadCoverUrl(url = this.coverPickerUrl) {
+                    const response = await fetch(this.coverUrl(url), {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                         },
@@ -1041,6 +723,18 @@
                             window.Alpine.initTree(this.$refs.coverPicker);
                         });
                     }
+                },
+
+                async loadCoverPage(event) {
+                    const link = event.target.closest('a');
+
+                    if (!link) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    await this.loadCoverUrl(link.href);
                 },
             }"
             class="article-panel article-panel-media overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
@@ -1114,12 +808,13 @@
                         type="text"
                         id="cover_media_search"
                         x-model="mediaSearch"
+                        @input="scheduleCoverSearch()"
                         placeholder="พิมพ์ชื่อรูป, title หรือชื่อไฟล์..."
                         class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                     >
 
                     <p class="mt-1 text-xs text-slate-500">
-                        ใช้ค้นหาเฉพาะรูปที่แสดงอยู่ในหน้าปัจจุบัน
+                        ค้นหาจากคลังสื่อทั้งหมด
                     </p>
                 </div>
 
@@ -1147,97 +842,29 @@
         </section>
 
         {{-- Related Articles --}}
-        <section
-            x-data="{
-                search: '',
-                selectedRelatedArticleIds: @js(array_map('strval', $selectedRelatedArticleIds)),
-                relatedArticles: @js($relatedArticles->map(fn ($relatedArticle) => [
-                    'id' => (string) $relatedArticle->id,
-                    'title' => $relatedArticle->content?->title ?? 'ไม่มีชื่อ',
-                    'slug' => $relatedArticle->content?->slug ?? '-',
-                    'search' => mb_strtolower(($relatedArticle->content?->title ?? '') . ' ' . ($relatedArticle->content?->slug ?? '') . ' ' . $relatedArticle->id),
-                ])->values()),
-                isSelected(id) {
-                    return this.selectedRelatedArticleIds.includes(String(id));
-                },
-                get filteredRelatedArticles() {
-                    const keyword = this.search.toLowerCase().trim();
-                    if (!keyword) {
-                        return this.relatedArticles;
-                    }
-                    return this.relatedArticles.filter((article) => article.search.includes(keyword));
-                }
-            }"
-            class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
-        >
+        <section class="article-panel article-panel-taxonomy overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
             <div id="article-related" class="border-b border-white/10 px-6 py-4">
                 <h2 class="text-base font-semibold text-white">Related Content</h2>
             </div>
 
             <div class="space-y-4 p-6">
-                <div>
-                    <label for="related_article_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                        ค้นหาที่เกี่ยวข้อง
-                    </label>
-                    <input
-                        id="related_article_search"
-                        type="search"
-                        x-model.debounce.100ms="search"
-                        placeholder="ค้นหาจากชื่อ slug หรือ ID"
-                        class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                </div>
-                <div class="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
-                    <p class="text-xs text-slate-400">
-                        เลือกแล้ว <span class="font-semibold text-blue-300" x-text="selectedRelatedArticleIds.length"></span> 
-                    </p>
-                    <button
-                        type="button"
-                        x-show="selectedRelatedArticleIds.length > 0"
-                        @click="selectedRelatedArticleIds = []"
-                        class="text-xs font-medium text-rose-300 transition hover:text-rose-200"
-                    >
-                        ล้างทั้งหมด
-                    </button>
-                </div>
-
-                <div class="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                @forelse ($relatedArticles as $relatedArticle)
-                    <label
-                        x-show="filteredRelatedArticles.some((article) => article.id === '{{ $relatedArticle->id }}')"
-                        class="flex items-start gap-3 rounded-xl border p-4 transition"
-                        :class="isSelected('{{ $relatedArticle->id }}')
-                            ? 'border-blue-400/50 bg-blue-500/10 ring-1 ring-blue-500/20'
-                            : 'border-white/10 bg-slate-950/40 hover:border-blue-400/30 hover:bg-white/5'"
-                    >
-                        <input
-                            type="checkbox"
-                            name="related_article_ids[]"
-                            value="{{ $relatedArticle->id }}"
-                            x-model="selectedRelatedArticleIds"
-                            @checked(in_array($relatedArticle->id, $selectedRelatedArticleIds))
-                            class="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-500 focus:ring-blue-500/30"
-                        >
-                        <div>
-                            <div class="text-sm font-medium text-slate-200">
-                                {{ $relatedArticle->content?->title ?? 'ไม่มีชื่อ' }}
-                            </div>
-                            <div class="text-xs text-slate-500">
-                                #{{ $relatedArticle->id }} | {{ $relatedArticle->content?->slug ?? '-' }}
-                            </div>
-                        </div>
-                    </label>
-                @empty
-                    <p class="text-sm text-slate-500">ยังไม่มีอื่นให้เลือกเป็นที่เกี่ยวข้อง</p>
-                @endforelse
-
-                    <div
-                        x-show="filteredRelatedArticles.length === 0"
-                        class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
-                    >
-                        ไม่พบที่ตรงกับคำค้นหา
-                    </div>
-                </div>
+                @include('admin.content.partials._async_multi_select', [
+                    'id' => 'article_related',
+                    'name' => 'related_article_ids',
+                    'label' => 'ค้นหาที่เกี่ยวข้อง',
+                    'placeholder' => 'ค้นหาจากชื่อ slug หรือ ID',
+                    'emptyText' => 'ยังไม่ได้เลือกบทความที่เกี่ยวข้อง',
+                    'noResultsText' => 'ไม่พบบทความที่ตรงกับคำค้นหา',
+                    'searchUrl' => route('admin.lookups.articles', array_filter([
+                        'exclude_id' => $article?->id,
+                    ])),
+                    'selectedIds' => $selectedRelatedArticleIds,
+                    'selectedOptions' => $relatedArticles->map(fn ($relatedArticle) => [
+                        'id' => $relatedArticle->id,
+                        'label' => $relatedArticle->content?->title ?? 'ไม่มีชื่อ',
+                        'meta' => '#' . $relatedArticle->id . ' | ' . ($relatedArticle->content?->slug ?? '-'),
+                    ]),
+                ])
 
                 @error('related_article_ids')
                     <p class="text-sm text-rose-300">{{ $message }}</p>
@@ -1267,7 +894,7 @@
                             class="@error('status') border-rose-400/60 @else border-white/10 @enderror w-full rounded-xl border bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                         >
                             <option value="draft" @selected(old('status', $content->status ?? 'draft') === 'draft')>ฉบับร่าง</option>
-                            <option value="published" @selected(old('status', $content->status ?? 'draft') === 'published')>เผยแพร่แล้ว</option>
+                            <option value="review" @selected(old('status', $content->status ?? 'draft') === 'review')>รอตรวจสอบ</option>
                             <option value="archived" @selected(old('status', $content->status ?? 'draft') === 'archived')>เก็บถาวร</option>
                         </select>
                         @error('status')

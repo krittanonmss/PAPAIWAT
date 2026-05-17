@@ -84,22 +84,7 @@
             @method('PUT')
 
             <div x-data="{ activeTab: 'content' }" :class="`article-studio-tab-${activeTab}`" class="space-y-6">
-                <section class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-slate-950/30 backdrop-blur">
-                    <div class="grid xl:grid-cols-[minmax(0,1fr)_340px]">
-                        <div class="border-b border-white/10 p-5 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Article Studio</p>
-                            <h2 class="mt-1 text-lg font-semibold text-white">จัดการบทความ</h2>
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">แก้เนื้อหา สื่อ SEO และการเผยแพร่ผ่าน tabs ด้านล่าง โดยยังใช้ข้อมูลชุดเดิมครบถ้วน</p>
-                        </div>
-                        <aside class="space-y-3 bg-white/[0.03] p-5">
-                            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">สถานะงาน</p>
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                                <p class="text-sm font-semibold text-white">{{ $article->content?->title ?? 'ยังไม่มีชื่อ' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">{{ $article->content?->status ?? 'draft' }}</p>
-                            </div>
-                        </aside>
-                    </div>
-                </section>
+                @include('admin.content.articles.partials._template_preview_panel')
 
                 <div class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="grid gap-2 md:grid-cols-5">
@@ -124,6 +109,24 @@
                     </p>
 
                     <div class="flex items-center justify-end gap-3">
+                        @if (in_array($article->content?->status, ['draft', 'review'], true))
+                            <button
+                                type="submit"
+                                form="publish-article-form"
+                                class="inline-flex items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
+                            >
+                                เผยแพร่
+                            </button>
+                        @elseif ($article->content?->status === 'published')
+                            <button
+                                type="submit"
+                                form="unpublish-article-form"
+                                class="inline-flex items-center justify-center rounded-xl border border-amber-400/30 bg-amber-500/10 px-5 py-2.5 text-sm font-medium text-amber-200 transition hover:bg-amber-500/20"
+                            >
+                                ยกเลิกเผยแพร่
+                            </button>
+                        @endif
+
                         <a
                             href="{{ route('admin.content.articles.index') }}"
                             class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
@@ -140,6 +143,16 @@
                     </div>
                 </div>
             </div>
+        </form>
+
+        <form id="publish-article-form" method="POST" action="{{ route('admin.content.articles.publish', $article) }}" class="hidden">
+            @csrf
+            @method('PATCH')
+        </form>
+
+        <form id="unpublish-article-form" method="POST" action="{{ route('admin.content.articles.unpublish', $article) }}" class="hidden">
+            @csrf
+            @method('PATCH')
         </form>
     </div>
 </x-layouts.admin>

@@ -58,7 +58,7 @@
         >
             @csrf
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
 
                 {{-- Main Form --}}
                 <div class="space-y-6">
@@ -70,22 +70,22 @@
                     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h3 class="text-sm font-semibold text-white">เช็กลิสต์ก่อนบันทึก</h3>
 
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">ชื่อโฟลเดอร์</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     ตั้งชื่อให้เข้าใจง่าย และสื่อถึงประเภทไฟล์ที่จัดเก็บ
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">โครงสร้างโฟลเดอร์</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     เลือกโฟลเดอร์แม่ให้ถูกต้อง หากต้องการจัดเก็บแบบลำดับชั้น
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">สถานะการใช้งาน</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     เปิดใช้งานเมื่อโฟลเดอร์พร้อมใช้ใน คลังสื่อ

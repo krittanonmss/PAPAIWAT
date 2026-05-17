@@ -165,6 +165,24 @@
                 </div>
             </div>
 
+            <div class="rounded-3xl border border-amber-400/20 bg-amber-500/10 p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
+                <h2 class="text-base font-semibold text-white">ยืนยันรหัสผ่านผู้ดำเนินการ</h2>
+                <p class="mt-1 text-sm text-amber-100/80">ต้องกรอกเมื่อเปลี่ยนบทบาท สถานะ หรือรหัสผ่านของผู้ใช้รายนี้</p>
+
+                <div class="mt-5 max-w-md">
+                    <label class="mb-1.5 block text-sm font-medium text-slate-300">รหัสผ่านปัจจุบันของคุณ</label>
+                    <input
+                        type="password"
+                        name="current_password"
+                        autocomplete="current-password"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-500/20"
+                    >
+                    @error('current_password')
+                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
             {{-- การจัดการs --}}
             <div class="flex justify-end gap-3">
                 <a

@@ -26,12 +26,15 @@ Route::prefix('admin')
             ->name('profile.password.update');
 
         Route::get('/content/{type}/template-preview', [ContentTemplatePreviewController::class, 'sample'])
+            ->middleware('admin.permission:preview.view')
             ->name('content.template-preview.sample');
 
         Route::post('/content/{type}/template-preview/live', [ContentTemplatePreviewController::class, 'live'])
+            ->middleware('admin.permission:preview.view')
             ->name('content.template-preview.live');
 
         Route::get('/content/{type}/{content}/template-preview', ContentTemplatePreviewController::class)
+            ->middleware('admin.permission:preview.view')
             ->name('content.template-preview');
 
         require __DIR__.'/access.php';

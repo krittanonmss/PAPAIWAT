@@ -3,6 +3,7 @@
 namespace App\Services\Admin\Content\Temple;
 
 use App\Models\Content\Content;
+use App\Models\Content\ContentVersion;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,7 @@ class TempleDataSyncService
             ]);
 
             $this->syncAll($temple, $content, $validated);
+            $this->createVersion($temple, 'created');
 
             return $temple;
         });
@@ -83,6 +85,7 @@ class TempleDataSyncService
             ]);
 
             $this->syncAll($temple, $temple->content, $validated);
+            $this->createVersion($temple, 'updated');
         });
 
         return $temple;
@@ -93,10 +96,40 @@ class TempleDataSyncService
         $temple->load('content');
 
         DB::transaction(function () use ($temple) {
+            $this->createVersion($temple, 'deleted');
+
             $temple->content?->categories()->detach();
             $temple->content?->mediaUsages()->delete();
             $temple->content?->delete();
         });
+    }
+
+    public function createVersion(Temple $temple, string $versionName): void
+    {
+        $temple->loadMissing([
+            'content.categories',
+            'content.mediaUsages',
+            'address',
+            'openingHours',
+            'fees',
+            'facilityItems.facility',
+            'highlights',
+            'visitRules',
+            'travelInfos',
+            'nearbyPlaces',
+        ]);
+
+        if (! $temple->content) {
+            return;
+        }
+
+        ContentVersion::query()->create([
+            'content_id' => $temple->content->id,
+            'content_type' => 'temple',
+            'version_name' => $versionName,
+            'snapshot' => $this->snapshot($temple),
+            'created_by_admin_id' => auth('admin')->id(),
+        ]);
     }
 
     private function sanitizeRichText(?string $value): ?string
@@ -633,5 +666,55 @@ class TempleDataSyncService
         if (! empty($items)) {
             $temple->nearbyPlaces()->createMany($items);
         }
+    }
+
+    private function snapshot(Temple $temple): array
+    {
+        $content = $temple->content;
+
+        return [
+            'content' => $content?->only([
+                'id',
+                'content_type',
+                'title',
+                'slug',
+                'template_id',
+                'excerpt',
+                'description',
+                'status',
+                'is_featured',
+                'is_popular',
+                'meta_title',
+                'meta_description',
+                'published_at',
+            ]),
+            'temple' => $temple->only([
+                'id',
+                'content_id',
+                'temple_type',
+                'sect',
+                'architecture_style',
+                'founded_year',
+                'history',
+                'dress_code',
+                'recommended_visit_start_time',
+                'recommended_visit_end_time',
+            ]),
+            'category_ids' => $content?->categories->pluck('id')->values()->all() ?? [],
+            'primary_category_id' => $content?->categories->firstWhere('pivot.is_primary', true)?->id,
+            'media' => $content?->mediaUsages->map(fn ($usage) => [
+                'media_id' => $usage->media_id,
+                'role_key' => $usage->role_key,
+                'sort_order' => $usage->sort_order,
+            ])->values()->all() ?? [],
+            'address' => $temple->address?->toArray(),
+            'opening_hours' => $temple->openingHours->toArray(),
+            'fees' => $temple->fees->toArray(),
+            'facilities' => $temple->facilityItems->toArray(),
+            'highlights' => $temple->highlights->toArray(),
+            'visit_rules' => $temple->visitRules->toArray(),
+            'travel_infos' => $temple->travelInfos->toArray(),
+            'nearby_places' => $temple->nearbyPlaces->toArray(),
+        ];
     }
 }

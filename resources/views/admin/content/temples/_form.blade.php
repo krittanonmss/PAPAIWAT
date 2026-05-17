@@ -80,7 +80,7 @@
     })->values() : $facilityItems->map(function ($item) {
         return [
             'facility_id' => $item->facility_id,
-            'facility_name' => '',
+            'facility_name' => $item->facility?->name ?? '',
             'value' => $item->value ?? '',
             'note' => $item->note ?? '',
             'sort_order' => $item->sort_order ?? 0,
@@ -155,6 +155,7 @@
     $jsNearbyPlaces = $oldNearbyPlaces !== null ? collect($oldNearbyPlaces)->map(function ($n) {
         return [
             'nearby_temple_id' => $n['nearby_temple_id'] ?? '',
+            'nearby_temple_title' => $n['nearby_temple_title'] ?? '',
             'relation_type'    => $n['relation_type'] ?? '',
             'distance_km'      => $n['distance_km'] ?? '',
             'duration_minutes' => $n['duration_minutes'] ?? '',
@@ -164,6 +165,7 @@
     })->values() : $nearbyPlaces->map(function ($n) {
         return [
             'nearby_temple_id' => $n->nearby_temple_id,
+            'nearby_temple_title' => $n->nearbyTemple?->content?->title ?? '',
             'relation_type'    => $n->relation_type ?? '',
             'distance_km'      => $n->distance_km,
             'duration_minutes' => $n->duration_minutes,
@@ -771,144 +773,48 @@
                 </div>
             </div>
 
-            <div class="p-6">
-                @if ($categories->isEmpty())
-                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-8 text-center">
-                        <p class="text-sm font-medium text-slate-300">ยังไม่มีหมวดหมู่</p>
-                        <p class="mt-1 text-xs text-slate-500">สร้างหมวดหมู่ก่อนเพื่อจัดกลุ่มวัดบนหน้าเว็บไซต์</p>
+            <div class="grid gap-5 p-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div>
+                    @include('admin.content.partials._async_multi_select', [
+                        'id' => 'temple_categories',
+                        'name' => 'category_ids',
+                        'label' => 'ค้นหาหมวดหมู่',
+                        'placeholder' => 'ค้นหาจากชื่อหมวดหมู่ slug หรือ ID',
+                        'emptyText' => 'ยังไม่ได้เลือกหมวดหมู่',
+                        'noResultsText' => 'ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา',
+                        'searchUrl' => route('admin.lookups.categories', ['type' => 'temple']),
+                        'selectedIds' => old('category_ids', $existingCategoryIds),
+                        'selectedOptions' => $categories->map(fn ($cat) => [
+                            'id' => $cat->id,
+                            'label' => $cat->name,
+                            'meta' => 'Category #' . $cat->id,
+                        ]),
+                    ])
+                </div>
+
+                <aside class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                    <div>
+                        @include('admin.content.partials._async_select', [
+                            'id' => 'primary_category_id',
+                            'name' => 'primary_category_id',
+                            'label' => 'หมวดหมู่หลัก',
+                            'selected' => old('primary_category_id', $primaryCategoryId),
+                            'selectedOption' => ($primaryCategory = $categories->firstWhere('id', old('primary_category_id', $primaryCategoryId))) ? [
+                                'id' => $primaryCategory->id,
+                                'label' => $primaryCategory->name,
+                                'meta' => 'Category #' . $primaryCategory->id,
+                            ] : null,
+                            'emptyLabel' => '— ไม่ระบุ —',
+                            'placeholder' => 'เลือกหมวดหมู่หลัก',
+                            'searchPlaceholder' => 'ค้นหาหมวดหมู่หลัก...',
+                            'searchUrl' => route('admin.lookups.categories', ['type' => 'temple']),
+                        ])
+
+                        <p class="mt-2 text-xs leading-5 text-slate-500">
+                            ใช้เป็นหมวดหลักในรายการและ metadata ของหน้าเว็บไซต์
+                        </p>
                     </div>
-                @else
-                    <div
-                        class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]"
-                        x-data="{
-                            search: '',
-                            selectedCategoryIds: @js(array_map('strval', old('category_ids', $existingCategoryIds))),
-                            categories: @js($categories->map(fn ($cat) => [
-                                'id' => (string) $cat->id,
-                                'name' => $cat->name,
-                                'search' => mb_strtolower($cat->name . ' ' . $cat->id),
-                            ])->values()),
-                            isSelected(id) {
-                                return this.selectedCategoryIds.includes(String(id));
-                            },
-                            get filteredCategories() {
-                                const keyword = this.search.toLowerCase().trim();
-                                if (!keyword) {
-                                    return this.categories;
-                                }
-                                return this.categories.filter((category) => category.search.includes(keyword));
-                            },
-                            get selectedCategories() {
-                                return this.categories.filter((category) => this.isSelected(category.id));
-                            }
-                        }"
-                    >
-                        <div class="min-w-0 space-y-4">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                                <div class="min-w-0 flex-1">
-                                    <label for="temple_category_search" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                        ค้นหาหมวดหมู่
-                                    </label>
-                                    <input
-                                        id="temple_category_search"
-                                        type="search"
-                                        x-model.debounce.100ms="search"
-                                        placeholder="ค้นหาจากชื่อหมวดหมู่หรือ ID"
-                                        class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                                    >
-                                </div>
-
-                                <div class="rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-slate-300">
-                                    เลือกแล้ว <span class="font-semibold text-blue-300" x-text="selectedCategoryIds.length"></span>
-                                </div>
-                            </div>
-
-                            <div class="grid max-h-[320px] grid-cols-1 gap-2 overflow-y-auto pr-1 md:grid-cols-2 2xl:grid-cols-3">
-                                @foreach ($categories as $cat)
-                                    @php
-                                        $checked = in_array($cat->id, old('category_ids', $existingCategoryIds));
-                                    @endphp
-
-                                    <label
-                                        x-show="filteredCategories.some((category) => category.id === '{{ $cat->id }}')"
-                                        class="group flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition hover:bg-white/[0.06]"
-                                        :class="isSelected('{{ $cat->id }}') ? 'border-blue-400/40 bg-blue-500/10' : 'border-white/10 bg-slate-950/40'"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            name="category_ids[]"
-                                            value="{{ $cat->id }}"
-                                            x-model="selectedCategoryIds"
-                                            class="h-4 w-4 rounded border-white/20 bg-slate-950 text-blue-600"
-                                            @checked($checked)
-                                            onchange="updatePrimaryCategoryOptions()"
-                                        >
-                                        <span class="min-w-0 flex-1 truncate text-sm text-slate-300">{{ $cat->name }}</span>
-                                        <span x-show="isSelected('{{ $cat->id }}')" class="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-medium text-blue-200">เลือก</span>
-                                    </label>
-                                @endforeach
-                            </div>
-
-                            <div
-                                x-show="filteredCategories.length === 0"
-                                class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-500"
-                            >
-                                ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา
-                            </div>
-                        </div>
-
-                        <aside class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                            <div>
-                                <label for="primary_category_id" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                    หมวดหมู่หลัก
-                                </label>
-
-                                @include('admin.content.partials._searchable_select', [
-                                    'id' => 'primary_category_id',
-                                    'name' => 'primary_category_id',
-                                    'selected' => old('primary_category_id', $primaryCategoryId),
-                                    'emptyLabel' => '— ไม่ระบุ —',
-                                    'placeholder' => 'เลือกหมวดหมู่หลัก',
-                                    'searchPlaceholder' => 'ค้นหาหมวดหมู่หลัก...',
-                                    'options' => $categories->map(fn ($cat) => [
-                                        'value' => $cat->id,
-                                        'label' => $cat->name,
-                                        'meta' => 'Category #' . $cat->id,
-                                        'search' => $cat->name . ' ' . $cat->id,
-                                    ]),
-                                ])
-
-                                <p class="mt-2 text-xs leading-5 text-slate-500">
-                                    ใช้เป็นหมวดหลักในรายการและ metadata ของหน้าเว็บไซต์
-                                </p>
-                            </div>
-
-                            <div class="border-t border-white/10 pt-4">
-                                <div class="mb-2 flex items-center justify-between gap-3">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ที่เลือก</p>
-                                    <button
-                                        type="button"
-                                        x-show="selectedCategoryIds.length > 0"
-                                        @click="selectedCategoryIds = []; $nextTick(() => updatePrimaryCategoryOptions())"
-                                        class="text-xs font-medium text-rose-300 hover:text-rose-200"
-                                    >
-                                        ล้างทั้งหมด
-                                    </button>
-                                </div>
-
-                                <div x-show="selectedCategories.length > 0" class="flex max-h-32 flex-wrap gap-2 overflow-y-auto pr-1">
-                                    <template x-for="category in selectedCategories" :key="category.id">
-                                        <span class="rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs text-blue-100" x-text="category.name"></span>
-                                    </template>
-                                </div>
-
-                                <p x-show="selectedCategories.length === 0" class="rounded-xl border border-dashed border-white/10 px-3 py-3 text-center text-xs text-slate-500">
-                                    ยังไม่ได้เลือกหมวดหมู่
-                                </p>
-                            </div>
-                        </aside>
-                    </div>
-                @endif
+                </aside>
             </div>
         </section>
     </div>
@@ -918,6 +824,9 @@
         id="media-section"
         x-data="{
             mediaSearch: '',
+            mediaSearchTimer: null,
+            coverPickerUrl: @js(route('admin.temples.media-picker.cover')),
+            galleryPickerUrl: @js(route('admin.temples.media-picker.gallery')),
             selectedCover: window.templeDraftMediaId('cover_media_id', @js((string) old('cover_media_id', $coverMedia?->media_id ?? ''))),
             selectedGallery: window.templeDraftMediaIdArray('gallery_media_ids[]', @js(array_map('strval', old('gallery_media_ids', $galleryMediaIds)))),
 
@@ -934,6 +843,26 @@
                 this.$watch('selectedGallery', () => this.$nextTick(() => saveTempleDraft()));
             },
 
+            mediaUrl(url) {
+                const nextUrl = new URL(url, window.location.origin);
+
+                if (this.mediaSearch.trim()) {
+                    nextUrl.searchParams.set('q', this.mediaSearch.trim());
+                } else {
+                    nextUrl.searchParams.delete('q');
+                }
+
+                return nextUrl.toString();
+            },
+
+            scheduleMediaSearch() {
+                window.clearTimeout(this.mediaSearchTimer);
+                this.mediaSearchTimer = window.setTimeout(() => {
+                    this.loadCoverUrl();
+                    this.loadGalleryUrl();
+                }, 300);
+            },
+
             toggleGallery(id) {
                 id = String(id);
 
@@ -945,16 +874,8 @@
                 this.selectedGallery.push(id);
             },
 
-            async loadCoverPage(event) {
-            const link = event.target.closest('a');
-
-            if (!link) {
-                return;
-            }
-
-            event.preventDefault();
-
-            const response = await fetch(link.href, {
+            async loadCoverUrl(url = this.coverPickerUrl) {
+            const response = await fetch(this.mediaUrl(url), {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
@@ -969,7 +890,7 @@
             }
         },
 
-        async loadGalleryPage(event) {
+            async loadCoverPage(event) {
             const link = event.target.closest('a');
 
             if (!link) {
@@ -978,7 +899,11 @@
 
             event.preventDefault();
 
-            const response = await fetch(link.href, {
+            await this.loadCoverUrl(link.href);
+        },
+
+        async loadGalleryUrl(url = this.galleryPickerUrl) {
+            const response = await fetch(this.mediaUrl(url), {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
@@ -991,6 +916,18 @@
                     window.Alpine.initTree(this.$refs.galleryPicker);
                 });
             }
+        },
+
+        async loadGalleryPage(event) {
+            const link = event.target.closest('a');
+
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+
+            await this.loadGalleryUrl(link.href);
         },
         }"
         class="temple-panel temple-panel-media overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur"
@@ -1005,13 +942,14 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <div class="w-full sm:w-72">
                         <label for="media_search" class="mb-1.5 block text-xs font-medium text-slate-400">
-                            ค้นหารูปในหน้านี้
+                            ค้นหารูปในคลังสื่อ
                         </label>
 
                         <input
                             id="media_search"
                             type="text"
                             x-model="mediaSearch"
+                            @input="scheduleMediaSearch()"
                             placeholder="ชื่อรูปหรือชื่อไฟล์..."
                             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         >
@@ -1494,6 +1432,7 @@
                             <input
                                 type="search"
                                 x-model.debounce.100ms="row.facility_search"
+                                @input.debounce.250ms="searchFacilities(row)"
                                 class="mb-2 w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
                                 placeholder="ค้นหาสิ่งอำนวยความสะดวก..."
                             >
@@ -1957,6 +1896,7 @@
                             <input
                                 type="search"
                                 x-model.debounce.100ms="row.temple_search"
+                                @input.debounce.250ms="searchNearbyTemples(row)"
                                 class="mb-2 w-full rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400"
                                 placeholder="ค้นหาชื่อหรือ ID..."
                             >
@@ -2880,10 +2820,9 @@
 
     function facilitiesManager() {
         const existing = @json($jsFacilityItems);
-        const facilities = @json($jsFacilities);
+        const facilitiesUrl = @json(route('admin.lookups.facilities'));
 
         return {
-            facilities,
             rows: [],
 
             init() {
@@ -2896,10 +2835,16 @@
                     facility_id: row.facility_id ? String(row.facility_id) : '',
                     facility_search: row.facility_search || '',
                     facility_name: row.facility_name || '',
+                    facility_options: row.facility_id && row.facility_name ? [{
+                        id: String(row.facility_id),
+                        label: row.facility_name,
+                    }] : [],
                     value: row.value || '',
                     note: row.note || '',
                     sort_order: row.sort_order ?? 0,
                 }));
+
+                this.rows.forEach((row) => this.searchFacilities(row));
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
@@ -2914,6 +2859,7 @@
                     facility_id: '',
                     facility_search: '',
                     facility_name: '',
+                    facility_options: [],
                     value: '',
                     note: '',
                     sort_order: this.rows.length,
@@ -2925,17 +2871,33 @@
             },
 
             filteredFacilities(row) {
-                const keyword = (row.facility_search || '').toLowerCase().trim();
+                return row.facility_options || [];
+            },
 
-                return this.facilities
-                    .filter((facility) => {
-                        if (row.facility_id && String(facility.id) === String(row.facility_id)) {
-                            return true;
-                        }
+            async searchFacilities(row) {
+                const url = new URL(facilitiesUrl, window.location.origin);
 
-                        return !keyword || facility.name.toLowerCase().includes(keyword) || String(facility.id).includes(keyword);
-                    })
-                    .slice(0, 80);
+                if (row.facility_search?.trim()) {
+                    url.searchParams.set('q', row.facility_search.trim());
+                }
+
+                if (row.facility_id) {
+                    url.searchParams.append('ids[]', row.facility_id);
+                }
+
+                const response = await fetch(url, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                row.facility_options = (payload.items || []).map((item) => ({
+                    id: String(item.id),
+                    name: item.label,
+                }));
             },
         };
     }
@@ -2980,11 +2942,10 @@
 
     function nearbyPlacesManager() {
         const existing = @json($jsNearbyPlaces);
-        const nearbyTemples = @json($jsNearbyTemples);
+        const templesUrl = @json(route('admin.lookups.temples', array_filter(['exclude_id' => $temple?->id])));
 
         return {
             rows: [],
-            nearbyTemples,
 
             init() {
                 const fallbackRows = existing.length ? existing : [];
@@ -2995,7 +2956,13 @@
                     ...row,
                     nearby_temple_id: row.nearby_temple_id ? String(row.nearby_temple_id) : '',
                     temple_search: row.temple_search || '',
+                    temple_options: row.nearby_temple_id && row.nearby_temple_title ? [{
+                        id: String(row.nearby_temple_id),
+                        title: row.nearby_temple_title,
+                    }] : [],
                 }));
+
+                this.rows.forEach((row) => this.searchNearbyTemples(row));
 
                 this.$watch('rows', (value) => {
                     window.templeDraft.write({
@@ -3008,6 +2975,7 @@
                 this.rows.push({
                     nearby_temple_id: '',
                     temple_search: '',
+                    temple_options: [],
                     relation_type: '',
                     distance_km: '',
                     duration_minutes: '',
@@ -3021,17 +2989,33 @@
             },
 
             filteredNearbyTemples(row) {
-                const keyword = (row.temple_search || '').toLowerCase().trim();
+                return row.temple_options || [];
+            },
 
-                return this.nearbyTemples
-                    .filter((temple) => {
-                        if (row.nearby_temple_id && String(temple.id) === String(row.nearby_temple_id)) {
-                            return true;
-                        }
+            async searchNearbyTemples(row) {
+                const url = new URL(templesUrl, window.location.origin);
 
-                        return !keyword || temple.search.includes(keyword);
-                    })
-                    .slice(0, 80);
+                if (row.temple_search?.trim()) {
+                    url.searchParams.set('q', row.temple_search.trim());
+                }
+
+                if (row.nearby_temple_id) {
+                    url.searchParams.append('ids[]', row.nearby_temple_id);
+                }
+
+                const response = await fetch(url, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                row.temple_options = (payload.items || []).map((item) => ({
+                    id: String(item.id),
+                    title: item.label,
+                }));
             },
         };
     }

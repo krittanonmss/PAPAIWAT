@@ -104,6 +104,24 @@ class MediaSelectionEditFormTest extends TestCase
             ->assertSee("selectedCover: window.articleDraftMediaId('cover_media_id', '{$cover->id}')", false);
     }
 
+    public function test_media_picker_searches_across_database_not_only_current_page(): void
+    {
+        $target = $this->createImageMedia('very-specific-cover.jpg');
+
+        foreach (range(1, 12) as $index) {
+            $this->createImageMedia("newer-search-$index.jpg");
+        }
+
+        $this->get(route('admin.content.articles.media-picker.cover', ['q' => 'very-specific']))
+            ->assertOk()
+            ->assertSee('very-specific-cover.jpg')
+            ->assertDontSee('newer-search-12.jpg');
+
+        $this->get(route('admin.temples.media-picker.cover', ['q' => (string) $target->id]))
+            ->assertOk()
+            ->assertSee('very-specific-cover.jpg');
+    }
+
     private function createImageMedia(string $filename): Media
     {
         return Media::query()->create([

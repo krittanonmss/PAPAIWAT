@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class ContentCategoryAssignmentSeeder extends Seeder
 {
@@ -27,13 +26,7 @@ class ContentCategoryAssignmentSeeder extends Seeder
 
                 $categoryIds = $selected->pluck('id')->values();
 
-                DB::table('categorizables')
-                    ->where('categorizable_type', Content::class)
-                    ->where('categorizable_id', $content->id)
-                    ->whereIn('category_id', $categories[$content->content_type]->pluck('id'))
-                    ->delete();
-
-                $content->categories()->attach($categoryIds->mapWithKeys(fn ($categoryId, $sortOrder) => [
+                $content->categories()->sync($categoryIds->mapWithKeys(fn ($categoryId, $sortOrder) => [
                     $categoryId => [
                         'is_primary' => $sortOrder === 0,
                         'sort_order' => $sortOrder + 1,

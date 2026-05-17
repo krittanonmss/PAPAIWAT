@@ -35,6 +35,7 @@ class Media extends Model
         'caption',
         'description',
         'checksum',
+        'file_hash',
         'visibility',
         'upload_status',
         'uploaded_by_admin_id',

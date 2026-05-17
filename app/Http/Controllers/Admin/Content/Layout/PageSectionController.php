@@ -8,15 +8,24 @@ use App\Models\Content\Media\Media;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
 use App\Http\Controllers\Frontend\FrontendPageController;
+use App\Services\Admin\Content\Layout\LayoutVersionService;
+use App\Services\Admin\Content\Layout\SectionSchemaValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PageSectionController extends Controller
 {
+    public function __construct(
+        private readonly SectionSchemaValidator $sectionSchemaValidator,
+        private readonly LayoutVersionService $versionService,
+    ) {
+    }
+
     public function create(Page $page): View
     {
         $sectionMediaItems = $this->sectionMediaItems();
@@ -39,13 +48,17 @@ class PageSectionController extends Controller
     public function preview(Request $request, Page $page): JsonResponse
     {
         $componentKey = (string) $request->input('component_key', 'hero');
+        $content = $this->prepareSectionContent($request->input('content')) ?? [];
+        $settings = $this->sanitizeSectionSettings($this->decodeJson($request->input('settings')) ?? []);
+        $this->sectionSchemaValidator->validate($componentKey, $content, $settings);
+
         $section = new PageSection([
             'page_id' => $page->id,
             'name' => $request->input('name') ?: $this->defaultSectionName($componentKey),
             'section_key' => $request->input('section_key') ?: 'preview-section',
             'component_key' => $componentKey,
-            'content' => $this->prepareSectionContent($request->input('content')) ?? [],
-            'settings' => $this->sanitizeSectionSettings($this->decodeJson($request->input('settings')) ?? []),
+            'content' => $content,
+            'settings' => $settings,
             'status' => 'active',
             'is_visible' => true,
             'sort_order' => (int) $request->input('sort_order', 0),
@@ -88,13 +101,18 @@ class PageSectionController extends Controller
         $validated['page_id'] = $page->id;
         $validated['settings'] = $this->sanitizeSectionSettings($this->decodeJson($validated['settings'] ?? null) ?? []);
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
+        $this->sectionSchemaValidator->validate($validated['component_key'], $validated['content'] ?? [], $validated['settings']);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . now()->format('His'));
         $validated['section_key'] = $validated['section_key'] ?: ($generatedKey ?: $validated['component_key'] . '-' . now()->format('His'));
         $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
-        PageSection::create($validated);
+        DB::transaction(function () use ($page, $validated) {
+            $section = PageSection::create($validated);
+            $this->versionService->snapshotSection($section, 'created');
+            $this->versionService->snapshotPage($page, 'section_created');
+        });
 
         return redirect()
             ->route('admin.content.pages.show', $page)
@@ -129,13 +147,20 @@ class PageSectionController extends Controller
 
         $validated['settings'] = $this->sanitizeSectionSettings($this->decodeJson($validated['settings'] ?? null) ?? []);
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
+        $this->sectionSchemaValidator->validate($validated['component_key'], $validated['content'] ?? [], $validated['settings']);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
         $generatedKey = Str::slug($validated['name'] . '-' . $section->id);
         $validated['section_key'] = $validated['section_key'] ?: ($section->section_key ?: ($generatedKey ?: $validated['component_key'] . '-' . $section->id));
         $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
-        $section->update($validated);
+        DB::transaction(function () use ($page, $section, $validated) {
+            $this->versionService->snapshotSection($section, 'before_update');
+            $this->versionService->snapshotPage($page, 'section_before_update');
+            $section->update($validated);
+            $this->versionService->snapshotSection($section, 'updated');
+            $this->versionService->snapshotPage($page, 'section_updated');
+        });
 
         return redirect()
             ->route('admin.content.pages.show', $page)
@@ -146,7 +171,16 @@ class PageSectionController extends Controller
     {
         abort_if($section->page_id !== $page->id, 404);
 
-        $section->delete();
+        if ($page->status === 'published' && $section->status === 'active' && $section->is_visible) {
+            return back()->withErrors(['section' => 'ไม่สามารถลบ section ที่กำลังแสดงบนหน้าที่เผยแพร่แล้ว ให้ปิดการแสดงผลก่อน']);
+        }
+
+        DB::transaction(function () use ($page, $section) {
+            $this->versionService->snapshotSection($section, 'before_delete');
+            $this->versionService->snapshotPage($page, 'section_before_delete');
+            $section->delete();
+            $this->versionService->snapshotPage($page, 'section_deleted');
+        });
 
         return redirect()
             ->route('admin.content.pages.show', $page)

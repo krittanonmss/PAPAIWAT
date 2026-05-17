@@ -269,10 +269,14 @@ class ContentTemplatePreviewController extends Controller
 
     private function liveContent(Request $request, string $type): Content
     {
+        $title = $request->input('title') ?: ($type === 'temple' ? 'รายละเอียดวัด' : 'รายละเอียดบทความ');
+        $slug = $request->input('slug') ?: Str::slug($title);
+        $slug = $slug !== '' ? $slug : $type . '-preview';
+
         $content = new Content([
             'content_type' => $type,
-            'title' => $request->input('title') ?: ($type === 'temple' ? 'รายละเอียดวัด' : 'รายละเอียดบทความ'),
-            'slug' => $request->input('slug') ?: Str::slug($request->input('title') ?: $type . '-preview'),
+            'title' => $title,
+            'slug' => $slug,
             'template_id' => $request->integer('template_id') ?: null,
             'excerpt' => $request->input('excerpt'),
             'description' => SafeRichText::clean($request->input('description')) ?? $request->input('description'),

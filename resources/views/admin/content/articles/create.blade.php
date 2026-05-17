@@ -60,24 +60,9 @@
             @csrf
 
             <div x-data="{ activeTab: 'content' }" :class="`article-studio-tab-${activeTab}`" class="space-y-6">
-                <section class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-slate-950/30 backdrop-blur">
-                    <div class="grid xl:grid-cols-[minmax(0,1fr)_340px]">
-                        <div class="border-b border-white/10 p-5 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Article Studio</p>
-                            <h2 class="mt-1 text-lg font-semibold text-white">จัดการบทความ</h2>
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">แก้เนื้อหา สื่อ SEO และการเผยแพร่ผ่าน tabs ด้านล่าง โดยยังใช้ข้อมูลชุดเดิมครบถ้วน</p>
-                        </div>
-                        <aside class="space-y-3 bg-white/[0.03] p-5">
-                            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ภาพรวม</p>
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">เนื้อหา</span>
-                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">หมวดหมู่</span>
-                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">สื่อ</span>
-                                <span class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-slate-300">เผยแพร่</span>
-                            </div>
-                        </aside>
-                    </div>
-                </section>
+                @include('admin.content.articles.partials._template_preview_panel', [
+                    'article' => new \App\Models\Content\Article\Article(),
+                ])
 
                 <div class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="grid gap-2 md:grid-cols-5">

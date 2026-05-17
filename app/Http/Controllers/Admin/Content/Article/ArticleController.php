@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Admin\Content\Article;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Article\StoreArticleRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleRequest;
+use App\Models\Admin\AuditLog;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Article\ArticleStat;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
+use App\Models\Content\ContentVersion;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
+use App\Services\Admin\Content\Article\ArticleValidationService;
+use App\Support\SafeRichText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +24,13 @@ use Illuminate\View\View;
 
 class ArticleController extends Controller
 {
+    private ArticleValidationService $articleValidationService;
+
+    public function __construct(?ArticleValidationService $articleValidationService = null)
+    {
+        $this->articleValidationService = $articleValidationService ?? new ArticleValidationService;
+    }
+
     public function index(Request $request): View
     {
         $query = Article::query()
@@ -113,34 +124,10 @@ class ArticleController extends Controller
 
     public function create(): View
     {
-        $categories = Category::query()
-            ->where('type_key', 'article')
-            ->where('status', 'active')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $tags = \App\Models\Content\Article\ArticleTag::query()
-            ->where('status', 'active')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $mediaItems = Media::query()
-            ->where('media_type', 'image')
-            ->where('upload_status', 'completed')
-            ->whereNull('deleted_at')
-            ->latest('id')
-            ->get();
-
-        $relatedArticles = Article::query()
-            ->with('content')
-            ->whereHas('content', function (Builder $q) {
-                $q->where('content_type', 'article')
-                    ->whereNull('deleted_at');
-            })
-            ->latest('id')
-            ->get();
+        $categories = collect();
+        $tags = collect();
+        $mediaItems = collect();
+        $relatedArticles = collect();
 
         return view('admin.content.articles.create', compact(
             'categories',
@@ -158,15 +145,16 @@ class ArticleController extends Controller
     public function store(StoreArticleRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $this->articleValidationService->validateForSave($validated);
 
-        DB::transaction(function () use ($validated) {
+        $article = DB::transaction(function () use ($validated) {
             $content = Content::query()->create([
                 'content_type' => 'article',
                 'title' => $validated['title'],
                 'slug' => $this->generateUniqueSlug($validated['slug'] ?? $validated['title']),
                 'template_id' => $validated['template_id'] ?? null,
-                'excerpt' => $validated['excerpt'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'excerpt' => $this->sanitizeRichText($validated['excerpt'] ?? null),
+                'description' => $this->sanitizeRichText($validated['description'] ?? null),
                 'status' => $validated['status'],
                 'is_featured' => $validated['is_featured'] ?? false,
                 'is_popular' => $validated['is_popular'] ?? false,
@@ -180,8 +168,8 @@ class ArticleController extends Controller
             $article = Article::query()->create([
                 'content_id' => $content->id,
                 'title_en' => $validated['title_en'] ?? null,
-                'excerpt_en' => $validated['excerpt_en'] ?? null,
-                'body' => $validated['body'] ?? null,
+                'excerpt_en' => $this->sanitizeRichText($validated['excerpt_en'] ?? null),
+                'body' => $this->sanitizeRichText($validated['body'] ?? null),
                 'body_format' => $validated['body_format'],
                 'author_name' => $validated['author_name'] ?? null,
                 'reading_time_minutes' => $validated['reading_time_minutes'] ?? null,
@@ -205,7 +193,14 @@ class ArticleController extends Controller
             $this->syncTags($article, $validated['tag_ids'] ?? []);
             $this->syncCoverMedia($content, $validated['cover_media_id'] ?? null);
             $this->syncRelatedArticles($article, $validated['related_article_ids'] ?? []);
+
+            $this->createVersion($article, 'created');
+
+            return $article;
         });
+
+        $article->load('content.mediaUsages');
+        $this->writeAuditLog($request, 'article.created', $article, null, $this->articleAuditData($article));
 
         return redirect()
             ->route('admin.content.articles.index')
@@ -237,35 +232,10 @@ class ArticleController extends Controller
             'content.mediaUsages',
         ]);
 
-        $categories = Category::query()
-            ->where('type_key', 'article')
-            ->where('status', 'active')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $tags = \App\Models\Content\Article\ArticleTag::query()
-            ->where('status', 'active')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $mediaItems = Media::query()
-            ->where('media_type', 'image')
-            ->where('upload_status', 'completed')
-            ->whereNull('deleted_at')
-            ->latest('id')
-            ->get();
-
-        $relatedArticles = Article::query()
-            ->with('content')
-            ->where('id', '!=', $article->id)
-            ->whereHas('content', function (Builder $q) {
-                $q->where('content_type', 'article')
-                    ->whereNull('deleted_at');
-            })
-            ->latest('id')
-            ->get();
+        $categories = $article->content?->categories ?? collect();
+        $tags = $article->tags ?? collect();
+        $mediaItems = collect();
+        $relatedArticles = $article->relatedArticles ?? collect();
 
         return view('admin.content.articles.edit', compact(
             'article',
@@ -288,7 +258,7 @@ class ArticleController extends Controller
     public function coverMediaPicker(Request $request): View
     {
         return view('admin.content.articles.partials._cover_media_grid', [
-            'mediaItems' => $this->coverMediaItems(),
+            'mediaItems' => $this->coverMediaItems(search: $request->string('q')->toString()),
         ]);
     }
 
@@ -296,7 +266,10 @@ class ArticleController extends Controller
     {
         $validated = $request->validated();
 
-        $article->load('content', 'stat');
+        $article->load('content.mediaUsages', 'stat');
+        $oldData = $this->articleAuditData($article);
+
+        $this->articleValidationService->validateForSave($validated, $article);
 
         DB::transaction(function () use ($validated, $article) {
             $article->content->update([
@@ -306,8 +279,8 @@ class ArticleController extends Controller
                     $article->content->id
                 ),
                 'template_id' => $validated['template_id'] ?? null,
-                'excerpt' => $validated['excerpt'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'excerpt' => $this->sanitizeRichText($validated['excerpt'] ?? null),
+                'description' => $this->sanitizeRichText($validated['description'] ?? null),
                 'status' => $validated['status'],
                 'is_featured' => $validated['is_featured'] ?? false,
                 'is_popular' => $validated['is_popular'] ?? false,
@@ -319,8 +292,8 @@ class ArticleController extends Controller
 
             $article->update([
                 'title_en' => $validated['title_en'] ?? null,
-                'excerpt_en' => $validated['excerpt_en'] ?? null,
-                'body' => $validated['body'] ?? null,
+                'excerpt_en' => $this->sanitizeRichText($validated['excerpt_en'] ?? null),
+                'body' => $this->sanitizeRichText($validated['body'] ?? null),
                 'body_format' => $validated['body_format'],
                 'author_name' => $validated['author_name'] ?? null,
                 'reading_time_minutes' => $validated['reading_time_minutes'] ?? null,
@@ -350,18 +323,83 @@ class ArticleController extends Controller
             $this->syncTags($article, $validated['tag_ids'] ?? []);
             $this->syncCoverMedia($article->content, $validated['cover_media_id'] ?? null);
             $this->syncRelatedArticles($article, $validated['related_article_ids'] ?? []);
+
+            $this->createVersion($article, 'updated');
         });
+
+        $article->refresh()->load('content.mediaUsages');
+        $newData = $this->articleAuditData($article);
+
+        $this->writeAuditLog($request, 'article.updated', $article, $oldData, $newData);
+
+        if (($oldData['status'] ?? null) !== ($newData['status'] ?? null)) {
+            $this->writeAuditLog($request, 'article.status_changed', $article, ['status' => $oldData['status']], ['status' => $newData['status']]);
+        }
+
+        if (($oldData['template_id'] ?? null) !== ($newData['template_id'] ?? null)) {
+            $this->writeAuditLog($request, 'article.template_changed', $article, ['template_id' => $oldData['template_id']], ['template_id' => $newData['template_id']]);
+        }
+
+        if (($oldData['cover_media_id'] ?? null) !== ($newData['cover_media_id'] ?? null)) {
+            $this->writeAuditLog($request, 'article.media_changed', $article, ['cover_media_id' => $oldData['cover_media_id']], ['cover_media_id' => $newData['cover_media_id']]);
+        }
 
         return redirect()
             ->route('admin.content.articles.edit', $article)
             ->with('success', 'อัปเดตบทความเรียบร้อยแล้ว');
     }
 
-    public function destroy(Article $article): RedirectResponse
+    public function publish(Request $request, Article $article): RedirectResponse
     {
-        $article->load('content');
+        $article->load('content.mediaUsages', 'content.categories');
+        $oldData = $this->articleAuditData($article);
+
+        $this->articleValidationService->validateForPublish($article);
+
+        $article->content->forceFill([
+            'status' => 'published',
+            'published_at' => $article->content->published_at ?? now(),
+            'updated_by_admin_id' => auth('admin')->id(),
+        ])->save();
+
+        $this->createVersion($article, 'published');
+
+        $article->refresh()->load('content.mediaUsages');
+        $this->writeAuditLog($request, 'article.published', $article, $oldData, $this->articleAuditData($article));
+
+        return redirect()
+            ->route('admin.content.articles.edit', $article)
+            ->with('success', 'เผยแพร่บทความเรียบร้อยแล้ว');
+    }
+
+    public function unpublish(Request $request, Article $article): RedirectResponse
+    {
+        $article->load('content.mediaUsages');
+        $oldData = $this->articleAuditData($article);
+
+        $article->content->forceFill([
+            'status' => 'review',
+            'updated_by_admin_id' => auth('admin')->id(),
+        ])->save();
+
+        $this->createVersion($article, 'unpublished');
+
+        $article->refresh()->load('content.mediaUsages');
+        $this->writeAuditLog($request, 'article.unpublished', $article, $oldData, $this->articleAuditData($article));
+
+        return redirect()
+            ->route('admin.content.articles.edit', $article)
+            ->with('success', 'ยกเลิกการเผยแพร่บทความเรียบร้อยแล้ว');
+    }
+
+    public function destroy(Request $request, Article $article): RedirectResponse
+    {
+        $article->load('content.mediaUsages');
+        $oldData = $this->articleAuditData($article);
 
         DB::transaction(function () use ($article) {
+            $this->createVersion($article, 'deleted');
+
             $article->tags()->detach();
             $article->relatedArticles()->detach();
             $article->content->categories()->detach();
@@ -373,6 +411,8 @@ class ArticleController extends Controller
 
             $article->content->delete();
         });
+
+        $this->writeAuditLog($request, 'article.deleted', $article, $oldData, ['deleted' => true]);
 
         return redirect()
             ->route('admin.content.articles.index')
@@ -473,28 +513,34 @@ class ArticleController extends Controller
     {
         return Template::query()
             ->active()
-            ->where('view_path', 'like', 'frontend.templates.details.%')
-            ->where(function (Builder $query) use ($contentType) {
-                $query->where('key', $contentType . '-detail')
-                    ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
-            })
+            ->where('template_type', 'detail')
+            ->where('content_type', $contentType)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
     }
 
-    private function coverMediaItems(array $selectedMediaIds = [])
+    private function coverMediaItems(array $selectedMediaIds = [], string $search = '')
     {
         $mediaItems = Media::query()
             ->where('upload_status', 'completed')
             ->where('media_type', 'image')
+            ->when($search !== '', function (Builder $query) use ($search) {
+                $query->where(function (Builder $subQuery) use ($search) {
+                    $subQuery->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('original_filename', 'like', '%' . $search . '%')
+                        ->orWhere('filename', 'like', '%' . $search . '%')
+                        ->orWhere('id', $search);
+                });
+            })
             ->orderByDesc('id')
             ->paginate(
                 perPage: 7,
                 columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
                 pageName: 'article_cover_media_page'
             )
-            ->withPath(route('admin.content.articles.media-picker.cover'));
+            ->withPath(route('admin.content.articles.media-picker.cover'))
+            ->appends(array_filter(['q' => $search]));
 
         $selectedMediaIds = collect($selectedMediaIds)
             ->filter(fn ($id) => is_numeric($id))
@@ -529,5 +575,106 @@ class ArticleController extends Controller
         );
 
         return $mediaItems;
+    }
+
+    private function sanitizeRichText(?string $value): ?string
+    {
+        return SafeRichText::clean($value);
+    }
+
+    private function createVersion(Article $article, string $versionName): void
+    {
+        $article->loadMissing([
+            'content.categories',
+            'content.mediaUsages',
+            'tags',
+            'relatedItems',
+        ]);
+
+        if (! $article->content) {
+            return;
+        }
+
+        ContentVersion::query()->create([
+            'content_id' => $article->content->id,
+            'content_type' => 'article',
+            'version_name' => $versionName,
+            'snapshot' => [
+                'content' => $article->content->only([
+                    'id',
+                    'content_type',
+                    'title',
+                    'slug',
+                    'template_id',
+                    'excerpt',
+                    'description',
+                    'status',
+                    'is_featured',
+                    'is_popular',
+                    'meta_title',
+                    'meta_description',
+                    'published_at',
+                ]),
+                'article' => $article->only([
+                    'id',
+                    'content_id',
+                    'title_en',
+                    'excerpt_en',
+                    'body',
+                    'body_format',
+                    'author_name',
+                    'reading_time_minutes',
+                    'seo_keywords',
+                    'allow_comments',
+                    'show_on_homepage',
+                    'scheduled_at',
+                    'expired_at',
+                ]),
+                'category_ids' => $article->content->categories->pluck('id')->values()->all(),
+                'tag_ids' => $article->tags->pluck('id')->values()->all(),
+                'media' => $article->content->mediaUsages->map(fn ($usage) => [
+                    'media_id' => $usage->media_id,
+                    'role_key' => $usage->role_key,
+                    'sort_order' => $usage->sort_order,
+                ])->values()->all(),
+                'related_article_ids' => $article->relatedItems->pluck('related_article_id')->values()->all(),
+            ],
+            'created_by_admin_id' => auth('admin')->id(),
+        ]);
+    }
+
+    private function articleAuditData(Article $article): array
+    {
+        $content = $article->content;
+
+        return [
+            'article_id' => $article->id,
+            'content_id' => $article->content_id,
+            'title' => $content?->title,
+            'slug' => $content?->slug,
+            'template_id' => $content?->template_id,
+            'status' => $content?->status,
+            'published_at' => $content?->published_at?->toDateTimeString(),
+            'scheduled_at' => $article->scheduled_at?->toDateTimeString(),
+            'expired_at' => $article->expired_at?->toDateTimeString(),
+            'cover_media_id' => $content?->mediaUsages?->firstWhere('role_key', 'cover')?->media_id,
+            'allow_comments' => $article->allow_comments,
+            'show_on_homepage' => $article->show_on_homepage,
+        ];
+    }
+
+    private function writeAuditLog(Request $request, string $action, Article $article, ?array $oldData, ?array $newData): void
+    {
+        AuditLog::query()->create([
+            'action' => $action,
+            'table_name' => 'articles',
+            'record_id' => $article->id,
+            'old_data' => $oldData,
+            'new_data' => $newData,
+            'performed_by' => auth('admin')->id(),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+        ]);
     }
 }

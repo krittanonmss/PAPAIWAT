@@ -31,39 +31,36 @@
 
             <div>
                 <label for="key" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    Key
+                    Template Registry <span class="text-rose-400">*</span>
                 </label>
-                <input
+                <select
                     id="key"
-                    type="text"
                     name="key"
-                    value="{{ old('key', $template->key ?? '') }}"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="เช่น default-page"
+                    required
                 >
-                <p class="mt-1.5 text-xs text-slate-500">เว้นว่างได้ ระบบจะสร้างจากชื่อ เทมเพลต ให้อัตโนมัติ</p>
+                    <option value="">เลือก template จาก registry</option>
+                    @foreach(($registryTemplates ?? collect()) as $registered)
+                        <option
+                            value="{{ $registered['key'] }}"
+                            {{ old('key', $template->key ?? '') === $registered['key'] ? 'selected' : '' }}
+                        >
+                            {{ $registered['name'] }} ({{ $registered['template_type'] }}/{{ $registered['content_type'] }})
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1.5 text-xs text-slate-500">ระบบจะใช้ view path, template type และ content type จาก registry เท่านั้น</p>
                 @error('key')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
                 @enderror
             </div>
 
             <div>
-                <label for="view_path" class="mb-1.5 block text-sm font-medium text-slate-300">
-                    พาธ ดูรายละเอียด <span class="text-rose-400">*</span>
-                </label>
-                <input
-                    id="view_path"
-                    type="text"
-                    name="view_path"
-                    value="{{ old('view_path', $template->view_path ?? '') }}"
-                    class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                    placeholder="เช่น หน้าเว็บจริง.pages.default"
-                    required
-                >
-                <p class="mt-1.5 text-xs text-slate-500">ใช้รูปแบบ Blade view path เช่น หน้าเว็บจริง.pages.default</p>
-                @error('view_path')
-                    <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
-                @enderror
+                <p class="mb-1.5 block text-sm font-medium text-slate-300">View path</p>
+                <div class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-slate-300">
+                    {{ old('view_path', $template->view_path ?? 'เลือก registry ก่อนบันทึก') }}
+                </div>
+                <p class="mt-1.5 text-xs text-slate-500">อ่านอย่างเดียวเพื่อป้องกันการกรอก view path อิสระ</p>
             </div>
 
             <div>

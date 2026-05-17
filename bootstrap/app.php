@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->appendToGroup('web', \App\Http\Middleware\AdminSecurityHeaders::class);
+
         $middleware->alias([
             'admin.auth' => AdminAuthenticate::class,
             'admin.guest' => AdminGuestRedirect::class,

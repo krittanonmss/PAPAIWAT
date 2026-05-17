@@ -89,6 +89,10 @@ Route::prefix('admin')
                 ->middleware('admin.permission:media.update')
                 ->name('regenerate-variants');
 
+            Route::get('/{media}/file', [MediaController::class, 'file'])
+                ->middleware('admin.permission:media.view')
+                ->name('file');
+
             Route::get('/{media}/edit', [MediaController::class, 'edit'])
                 ->middleware('admin.permission:media.update')
                 ->name('edit');

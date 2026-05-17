@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AdminAuthService
@@ -18,9 +19,14 @@ class AdminAuthService
 
     private const LOGIN_DECAY_SECONDS = 300;
 
+    private const MAX_ACTIVE_SESSIONS_PER_ADMIN = 5;
+
     public function login(string $email, string $password, bool $remember, Request $request): Admin
     {
+        $email = $this->normalizeEmail($email);
+
         $this->ensureLoginIsNotRateLimited($email, $request);
+        $this->purgeExpiredSessions();
 
         $admin = Admin::query()
             ->where('email', $email)
@@ -60,6 +66,13 @@ class AdminAuthService
             ]);
         }
 
+        if (Hash::needsRehash($admin->password_hash, $this->hashOptions())) {
+            $admin->forceFill([
+                'password_hash' => Hash::make($password, $this->hashOptions()),
+                'remember_token' => Str::random(60),
+            ])->save();
+        }
+
         if ($admin->status !== 'active') {
             $this->writeLoginLog(
                 adminId: $admin->id,
@@ -85,6 +98,10 @@ class AdminAuthService
             $sessionId = $request->session()->getId();
             $sessionTokenHash = hash('sha256', $sessionId);
 
+            AdminSession::query()
+                ->where('session_token_hash', $sessionTokenHash)
+                ->delete();
+
             AdminSession::query()->create([
                 'admin_id' => $admin->id,
                 'session_token_hash' => $sessionTokenHash,
@@ -94,6 +111,8 @@ class AdminAuthService
                 'expires_at' => now()->addMinutes((int) config('session.lifetime')),
                 'created_at' => now(),
             ]);
+
+            $this->pruneOldActiveSessions($admin, $sessionTokenHash);
 
             $admin->forceFill([
                 'last_login_at' => now(),
@@ -162,6 +181,19 @@ class AdminAuthService
 
         $seconds = RateLimiter::availableIn($key);
 
+        $adminId = Admin::query()
+            ->where('email', $email)
+            ->value('id');
+
+        $this->writeLoginLog(
+            adminId: $adminId,
+            email: $email,
+            ipAddress: $request->ip(),
+            status: 'failed',
+            reason: 'rate_limited',
+            userAgent: $request->userAgent(),
+        );
+
         throw ValidationException::withMessages([
             'email' => "พยายามเข้าสู่ระบบผิดหลายครั้ง กรุณารอ {$seconds} วินาทีแล้วลองใหม่",
         ]);
@@ -177,6 +209,50 @@ class AdminAuthService
 
     private function loginRateLimitKey(string $email, Request $request): string
     {
-        return 'admin-login:'.strtolower($email).'|'.$request->ip();
+        return 'admin-login:'.$this->normalizeEmail($email).'|'.$request->ip();
+    }
+
+    private function normalizeEmail(string $email): string
+    {
+        return strtolower(trim($email));
+    }
+
+    private function hashOptions(): array
+    {
+        if (config('hashing.driver') !== 'bcrypt') {
+            return [];
+        }
+
+        return [
+            'rounds' => (int) config('hashing.bcrypt.rounds', 12),
+        ];
+    }
+
+    private function purgeExpiredSessions(): void
+    {
+        AdminSession::query()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->delete();
+    }
+
+    private function pruneOldActiveSessions(Admin $admin, string $currentSessionTokenHash): void
+    {
+        $sessionIdsToKeep = AdminSession::query()
+            ->where('admin_id', $admin->id)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->orderByDesc('last_seen_at')
+            ->orderByDesc('id')
+            ->limit(self::MAX_ACTIVE_SESSIONS_PER_ADMIN)
+            ->pluck('id');
+
+        AdminSession::query()
+            ->where('admin_id', $admin->id)
+            ->where('session_token_hash', '!=', $currentSessionTokenHash)
+            ->whereNotIn('id', $sessionIdsToKeep)
+            ->delete();
     }
 }

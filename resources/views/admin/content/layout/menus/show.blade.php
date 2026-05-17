@@ -1,252 +1,126 @@
+@php
+    $items = $menu->items;
+    $rootItems = $items->whereNull('parent_id')->values();
+    $childrenByParent = $items->whereNotNull('parent_id')->groupBy('parent_id');
+    $statusClass = $menu->status === 'active'
+        ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
+        : 'border-slate-400/20 bg-slate-500/10 text-slate-300';
+@endphp
+
 <x-layouts.admin :title="$menu->name">
     <div class="space-y-6 text-white">
-
-        {{-- Header --}}
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 shadow-xl shadow-slate-950/30">
-            <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
-                <div class="max-w-2xl">
-                    <div class="mb-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300">
-                        รายละเอียดเมนู
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+            <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Menu Builder</p>
+                    <h1 class="mt-1 truncate text-2xl font-bold text-white">{{ $menu->name }}</h1>
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">{{ $menu->location_key ?: 'no location' }}</span>
+                        <span class="rounded-full border px-3 py-1 text-xs font-medium {{ $statusClass }}">{{ $menu->status }}</span>
+                        @if($menu->is_default)
+                            <span class="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">Default</span>
+                        @endif
+                        <span class="text-xs text-slate-500">{{ $items->count() }} items</span>
                     </div>
-
-                    <h1 class="text-2xl font-bold text-white">{{ $menu->name }}</h1>
-
-                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                        รายละเอียดกลุ่มเมนูและรายการเมนูภายใน
-                    </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
-                    <a
-                        href="{{ route('admin.content.menu-items.create', $menu) }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/40 transition hover:opacity-90"
-                    >
-                        เพิ่มเมนูย่อย
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('admin.content.menu-items.create', $menu) }}" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-500">
+                        เพิ่มรายการ
                     </a>
-
-                    <a
-                        href="{{ route('admin.content.menus.edit', $menu) }}"
-                        class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-amber-950/40 transition hover:opacity-90"
-                    >
-                        แก้ไข
+                    <a href="{{ route('admin.content.menus.edit', $menu) }}" class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">
+                        ตั้งค่าเมนู
                     </a>
-
-                    <a
-                        href="{{ route('admin.content.menus.index') }}"
-                        class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
-                    >
-                        กลับไปรายการเมนู
+                    <a href="{{ route('admin.content.menus.index') }}" class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">
+                        กลับ
                     </a>
                 </div>
             </div>
         </div>
 
         @if (session('success'))
-            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 shadow-lg shadow-emerald-950/20">
+            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                 {{ session('success') }}
             </div>
         @endif
 
-        @php
-            $statusClass = $menu->status === 'active'
-                ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
-                : 'border-slate-400/20 bg-slate-500/10 text-slate-300';
-        @endphp
-
-        <div class="grid gap-6 xl:grid-cols-3">
-            {{-- Main Content --}}
-            <div class="space-y-6 xl:col-span-2">
-                <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-                    <div class="flex flex-col gap-4 border-b border-white/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 class="text-base font-semibold text-white">รายการเมนู</h2>
-                            <p class="mt-1 text-sm text-slate-400">
-                                รายการเมนูที่อยู่ภายใต้กลุ่มนี้
-                            </p>
-                        </div>
-
-                        <a
-                            href="{{ route('admin.content.menu-items.create', $menu) }}"
-                            class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
-                        >
-                            เพิ่ม
-                        </a>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-950/50 text-xs uppercase tracking-wide text-slate-400">
-                                <tr>
-                                    <th class="px-6 py-4 font-semibold">ชื่อเมนู</th>
-                                    <th class="px-6 py-4 font-semibold">ประเภท</th>
-                                    <th class="px-6 py-4 font-semibold">ปลายทาง</th>
-                                    <th class="px-6 py-4 font-semibold">ลำดับ</th>
-                                    <th class="px-6 py-4 font-semibold">สถานะ</th>
-                                    <th class="px-6 py-4 text-right font-semibold">การจัดการ</th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="divide-y divide-white/10">
-                                @forelse($menu->items as $item)
-                                    <tr class="transition hover:bg-white/[0.05]">
-                                        <td class="px-6 py-4">
-                                            <div class="font-medium text-white">
-                                                {{ $item->label }}
-                                            </div>
-
-                                            @if($item->description)
-                                                <p class="mt-1 max-w-md text-xs leading-5 text-slate-400">
-                                                    {{ $item->description }}
-                                                </p>
-                                            @endif
-                                        </td>
-
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex rounded-xl border border-white/10 bg-slate-950/40 px-2.5 py-1 text-xs font-medium text-slate-300">
-                                                {{ $item->menu_item_type }}
-                                            </span>
-                                        </td>
-
-                                        <td class="px-6 py-4">
-                                            <span class="break-all text-sm text-slate-300">
-                                                {{ $item->target }}
-                                            </span>
-                                        </td>
-
-                                        <td class="px-6 py-4">
-                                            <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-2.5 text-xs font-semibold text-slate-200">
-                                                {{ $item->sort_order }}
-                                            </span>
-                                        </td>
-
-                                        <td class="px-6 py-4">
-                                            @if($item->is_enabled)
-                                                <span class="inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                                                    Enabled
-                                                </span>
-                                            @else
-                                                <span class="inline-flex rounded-full border border-slate-400/20 bg-slate-500/10 px-2.5 py-1 text-xs font-medium text-slate-400">
-                                                    Disabled
-                                                </span>
-                                            @endif
-                                        </td>
-
-                                        <td class="px-6 py-4 text-right">
-                                            <a
-                                                href="{{ route('admin.content.menu-items.edit', [$menu, $item]) }}"
-                                                class="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
-                                            >
-                                                Edit
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-14 text-center">
-                                            <div class="mx-auto max-w-sm rounded-3xl border border-white/10 bg-slate-950/30 p-6">
-                                                <div class="text-sm font-semibold text-white">
-                                                    ยังไม่มีรายการเมนู
-                                                </div>
-                                                <p class="mt-2 text-sm text-slate-400">
-                                                    เพิ่มรายการเมนูแรกสำหรับกลุ่มนี้
-                                                </p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+        @if ($errors->any())
+            <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-4 text-sm text-rose-200">
+                <p class="font-semibold text-rose-100">ไม่สามารถทำรายการได้</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
+        @endif
 
-            {{-- Right Column --}}
-            <div class="space-y-6">
-                <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
-                    <div class="border-b border-white/10 px-6 py-4">
-                        <h2 class="text-base font-semibold text-white">รายละเอียดเมนู</h2>
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <section class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <div class="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-white">โครงสร้างเมนู</h2>
+                        <p class="mt-1 text-sm text-slate-400">แสดงตาม parent/child และลำดับ sort order</p>
                     </div>
+                    <a href="{{ route('admin.content.menu-items.create', $menu) }}" class="rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-200 transition hover:bg-blue-500/20">
+                        เพิ่ม root item
+                    </a>
+                </div>
 
-                    <div class="divide-y divide-white/10">
-                        <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">ชื่อ</p>
-                            <p class="mt-0.5 break-words text-sm font-medium text-slate-200">{{ $menu->name }}</p>
+                <div class="mt-5 space-y-3">
+                    @forelse($rootItems as $item)
+                        @include('admin.content.layout.menus._tree_item', [
+                            'menu' => $menu,
+                            'item' => $item,
+                            'childrenByParent' => $childrenByParent,
+                            'depth' => 0,
+                        ])
+                    @empty
+                        <div class="rounded-3xl border border-dashed border-white/15 bg-slate-950/30 p-10 text-center">
+                            <p class="text-base font-semibold text-white">ยังไม่มีรายการเมนู</p>
+                            <p class="mt-2 text-sm text-slate-400">เริ่มจากเพิ่ม root item เช่น หน้าแรก หรือหัวข้อ Footer</p>
+                            <a href="{{ route('admin.content.menu-items.create', $menu) }}" class="mt-5 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">เพิ่มรายการแรก</a>
                         </div>
+                    @endforelse
+                </div>
+            </section>
 
-                        <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Slug</p>
-                            <div class="mt-1">
-                                <span class="inline-flex rounded-xl border border-white/10 bg-slate-950/40 px-2.5 py-1 text-xs font-medium text-slate-300">
-                                    {{ $menu->slug }}
-                                </span>
-                            </div>
+            <aside class="space-y-5 xl:sticky xl:top-6 xl:self-start">
+                <section class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <h2 class="text-sm font-semibold text-white">สรุปเมนู</h2>
+                    <div class="mt-4 divide-y divide-white/10 text-sm">
+                        <div class="flex justify-between gap-4 py-3">
+                            <span class="text-slate-400">Slug</span>
+                            <span class="truncate text-slate-200">{{ $menu->slug }}</span>
                         </div>
-
-                        <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">Location Key</p>
-                            <p class="mt-0.5 break-words text-sm text-slate-300">{{ $menu->location_key ?? '-' }}</p>
+                        <div class="flex justify-between gap-4 py-3">
+                            <span class="text-slate-400">Location</span>
+                            <span class="text-slate-200">{{ $menu->location_key ?: '-' }}</span>
                         </div>
-
-                        <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">ลำดับ</span>
-                            <span class="text-sm font-medium text-slate-200">{{ $menu->sort_order }}</span>
+                        <div class="flex justify-between gap-4 py-3">
+                            <span class="text-slate-400">Root items</span>
+                            <span class="text-slate-200">{{ $rootItems->count() }}</span>
                         </div>
-
-                        <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">เริ่มต้น</span>
-                            @if($menu->is_default)
-                                <span class="inline-flex rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">
-                                    เริ่มต้น
-                                </span>
-                            @else
-                                <span class="text-sm text-slate-500">-</span>
-                            @endif
-                        </div>
-
-                        <div class="flex items-center justify-between gap-4 px-6 py-3">
-                            <span class="text-sm text-slate-400">สถานะ</span>
-                            <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium {{ $statusClass }}">
-                                {{ ucfirst($menu->status) }}
-                            </span>
-                        </div>
-
-                        <div class="px-6 py-3">
-                            <p class="text-xs text-slate-500">คำอธิบาย</p>
-                            <p class="mt-0.5 text-sm leading-6 text-slate-300">
-                                {{ $menu->description ?: '-' }}
-                            </p>
+                        <div class="flex justify-between gap-4 py-3">
+                            <span class="text-slate-400">Child items</span>
+                            <span class="text-slate-200">{{ $items->count() - $rootItems->count() }}</span>
                         </div>
                     </div>
+                    @if($menu->description)
+                        <p class="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm leading-6 text-slate-300">{{ $menu->description }}</p>
+                    @endif
                 </section>
 
-                <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
-                    <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
-                    </div>
-
-                    <div class="p-6">
-                        <p class="mb-4 text-sm text-rose-200/80">
-                            ลบกลุ่มเมนูนี้ออกจากระบบ
-                        </p>
-
-                        <form
-                            method="POST"
-                            action="{{ route('admin.content.menus.destroy', $menu) }}"
-                            onsubmit="return confirm('ยืนยันการลบเมนูนี้?')"
-                        >
-                            @csrf
-                            @method('DELETE')
-
-                            <button
-                                type="submit"
-                                class="w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20"
-                            >
-                                Delete Menu
-                            </button>
-                        </form>
-                    </div>
+                <section class="rounded-3xl border border-rose-400/20 bg-rose-500/10 p-5 shadow-xl shadow-rose-950/20">
+                    <h2 class="text-sm font-semibold text-rose-100">ลบเมนู</h2>
+                    <p class="mt-2 text-sm leading-6 text-rose-200/80">ลบได้เมื่อไม่ใช่ default และไม่มีรายการ หรือใช้ force อย่างชัดเจน</p>
+                    <form method="POST" action="{{ route('admin.content.menus.destroy', $menu) }}" class="mt-4" onsubmit="return confirm('ยืนยันการลบเมนูนี้?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20">Delete Menu</button>
+                    </form>
                 </section>
-            </div>
+            </aside>
         </div>
     </div>
 </x-layouts.admin>

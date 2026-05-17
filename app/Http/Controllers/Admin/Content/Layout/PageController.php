@@ -6,14 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
+use App\Services\Admin\Content\Layout\LayoutVersionService;
+use App\Support\TemplateRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
 
 class PageController extends Controller
 {
+    public function __construct(
+        private readonly TemplateRegistry $templateRegistry,
+        private readonly LayoutVersionService $versionService,
+    ) {
+    }
+
     public function index(): View
     {
         $pages = Page::query()
@@ -29,6 +38,7 @@ class PageController extends Controller
     {
         $templates = Template::query()
             ->active()
+            ->whereIn('template_type', ['page', 'list'])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -76,11 +86,20 @@ class PageController extends Controller
         $validated['created_by_admin_id'] = auth('admin')->id();
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
-        if ($validated['is_homepage']) {
-            Page::query()->update(['is_homepage' => false]);
+        if (($validated['template_id'] ?? null) && ! $this->templateIsAllowedForPage((int) $validated['template_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['template_id' => 'Template นี้ไม่รองรับหน้า Page/List']);
         }
 
-        Page::create($validated);
+        DB::transaction(function () use ($validated) {
+            if ($validated['is_homepage']) {
+                Page::query()->update(['is_homepage' => false]);
+            }
+
+            $page = Page::create($validated);
+            $this->versionService->snapshotPage($page, 'created');
+        });
 
         return redirect()
             ->route('admin.content.pages.index')
@@ -93,6 +112,7 @@ class PageController extends Controller
             'template',
             'sections' => fn ($query) => $query->orderBy('sort_order'),
             'ogImage',
+            'versions' => fn ($query) => $query->latest()->limit(10),
         ]);
 
         return view('admin.content.layout.pages.show', compact('page'));
@@ -102,6 +122,7 @@ class PageController extends Controller
     {
         $templates = Template::query()
             ->active()
+            ->whereIn('template_type', ['page', 'list'])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -148,13 +169,24 @@ class PageController extends Controller
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
-        if ($validated['is_homepage']) {
-            Page::query()
-                ->whereKeyNot($page->id)
-                ->update(['is_homepage' => false]);
+        if (($validated['template_id'] ?? null) && ! $this->templateIsAllowedForPage((int) $validated['template_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['template_id' => 'Template นี้ไม่รองรับหน้า Page/List']);
         }
 
-        $page->update($validated);
+        DB::transaction(function () use ($page, $validated) {
+            $this->versionService->snapshotPage($page, 'before_update');
+
+            if ($validated['is_homepage']) {
+                Page::query()
+                    ->whereKeyNot($page->id)
+                    ->update(['is_homepage' => false]);
+            }
+
+            $page->update($validated);
+            $this->versionService->snapshotPage($page, 'updated');
+        });
 
         return redirect()
             ->route('admin.content.pages.index')
@@ -163,11 +195,31 @@ class PageController extends Controller
 
     public function destroy(Page $page): RedirectResponse
     {
-        $page->delete();
+        if ($page->is_homepage) {
+            return back()->withErrors(['page' => 'ไม่สามารถลบหน้า homepage ได้']);
+        }
+
+        if ($this->pageIsReferencedBySections($page)) {
+            return back()->withErrors(['page' => 'ไม่สามารถลบหน้าที่ถูกใช้งานใน section อื่น']);
+        }
+
+        DB::transaction(function () use ($page) {
+            $this->versionService->snapshotPage($page, 'before_delete');
+            $page->delete();
+        });
 
         return redirect()
             ->route('admin.content.pages.index')
             ->with('success', 'ลบหน้าเว็บเรียบร้อยแล้ว');
+    }
+
+    public function rollback(Page $page, int $version): RedirectResponse
+    {
+        $this->versionService->rollbackPage($page, $version);
+
+        return redirect()
+            ->route('admin.content.pages.show', $page)
+            ->with('success', 'ย้อนกลับเวอร์ชันหน้าเว็บเรียบร้อยแล้ว');
     }
 
     private function previewResponse(Request $request, ?Page $existingPage = null): JsonResponse
@@ -259,5 +311,27 @@ class PageController extends Controller
             ->where('is_visible', true)
             ->orderBy('sort_order')
             ->get();
+    }
+
+    private function pageIsReferencedBySections(Page $page): bool
+    {
+        $needle = (string) $page->id;
+
+        return \App\Models\Content\Layout\PageSection::query()
+            ->where('page_id', '!=', $page->id)
+            ->where(function ($query) use ($needle) {
+                foreach (['primary_page_id', 'secondary_page_id', 'all_button_page_id'] as $key) {
+                    $query->orWhere('content->' . $key, $needle);
+                }
+            })
+            ->exists();
+    }
+
+    private function templateIsAllowedForPage(int $templateId): bool
+    {
+        return Template::query()
+            ->whereKey($templateId)
+            ->whereIn('template_type', ['page', 'list'])
+            ->exists();
     }
 }

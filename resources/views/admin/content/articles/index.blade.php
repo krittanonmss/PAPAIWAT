@@ -56,6 +56,7 @@
                         >
                             <option value="" class="bg-slate-900">ทุกสถานะ</option>
                             <option value="draft" class="bg-slate-900" @selected(request('status') === 'draft')>ฉบับร่าง</option>
+                            <option value="review" class="bg-slate-900" @selected(request('status') === 'review')>รอตรวจสอบ</option>
                             <option value="published" class="bg-slate-900" @selected(request('status') === 'published')>เผยแพร่แล้ว</option>
                             <option value="archived" class="bg-slate-900" @selected(request('status') === 'archived')>เก็บถาวร</option>
                         </select>
@@ -303,6 +304,13 @@
                                             <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                                 เผยแพร่แล้ว
+                                            </span>
+                                            @break
+
+                                        @case('review')
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-sky-300"></span>
+                                                รอตรวจสอบ
                                             </span>
                                             @break
 

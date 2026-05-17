@@ -48,6 +48,21 @@ class AdminAuthFeatureTest extends TestCase
         ]);
     }
 
+    public function test_admin_login_response_has_security_headers(): void
+    {
+        $response = $this->get(route('admin.login'));
+
+        $response
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertHeader('Referrer-Policy', 'same-origin')
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-cache', $response->headers->get('Cache-Control'));
+    }
+
     public function test_failed_login_attempts_are_rate_limited(): void
     {
         RateLimiter::clear('admin-login:admin@example.com|127.0.0.1');
@@ -64,7 +79,51 @@ class AdminAuthFeatureTest extends TestCase
             'password' => 'wrong-password',
         ])->assertSessionHasErrors('email');
 
-        $this->assertSame(5, LoginLog::query()->where('status', 'failed')->count());
+        $this->assertSame(5, LoginLog::query()->where('reason', 'invalid_password')->count());
+        $this->assertDatabaseHas('login_logs', [
+            'email' => 'admin@example.com',
+            'status' => 'failed',
+            'reason' => 'rate_limited',
+        ]);
+    }
+
+    public function test_login_normalizes_email_before_authentication_and_rate_limiting(): void
+    {
+        $response = $this->post(route('admin.login.store'), [
+            'email' => ' ADMIN@EXAMPLE.COM ',
+            'password' => 'ChangeMe12345',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticated('admin');
+        $this->assertDatabaseHas('login_logs', [
+            'email' => 'admin@example.com',
+            'status' => 'success',
+        ]);
+    }
+
+    public function test_login_rehashes_legacy_password_hashes(): void
+    {
+        $admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        config(['hashing.bcrypt.rounds' => 4]);
+        $legacyHash = Hash::make('ChangeMe12345', ['rounds' => 4]);
+        config(['hashing.bcrypt.rounds' => 12]);
+
+        $admin->forceFill([
+            'password_hash' => $legacyHash,
+        ])->save();
+
+        $this->post(route('admin.login.store'), [
+            'email' => 'admin@example.com',
+            'password' => 'ChangeMe12345',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $admin->refresh();
+
+        $this->assertTrue(Hash::check('ChangeMe12345', $admin->password_hash));
+        $this->assertNotSame($legacyHash, $admin->password_hash);
     }
 
     public function test_inactive_admin_cannot_login(): void
@@ -96,6 +155,73 @@ class AdminAuthFeatureTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->assertGuest('admin');
+    }
+
+    public function test_tracked_admin_session_is_bound_to_user_agent(): void
+    {
+        $this->authenticateAsDefaultAdminWithTrackedSession();
+
+        $this->withHeader('User-Agent', 'Different Browser')
+            ->get(route('admin.profile.edit'))
+            ->assertRedirect(route('admin.login'))
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest('admin');
+    }
+
+    public function test_remembered_admin_without_tracked_session_must_login_again(): void
+    {
+        $admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        $this->actingAs($admin, 'admin');
+
+        AdminSession::query()->delete();
+
+        $this->get(route('admin.profile.edit'))
+            ->assertRedirect(route('admin.login'))
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest('admin');
+    }
+
+    public function test_login_prunes_expired_and_old_active_sessions(): void
+    {
+        $admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        AdminSession::query()->create([
+            'admin_id' => $admin->id,
+            'session_token_hash' => hash('sha256', 'expired-session'),
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Symfony',
+            'last_seen_at' => now()->subDays(2),
+            'expires_at' => now()->subMinute(),
+            'created_at' => now()->subDays(2),
+        ]);
+
+        for ($index = 1; $index <= 5; $index++) {
+            AdminSession::query()->create([
+                'admin_id' => $admin->id,
+                'session_token_hash' => hash('sha256', "old-session-{$index}"),
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Symfony',
+                'last_seen_at' => now()->subMinutes(10 - $index),
+                'expires_at' => now()->addHour(),
+                'created_at' => now()->subMinutes(10 - $index),
+            ]);
+        }
+
+        $this->post(route('admin.login.store'), [
+            'email' => 'admin@example.com',
+            'password' => 'ChangeMe12345',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $this->assertSame(5, AdminSession::query()->where('admin_id', $admin->id)->count());
+        $this->assertDatabaseMissing('admin_sessions', [
+            'session_token_hash' => hash('sha256', 'expired-session'),
+        ]);
+        $this->assertDatabaseMissing('admin_sessions', [
+            'session_token_hash' => hash('sha256', 'old-session-1'),
+        ]);
     }
 
     public function test_profile_owner_can_update_own_password_after_confirming_current_password(): void

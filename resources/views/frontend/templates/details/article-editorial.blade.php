@@ -11,11 +11,14 @@
     $safeHtmlBody = $bodyFormat === 'html' ? \App\Support\SafeRichText::clean($body) : null;
     $favoriteCount = (int) data_get($article?->stat, 'bookmark_count', 0);
     $shareCount = (int) data_get($article?->stat, 'share_count', 0);
+    $articleUrl = $articleContent?->slug
+        ? route('articles.show', $articleContent->slug)
+        : url()->current();
     $favoritePayload = $article ? [
         'type' => 'article',
         'id' => $article->id,
         'title' => $articleContent?->title,
-        'url' => route('articles.show', $articleContent?->slug),
+        'url' => $articleUrl,
         'excerpt' => $articleContent?->excerpt ?? $article?->excerpt_en,
         'image' => null,
     ] : [];

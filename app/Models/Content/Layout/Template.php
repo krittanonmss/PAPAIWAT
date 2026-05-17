@@ -15,6 +15,9 @@ class Template extends Model
         'key',
         'description',
         'view_path',
+        'template_type',
+        'content_type',
+        'schema',
         'status',
         'is_default',
         'sort_order',
@@ -23,11 +26,17 @@ class Template extends Model
     protected $casts = [
         'is_default' => 'boolean',
         'sort_order' => 'integer',
+        'schema' => 'array',
     ];
 
     public function pages(): HasMany
     {
         return $this->hasMany(Page::class);
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(TemplateVersion::class);
     }
 
     public function scopeActive($query)

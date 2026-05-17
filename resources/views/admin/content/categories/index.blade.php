@@ -68,18 +68,30 @@
 
                 <div class="lg:col-span-2">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่แม่</label>
-                    <select
-                        name="parent_id"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทั้งหมด</option>
-                        <option value="root" class="bg-slate-900" @selected(request('parent_id') === 'root')>Root เท่านั้น</option>
-                        @foreach ($parents as $parent)
-                            <option value="{{ $parent->id }}" class="bg-slate-900" @selected((string) request('parent_id') === (string) $parent->id)>
-                                {{ $parent->name }} ({{ $parent->type_key }})
-                            </option>
-                        @endforeach
-                    </select>
+                    @if (request('parent_id') === 'root')
+                        <select
+                            name="parent_id"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                            <option value="">ทั้งหมด</option>
+                            <option value="root" selected>Root เท่านั้น</option>
+                        </select>
+                    @else
+                        @include('admin.content.partials._async_select', [
+                            'id' => 'filter_parent_id',
+                            'name' => 'parent_id',
+                            'selected' => request('parent_id'),
+                            'selectedOption' => $selectedParent ? [
+                                'id' => $selectedParent->id,
+                                'label' => $selectedParent->name,
+                                'meta' => $selectedParent->type_key.' | Level '.$selectedParent->level.' | #'.$selectedParent->id,
+                            ] : null,
+                            'searchUrl' => route('admin.lookups.categories'),
+                            'placeholder' => 'ค้นหาหมวดหมู่แม่',
+                            'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                            'emptyLabel' => 'ทั้งหมด',
+                        ])
+                    @endif
                 </div>
 
                 <div class="lg:col-span-2">
@@ -94,7 +106,19 @@
                     </select>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 lg:col-span-3 lg:self-end">
+                <div class="lg:col-span-2">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">รายการที่ลบ</label>
+                    <select
+                        name="deleted"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="" class="bg-slate-900">ไม่รวมรายการที่ลบ</option>
+                        <option value="with" class="bg-slate-900" @selected(request('deleted') === 'with')>รวมรายการที่ลบ</option>
+                        <option value="only" class="bg-slate-900" @selected(request('deleted') === 'only')>เฉพาะรายการที่ลบ</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 lg:col-span-1 lg:self-end">
                     <button
                         type="submit"
                         class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
@@ -148,7 +172,12 @@
                                         </div>
 
                                         <div class="min-w-0">
-                                            <p class="truncate font-semibold text-white">{{ $category->name }}</p>
+                                            <p class="truncate font-semibold text-white">
+                                                {{ $category->name }}
+                                                @if ($category->trashed())
+                                                    <span class="ml-2 rounded-full border border-red-400/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-300">ลบแล้ว</span>
+                                                @endif
+                                            </p>
                                             <p class="truncate text-xs text-slate-400">{{ $category->slug }}</p>
                                         </div>
                                     </div>
@@ -202,23 +231,36 @@
 
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
-                                        <a
-                                            href="{{ route('admin.categories.edit', $category->id) }}"
-                                            class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-                                        >
-                                            แก้ไข
-                                        </a>
+                                        @if ($category->trashed())
+                                            <form method="POST" action="{{ route('admin.categories.restore', $category->id) }}" onsubmit="return confirm('ยืนยันการกู้คืน?');">
+                                                @csrf
+                                                @method('PATCH')
 
-                                        <form method="POST" action="{{ route('admin.categories.destroy', $category->id) }}" onsubmit="return confirm('ยืนยันการลบ?');">
-                                            @csrf
-                                            @method('DELETE')
-
-                                            <button
-                                                class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
+                                                <button
+                                                    class="rounded-xl border border-emerald-400/20 px-3 py-1.5 text-xs font-medium text-emerald-300 transition hover:bg-emerald-500/10"
+                                                >
+                                                    กู้คืน
+                                                </button>
+                                            </form>
+                                        @else
+                                            <a
+                                                href="{{ route('admin.categories.edit', $category->id) }}"
+                                                class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
                                             >
-                                                ลบ
-                                            </button>
-                                        </form>
+                                                แก้ไข
+                                            </a>
+
+                                            <form method="POST" action="{{ route('admin.categories.destroy', $category->id) }}" onsubmit="return confirm('ยืนยันการลบ?');">
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button
+                                                    class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
+                                                >
+                                                    ลบ
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

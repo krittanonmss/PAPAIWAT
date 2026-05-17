@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Content\Layout\Menu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
 
@@ -45,11 +46,15 @@ class MenuController extends Controller
         $validated['created_by_admin_id'] = auth('admin')->id();
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
-        if ($validated['is_default']) {
-            Menu::query()->update(['is_default' => false]);
-        }
+        DB::transaction(function () use ($validated) {
+            if ($validated['is_default']) {
+                Menu::query()
+                    ->where('location_key', $validated['location_key'])
+                    ->update(['is_default' => false]);
+            }
 
-        Menu::create($validated);
+            Menu::create($validated);
+        });
 
         return redirect()
             ->route('admin.content.menus.index')
@@ -90,13 +95,16 @@ class MenuController extends Controller
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
-        if ($validated['is_default']) {
-            Menu::query()
-                ->whereKeyNot($menu->id)
-                ->update(['is_default' => false]);
-        }
+        DB::transaction(function () use ($menu, $validated) {
+            if ($validated['is_default']) {
+                Menu::query()
+                    ->whereKeyNot($menu->id)
+                    ->where('location_key', $validated['location_key'])
+                    ->update(['is_default' => false]);
+            }
 
-        $menu->update($validated);
+            $menu->update($validated);
+        });
 
         return redirect()
             ->route('admin.content.menus.index')
@@ -105,6 +113,14 @@ class MenuController extends Controller
 
     public function destroy(Menu $menu): RedirectResponse
     {
+        if ($menu->is_default && ! request()->boolean('force')) {
+            return back()->withErrors(['menu' => 'ไม่สามารถลบ default menu ได้ หากต้องการลบต้อง force อย่างชัดเจน']);
+        }
+
+        if ($menu->items()->exists() && ! request()->boolean('force')) {
+            return back()->withErrors(['menu' => 'ไม่สามารถลบเมนูที่มีรายการอยู่ หากต้องการลบต้อง force อย่างชัดเจน']);
+        }
+
         $menu->delete();
 
         return redirect()

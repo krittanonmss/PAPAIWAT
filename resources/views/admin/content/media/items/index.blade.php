@@ -149,7 +149,7 @@
                         <input type="hidden" name="media_folder_id" value="{{ $selectedFolderId }}">
                     @endif
 
-                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-end">
+                    <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_160px_160px_140px_auto] xl:items-end">
                         <div>
                             <label for="search" class="mb-1.5 block text-sm font-medium text-slate-300">
                                 ค้นหาไฟล์
@@ -200,6 +200,24 @@
                             </select>
                         </div>
 
+                        <div>
+                            <label for="per_page" class="mb-1.5 block text-sm font-medium text-slate-300">
+                                จำนวนการ์ด
+                            </label>
+
+                            <select
+                                id="per_page"
+                                name="per_page"
+                                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                            >
+                                @foreach ($perPageOptions as $option)
+                                    <option value="{{ $option }}" class="bg-slate-900" @selected((int) $filters['per_page'] === $option)>
+                                        {{ $option }} ใบ
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="flex gap-2">
                             <button
                                 type="submit"
@@ -228,11 +246,11 @@
                                     $previewPath = $thumbnail?->path ?? $media->path;
                                 @endphp
 
-                                < class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
+                                <article class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
                                     <div class="relative aspect-[4/3] bg-slate-950">
                                         @if ($media->media_type === 'image')
                                             <img
-                                                src="{{ asset('storage/' . $previewPath) }}"
+                                                src="{{ $media->visibility === 'private' ? route('admin.media.file', $media) : asset('storage/' . $previewPath) }}"
                                                 alt="{{ $media->alt_text ?: $media->title ?: $media->original_filename }}"
                                                 class="h-full w-full object-cover"
                                                 loading="lazy"
@@ -252,20 +270,18 @@
                                         </div>
 
                                         <div class="absolute right-3 top-3 flex gap-2">
-                                            @if ($media->visibility === 'public')
-                                                <a
-                                                    href="{{ asset('storage/' . $media->path) }}"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950/75 text-slate-200 shadow transition hover:bg-slate-700 hover:text-white"
-                                                    title="ดูไฟล์"
-                                                    aria-label="ดูไฟล์ {{ $media->original_filename }}"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 10l4.5-4.5m0 0H16.5m3 0V8.5M9 14l-4.5 4.5m0 0H7.5m-3 0v-3" />
-                                                    </svg>
-                                                </a>
-                                            @endif
+                                            <a
+                                                href="{{ $media->visibility === 'private' ? route('admin.media.file', $media) : asset('storage/' . $media->path) }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950/75 text-slate-200 shadow transition hover:bg-slate-700 hover:text-white"
+                                                title="ดูไฟล์"
+                                                aria-label="ดูไฟล์ {{ $media->original_filename }}"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 10l4.5-4.5m0 0H16.5m3 0V8.5M9 14l-4.5 4.5m0 0H7.5m-3 0v-3" />
+                                                </svg>
+                                            </a>
                                         </div>
                                     </div>
 
@@ -338,7 +354,7 @@
                                             </form>
                                         </div>
                                     </div>
-                                </>
+                                </article>
                             @endforeach
                         </div>
 

@@ -13,6 +13,8 @@ class Category extends Model
 {
     use SoftDeletes;
 
+    public const MAX_LEVEL = 4;
+
     protected $fillable = [
         'parent_id',
         'name',

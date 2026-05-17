@@ -303,6 +303,31 @@
                     </div>
                 </section>
 
+                <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <div class="border-b border-white/10 px-6 py-4">
+                        <h2 class="text-base font-semibold text-white">Version History</h2>
+                    </div>
+
+                    <div class="divide-y divide-white/10">
+                        @forelse($page->versions as $version)
+                            <div class="flex items-center justify-between gap-4 px-6 py-3">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-200">{{ $version->version_name ?: 'snapshot' }}</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">{{ $version->created_at?->format('d/m/Y H:i') }}</p>
+                                </div>
+                                <form method="POST" action="{{ route('admin.content.pages.versions.rollback', [$page, $version]) }}" onsubmit="return confirm('ยืนยัน rollback เวอร์ชันนี้?')">
+                                    @csrf
+                                    <button type="submit" class="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-200 transition hover:bg-amber-500/20">
+                                        Rollback
+                                    </button>
+                                </form>
+                            </div>
+                        @empty
+                            <div class="px-6 py-6 text-sm text-slate-400">ยังไม่มี version history</div>
+                        @endforelse
+                    </div>
+                </section>
+
                 <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
                     <div class="border-b border-rose-400/20 px-6 py-4">
                         <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>

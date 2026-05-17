@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Admin\Content\Media;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Media\StoreMediaRequest;
 use App\Http\Requests\Admin\Content\Media\UpdateMediaRequest;
+use App\Jobs\Content\Media\GenerateMediaVariants;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Media\MediaFolder;
 use App\Services\Content\Media\MediaVariantService;
+use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 use Illuminate\View\View;
 
 class MediaController extends Controller
@@ -52,7 +56,11 @@ class MediaController extends Controller
             }
         }
 
-        $mediaItems = $query->paginate(24)->withQueryString();
+        $perPageOptions = [12, 24, 48, 96];
+        $perPage = $request->integer('per_page', 24);
+        $perPage = in_array($perPage, $perPageOptions, true) ? $perPage : 24;
+
+        $mediaItems = $query->paginate($perPage)->withQueryString();
 
         $folders = MediaFolder::query()
             ->with([
@@ -70,10 +78,6 @@ class MediaController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
-
-        $folderOptions = MediaFolder::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
 
         $selectedFolder = null;
 
@@ -93,6 +97,7 @@ class MediaController extends Controller
             'media_type' => $request->string('media_type')->toString(),
             'visibility' => $request->string('visibility')->toString(),
             'media_folder_id' => $selectedFolderId,
+            'per_page' => $perPage,
         ];
 
         $mediaTypes = ['image', 'video', 'audio', 'document', 'other'];
@@ -101,25 +106,19 @@ class MediaController extends Controller
             'title' => 'จัดการคลังสื่อ',
             'mediaItems' => $mediaItems,
             'folders' => $folders,
-            'folderOptions' => $folderOptions,
             'selectedFolder' => $selectedFolder,
             'selectedFolderId' => $selectedFolderId,
             'stats' => $stats,
             'filters' => $filters,
             'mediaTypes' => $mediaTypes,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
     public function create(): View
     {
-        $folders = MediaFolder::query()
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         return view('admin.content.media.items.create', [
             'title' => 'อัปโหลดสื่อ',
-            'folders' => $folders,
         ]);
     }
 
@@ -129,6 +128,14 @@ class MediaController extends Controller
         $uploadedFiles = $this->uploadedFiles($request);
 
         foreach ($uploadedFiles as $uploadedFile) {
+            $fileHash = $this->fileHash($uploadedFile);
+
+            if ($this->duplicateExists($fileHash)) {
+                return back()
+                    ->withErrors(['files' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ'])
+                    ->withInput();
+            }
+
             $media = $this->storeUploadedMedia($uploadedFile, [
                 'media_folder_id' => $validated['media_folder_id'] ?? null,
                 'title' => count($uploadedFiles) === 1 ? ($validated['title'] ?? null) : null,
@@ -136,9 +143,10 @@ class MediaController extends Controller
                 'caption' => count($uploadedFiles) === 1 ? ($validated['caption'] ?? null) : null,
                 'description' => count($uploadedFiles) === 1 ? ($validated['description'] ?? null) : null,
                 'visibility' => $validated['visibility'] ?? 'public',
+                'file_hash' => $fileHash,
             ]);
 
-            app(MediaVariantService::class)->generate($media);
+            GenerateMediaVariants::dispatch($media->id);
         }
 
         return redirect()
@@ -165,12 +173,19 @@ class MediaController extends Controller
         }
 
         foreach ($uploadedFiles as $uploadedFile) {
+            $fileHash = $this->fileHash($uploadedFile);
+
+            if ($this->duplicateExists($fileHash)) {
+                return back()->withErrors(['file' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ']);
+            }
+
             $media = $this->storeUploadedMedia($uploadedFile, [
                 'title' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
                 'visibility' => 'public',
+                'file_hash' => $fileHash,
             ]);
 
-            app(MediaVariantService::class)->generate($media);
+            GenerateMediaVariants::dispatch($media->id);
         }
 
         return back()->with('success', count($uploadedFiles) > 1
@@ -180,16 +195,11 @@ class MediaController extends Controller
 
     public function edit(Media $media): View
     {
-        $media->load(['folder', 'variants', 'usages', 'tags']);
-
-        $folders = MediaFolder::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $media->load(['folder', 'variants', 'usages.entity', 'usages.creator', 'tags']);
 
         return view('admin.content.media.items.edit', [
             'title' => 'แก้ไขสื่อ',
             'media' => $media,
-            'folders' => $folders,
         ]);
     }
 
@@ -207,67 +217,62 @@ class MediaController extends Controller
         ];
 
         if ($request->hasFile('file')) {
-            foreach ($media->variants as $variant) {
-                if ($variant->path && Storage::disk($variant->disk)->exists($variant->path)) {
-                    Storage::disk($variant->disk)->delete($variant->path);
-                }
-            }
-
-            $media->variants()->delete();
-
-            if ($media->path && Storage::disk($media->disk)->exists($media->path)) {
-                Storage::disk($media->disk)->delete($media->path);
-            }
-
             $uploadedFile = $request->file('file');
+            $fileHash = $this->fileHash($uploadedFile);
 
-            $disk = 'public';
-            $folderPath = 'media/uploads/' . now()->format('Y/m');
-            $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: '');
-            $filename = Str::uuid()->toString() . ($extension ? '.' . $extension : '');
-            $storedPath = $uploadedFile->storeAs($folderPath, $filename, $disk);
-
-            $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
-            $mediaType = $this->resolveMediaType($mimeType);
-            $fileSize = $uploadedFile->getSize() ?: 0;
-
-            $width = null;
-            $height = null;
-
-            if ($mediaType === 'image') {
-                $absolutePath = Storage::disk($disk)->path($storedPath);
-                $imageSize = @getimagesize($absolutePath);
-
-                if ($imageSize !== false) {
-                    $width = isset($imageSize[0]) ? (int) $imageSize[0] : null;
-                    $height = isset($imageSize[1]) ? (int) $imageSize[1] : null;
-                }
+            if ($this->duplicateExists($fileHash, $media)) {
+                return back()
+                    ->withErrors(['file' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ'])
+                    ->withInput();
             }
+
+            $storedFile = $this->storePhysicalFile($uploadedFile, $validated['visibility']);
 
             $updateData = array_merge($updateData, [
-                'disk' => $disk,
-                'directory' => dirname($storedPath) === '.' ? null : dirname($storedPath),
-                'filename' => basename($storedPath),
-                'path' => $storedPath,
-                'original_filename' => $uploadedFile->getClientOriginalName(),
-                'extension' => $extension ?: null,
-                'mime_type' => $mimeType,
-                'media_type' => $mediaType,
-                'file_size' => $fileSize,
-                'width' => $width,
-                'height' => $height,
+                'disk' => $storedFile['disk'],
+                'directory' => $storedFile['directory'],
+                'filename' => $storedFile['filename'],
+                'path' => $storedFile['path'],
+                'original_filename' => $storedFile['original_filename'],
+                'extension' => $storedFile['extension'],
+                'mime_type' => $storedFile['mime_type'],
+                'media_type' => $storedFile['media_type'],
+                'file_size' => $storedFile['file_size'],
+                'width' => $storedFile['width'],
+                'height' => $storedFile['height'],
                 'duration_seconds' => null,
-                'checksum' => hash_file('sha256', $uploadedFile->getRealPath()),
+                'checksum' => $fileHash,
+                'file_hash' => $fileHash,
                 'upload_status' => 'completed',
                 'uploaded_by_admin_id' => auth('admin')->id(),
                 'uploaded_at' => now(),
             ]);
         }
 
-        $media->update($updateData);
+        $oldFiles = $request->hasFile('file') ? $this->mediaStoragePaths($media) : [];
 
-        if ($request->hasFile('file') && $media->media_type === 'image') {
-            app(MediaVariantService::class)->generate($media->fresh());
+        try {
+            DB::transaction(function () use ($media, $updateData, $request): void {
+                if ($request->hasFile('file')) {
+                    $media->variants()->delete();
+                }
+
+                $media->update($updateData);
+            });
+
+            foreach ($oldFiles as $file) {
+                $this->deleteStorageFile($file['disk'], $file['path']);
+            }
+        } catch (Throwable $e) {
+            if (isset($storedFile)) {
+                $this->deleteStorageFile($storedFile['disk'], $storedFile['path']);
+            }
+
+            throw $e;
+        }
+
+        if ($request->hasFile('file')) {
+            GenerateMediaVariants::dispatch($media->id);
         }
 
         return redirect()
@@ -285,21 +290,17 @@ class MediaController extends Controller
                 ->with('error', 'ไม่สามารถลบไฟล์นี้ได้ เนื่องจากยังถูกใช้งานอยู่');
         }
 
-        if ($media->variants()->exists()) {
-            foreach ($media->variants as $variant) {
-                if ($variant->path && Storage::disk($variant->disk)->exists($variant->path)) {
-                    Storage::disk($variant->disk)->delete($variant->path);
-                }
-            }
+        $files = $this->mediaStoragePaths($media);
 
+        DB::transaction(function () use ($media): void {
             $media->variants()->delete();
-        }
+            $media->tags()->detach();
+            $media->delete();
+        });
 
-        if ($media->path && Storage::disk($media->disk)->exists($media->path)) {
-            Storage::disk($media->disk)->delete($media->path);
+        foreach ($files as $file) {
+            $this->deleteStorageFile($file['disk'], $file['path']);
         }
-
-        $media->delete();
 
         return redirect()
             ->route('admin.media.index')
@@ -315,6 +316,22 @@ class MediaController extends Controller
         $mediaVariantService->generate($media);
 
         return back()->with('success', 'สร้าง thumbnail / resize ใหม่สำเร็จ');
+    }
+
+    public function file(Media $media): Response|RedirectResponse
+    {
+        if ($media->visibility !== 'private') {
+            return redirect(Storage::disk($media->disk)->url($media->path));
+        }
+
+        abort_unless(auth('admin')->user()?->hasPermission('media.view'), 403);
+        abort_unless($media->path && Storage::disk($media->disk)->exists($media->path), 404);
+
+        return response(Storage::disk($media->disk)->get($media->path), 200, [
+            'Content-Type' => $media->mime_type,
+            'Content-Disposition' => 'inline; filename="'.$media->original_filename.'"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     private function resolveMediaType(string $mimeType): string
@@ -359,22 +376,58 @@ class MediaController extends Controller
 
     private function storeUploadedMedia(UploadedFile $uploadedFile, array $metadata = []): Media
     {
-        $disk = 'public';
-        $folderPath = 'media/uploads/' . now()->format('Y/m');
+        $storedFile = $this->storePhysicalFile($uploadedFile, $metadata['visibility'] ?? 'public');
+
+        try {
+            return DB::transaction(fn () => Media::query()->create([
+                'media_folder_id' => $metadata['media_folder_id'] ?? null,
+                'sort_order' => 0,
+                'disk' => $storedFile['disk'],
+                'directory' => $storedFile['directory'],
+                'filename' => $storedFile['filename'],
+                'path' => $storedFile['path'],
+                'original_filename' => $storedFile['original_filename'],
+                'extension' => $storedFile['extension'],
+                'mime_type' => $storedFile['mime_type'],
+                'media_type' => $storedFile['media_type'],
+                'file_size' => $storedFile['file_size'],
+                'width' => $storedFile['width'],
+                'height' => $storedFile['height'],
+                'duration_seconds' => null,
+                'title' => $metadata['title'] ?? null,
+                'alt_text' => $metadata['alt_text'] ?? null,
+                'caption' => $metadata['caption'] ?? null,
+                'description' => $metadata['description'] ?? null,
+                'checksum' => $metadata['file_hash'] ?? $this->fileHash($uploadedFile),
+                'file_hash' => $metadata['file_hash'] ?? $this->fileHash($uploadedFile),
+                'visibility' => $metadata['visibility'] ?? 'public',
+                'upload_status' => 'completed',
+                'uploaded_by_admin_id' => auth('admin')->id(),
+                'uploaded_at' => now(),
+            ]));
+        } catch (Throwable $e) {
+            $this->deleteStorageFile($storedFile['disk'], $storedFile['path']);
+
+            throw $e;
+        }
+    }
+
+    private function storePhysicalFile(UploadedFile $uploadedFile, string $visibility): array
+    {
+        $disk = $visibility === 'private' ? 'local' : 'public';
+        $folderPath = ($visibility === 'private' ? 'media/private/' : 'media/uploads/') . now()->format('Y/m');
         $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: '');
         $filename = Str::uuid()->toString() . ($extension ? '.' . $extension : '');
         $storedPath = $uploadedFile->storeAs($folderPath, $filename, $disk);
 
-        $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
+        $mimeType = $this->realMimeType($uploadedFile) ?: 'application/octet-stream';
         $mediaType = $this->resolveMediaType($mimeType);
         $fileSize = $uploadedFile->getSize() ?: 0;
-
         $width = null;
         $height = null;
 
         if ($mediaType === 'image') {
-            $absolutePath = Storage::disk($disk)->path($storedPath);
-            $imageSize = @getimagesize($absolutePath);
+            $imageSize = @getimagesize(Storage::disk($disk)->path($storedPath));
 
             if ($imageSize !== false) {
                 $width = isset($imageSize[0]) ? (int) $imageSize[0] : null;
@@ -382,9 +435,7 @@ class MediaController extends Controller
             }
         }
 
-        return Media::query()->create([
-            'media_folder_id' => $metadata['media_folder_id'] ?? null,
-            'sort_order' => 0,
+        return [
             'disk' => $disk,
             'directory' => dirname($storedPath) === '.' ? null : dirname($storedPath),
             'filename' => basename($storedPath),
@@ -396,16 +447,46 @@ class MediaController extends Controller
             'file_size' => $fileSize,
             'width' => $width,
             'height' => $height,
-            'duration_seconds' => null,
-            'title' => $metadata['title'] ?? null,
-            'alt_text' => $metadata['alt_text'] ?? null,
-            'caption' => $metadata['caption'] ?? null,
-            'description' => $metadata['description'] ?? null,
-            'checksum' => hash_file('sha256', $uploadedFile->getRealPath()),
-            'visibility' => $metadata['visibility'] ?? 'public',
-            'upload_status' => 'completed',
-            'uploaded_by_admin_id' => auth('admin')->id(),
-            'uploaded_at' => now(),
-        ]);
+        ];
+    }
+
+    private function fileHash(UploadedFile $uploadedFile): string
+    {
+        return hash_file('sha256', $uploadedFile->getRealPath());
+    }
+
+    private function duplicateExists(string $fileHash, ?Media $ignore = null): bool
+    {
+        return Media::withTrashed()
+            ->where(function ($query) use ($fileHash) {
+                $query->where('file_hash', $fileHash)
+                    ->orWhere('checksum', $fileHash);
+            })
+            ->when($ignore, fn ($query) => $query->whereKeyNot($ignore->getKey()))
+            ->exists();
+    }
+
+    private function realMimeType(UploadedFile $uploadedFile): ?string
+    {
+        return $uploadedFile->getMimeType();
+    }
+
+    private function mediaStoragePaths(Media $media): array
+    {
+        return collect([['disk' => $media->disk, 'path' => $media->path]])
+            ->merge($media->variants()->get(['disk', 'path'])->map(fn ($variant) => [
+                'disk' => $variant->disk,
+                'path' => $variant->path,
+            ]))
+            ->filter(fn ($file) => filled($file['disk'] ?? null) && filled($file['path'] ?? null))
+            ->values()
+            ->all();
+    }
+
+    private function deleteStorageFile(string $disk, string $path): void
+    {
+        if (Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->delete($path);
+        }
     }
 }

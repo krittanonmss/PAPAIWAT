@@ -40,12 +40,9 @@ class ContentTemplateResolver
 
         return Template::query()
             ->active()
-            ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->where('template_type', 'detail')
             ->when($contentType, function ($query) use ($contentType) {
-                $query->where(function ($query) use ($contentType) {
-                    $query->where('key', $contentType . '-detail')
-                        ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
-                });
+                $query->where('content_type', $contentType);
             })
             ->find($templateId);
     }
@@ -59,6 +56,8 @@ class ContentTemplateResolver
         return Template::query()
             ->active()
             ->where('key', $contentType . '-detail')
+            ->where('template_type', 'detail')
+            ->where('content_type', $contentType)
             ->first();
     }
 
@@ -67,12 +66,9 @@ class ContentTemplateResolver
         return Template::query()
             ->active()
             ->where('is_default', true)
-            ->where('view_path', 'like', 'frontend.templates.details.%')
+            ->where('template_type', 'detail')
             ->when($contentType, function ($query) use ($contentType) {
-                $query->where(function ($query) use ($contentType) {
-                    $query->where('key', $contentType . '-detail')
-                        ->orWhere('view_path', 'like', 'frontend.templates.details.' . $contentType . '-%');
-                });
+                $query->where('content_type', $contentType);
             })
             ->first();
     }

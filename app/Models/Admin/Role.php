@@ -12,11 +12,14 @@ class Role extends Model
 
     protected $fillable = [
         'name',
+        'role_key',
         'description',
+        'level',
         'is_system',
     ];
 
     protected $casts = [
+        'level' => 'integer',
         'is_system' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -47,5 +50,10 @@ class Role extends Model
         return $this->permissions()
             ->where('key', $permissionKey)
             ->exists();
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role_key === 'super_admin';
     }
 }

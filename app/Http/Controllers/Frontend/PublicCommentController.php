@@ -30,6 +30,7 @@ class PublicCommentController extends Controller
         PublicInteractionService $interactionService
     ): RedirectResponse {
         abort_unless($article->content?->status === 'published', 404);
+        abort_unless($article->allow_comments, 403);
 
         return $this->store($request, $article, $visitorService, $interactionService);
     }

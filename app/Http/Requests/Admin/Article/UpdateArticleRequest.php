@@ -40,16 +40,13 @@ class UpdateArticleRequest extends FormRequest
                 'integer',
                 Rule::exists('templates', 'id')->where(function ($query) {
                     $query->where('status', 'active')
-                        ->where('view_path', 'like', 'frontend.templates.details.%')
-                        ->where(function ($query) {
-                            $query->where('key', 'article-detail')
-                                ->orWhere('view_path', 'like', 'frontend.templates.details.article-%');
-                        });
+                        ->where('template_type', 'detail')
+                        ->where('content_type', 'article');
                 }),
             ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'in:draft,published,archived'],
+            'status' => ['required', 'in:draft,review,archived'],
             'is_featured' => ['nullable', 'boolean'],
             'is_popular' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
@@ -66,7 +63,7 @@ class UpdateArticleRequest extends FormRequest
             'allow_comments' => ['nullable', 'boolean'],
             'show_on_homepage' => ['nullable', 'boolean'],
             'scheduled_at' => ['nullable', 'date'],
-            'expired_at' => ['nullable', 'date', 'after_or_equal:scheduled_at'],
+            'expired_at' => ['nullable', 'date', 'after:scheduled_at'],
 
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],

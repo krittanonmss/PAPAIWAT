@@ -30,8 +30,7 @@ class LayoutCreationRedirectTest extends TestCase
     {
         $this->post(route('admin.content.templates.store'), [
             'name' => 'Detail Template',
-            'key' => 'detail-template',
-            'view_path' => 'frontend.templates.pages.default',
+            'key' => 'page-default',
             'status' => 'active',
         ])->assertRedirect(route('admin.content.templates.index'));
     }

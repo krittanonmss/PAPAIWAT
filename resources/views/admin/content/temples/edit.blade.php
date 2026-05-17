@@ -102,6 +102,16 @@
                     </button>
 
                     <div class="flex items-center justify-end gap-3">
+                        @if (in_array($temple->content?->status, ['draft', 'review'], true))
+                            <button
+                                type="submit"
+                                form="publish-temple-form"
+                                class="inline-flex items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-2.5 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20"
+                            >
+                                เผยแพร่
+                            </button>
+                        @endif
+
                         <a
                             href="{{ route('admin.temples.index') }}"
                             class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
@@ -130,5 +140,15 @@
     >
         @csrf
         @method('DELETE')
+    </form>
+
+    <form
+        id="publish-temple-form"
+        method="POST"
+        action="{{ route('admin.temples.publish', $temple) }}"
+        class="hidden"
+    >
+        @csrf
+        @method('PATCH')
     </form>
 </x-layouts.admin>

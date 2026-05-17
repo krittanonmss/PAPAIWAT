@@ -40,6 +40,9 @@ Route::prefix('admin')->name('admin.')->middleware(['admin.auth', 'admin.active'
         Route::put('/{admin}', [UserManagementController::class, 'update'])
             ->middleware('admin.permission:users.update')->name('update');
 
+        Route::patch('/{admin}/restore', [UserManagementController::class, 'restore'])
+            ->middleware('admin.permission:users.update')->name('restore');
+
         Route::delete('/{admin}', [UserManagementController::class, 'destroy'])
             ->middleware('admin.permission:users.delete')->name('destroy');
     });

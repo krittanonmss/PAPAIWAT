@@ -132,6 +132,37 @@
 <body class="min-h-screen bg-slate-950 text-white">
     @php
         $admin = auth('admin')->user();
+        $can = fn (string $permission): bool => $admin?->hasPermission($permission) ?? false;
+
+        $canViewDashboard = $can('dashboard.view');
+        $canViewUsers = $can('users.view');
+        $canViewRoles = $can('roles.view');
+        $canViewPermissions = $can('permissions.view');
+        $canViewTemples = $can('temples.view');
+        $canViewArticles = $can('articles.view');
+        $canViewCategories = $can('categories.view');
+        $canViewMedia = $can('media.view');
+        $canViewMenus = $can('menus.view');
+        $canViewPages = $can('pages.view');
+        $canViewTemplates = $can('templates.view');
+        $canViewInteractions = $can('interactions.view');
+
+        $canViewContentManagement = $canViewTemples
+            || $canViewArticles
+            || $canViewCategories
+            || $canViewMedia
+            || $canViewMenus
+            || $canViewPages
+            || $canViewTemplates
+            || $canViewInteractions;
+
+        $canViewLayoutManagement = $canViewMenus
+            || $canViewPages
+            || $canViewTemplates;
+
+        $canViewAccessManagement = $canViewUsers
+            || $canViewRoles
+            || $canViewPermissions;
 
         $isAccessManagementเปิดใช้งาน = request()->routeIs('admin.users.*')
             || request()->routeIs('admin.roles.*')
@@ -201,15 +232,18 @@
 
                     {{-- Nav - flex-1 + overflow-y-auto ให้ scroll ได้เฉพาะส่วนนี้ --}}
                     <nav class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5 text-sm">
-                        <a
-                            href="{{ route('admin.dashboard') }}"
-                            class="{{ request()->routeIs('admin.dashboard')
-                                ? 'block rounded-2xl border border-blue-400/30 bg-blue-900/80 px-4 py-3 font-medium text-blue-300 shadow-md shadow-blue-950/30'
-                                : 'block rounded-2xl px-4 py-3 font-medium text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                        >
-                            แดชบอร์ด
-                        </a>
+                        @if ($canViewDashboard)
+                            <a
+                                href="{{ route('admin.dashboard') }}"
+                                class="{{ request()->routeIs('admin.dashboard')
+                                    ? 'block rounded-2xl border border-blue-400/30 bg-blue-900/80 px-4 py-3 font-medium text-blue-300 shadow-md shadow-blue-950/30'
+                                    : 'block rounded-2xl px-4 py-3 font-medium text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                            >
+                                แดชบอร์ด
+                            </a>
+                        @endif
 
+                        @if ($canViewContentManagement)
                         <details
                             x-data="{ open: {{ $isContentManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                             x-bind:open="open"
@@ -226,6 +260,7 @@
                             </summary>
 
                             <div class="mt-2 space-y-2 transition-all duration-200">
+                                @if ($canViewTemples)
                                 <details
                                     x-data="{ open: {{ $isTempleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -252,7 +287,9 @@
                                         </a>
                                     </div>
                                 </details>
+                                @endif
 
+                                @if ($canViewArticles)
                                 <details
                                     x-data="{ open: {{ $isArticleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -288,7 +325,9 @@
                                         </a>
                                     </div>
                                 </details>
+                                @endif
 
+                                @if ($canViewCategories)
                                 <details
                                     x-data="{ open: {{ $isCategoryManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -315,7 +354,9 @@
                                         </a>
                                     </div>
                                 </details>
+                                @endif
 
+                                @if ($canViewMedia)
                                 <details
                                     x-data="{ open: {{ $isMediaManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -343,7 +384,9 @@
                                         </a>
                                     </div>
                                 </details>
+                                @endif
 
+                                @if ($canViewLayoutManagement)
                                 <details
                                     x-data="{ open: {{ $isLayoutManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -355,11 +398,12 @@
                                     >
                                         <div class="flex items-center justify-between">
                                             <span>จัดการโครงหน้าเว็บ</span>
-                                            <span class="text-xs text-slate-500">4</span>
+                                            <span class="text-xs text-slate-500">3</span>
                                         </div>
                                     </summary>
 
                                     <div class="mt-1 space-y-1">
+                                        @if ($canViewMenus)
                                         <a
                                             href="{{ route('admin.content.menus.index') }}"
                                             class="{{ request()->routeIs('admin.content.menus.*')
@@ -368,7 +412,9 @@
                                         >
                                             เมนู
                                         </a>
+                                        @endif
 
+                                        @if ($canViewPages)
                                         <a
                                             href="{{ route('admin.content.pages.index') }}"
                                             class="{{ request()->routeIs('admin.content.pages.*')
@@ -377,16 +423,9 @@
                                         >
                                             หน้าเว็บไซต์
                                         </a>
+                                        @endif
 
-                                        <a
-                                            href="{{ route('admin.content.templates.index') }}"
-                                            class="{{ request()->routeIs('admin.content.templates.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            เทมเพลต
-                                        </a>
-
+                                        @if ($canViewMenus)
                                         <a
                                             href="{{ route('admin.content.footer.edit') }}"
                                             class="{{ request()->routeIs('admin.content.footer.*')
@@ -395,9 +434,12 @@
                                         >
                                             Footer
                                         </a>
+                                        @endif
                                     </div>
                                 </details>
+                                @endif
 
+                                @if ($canViewInteractions)
                                 <details
                                     x-data="{ open: {{ $isInteractionManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                                     x-bind:open="open"
@@ -433,9 +475,12 @@
                                         </a>
                                     </div>
                                 </details>
+                                @endif
                             </div>
                         </details>
+                        @endif
 
+                        @if ($canViewAccessManagement)
                         <details
                             x-data="{ open: {{ $isAccessManagementเปิดใช้งาน ? 'true' : 'false' }} }"
                             x-bind:open="open"
@@ -452,6 +497,7 @@
                             </summary>
 
                             <div class="mt-2 space-y-1">
+                                @if ($canViewUsers)
                                 <a
                                     href="{{ route('admin.users.index') }}"
                                     class="{{ request()->routeIs('admin.users.*')
@@ -460,7 +506,9 @@
                                 >
                                     ผู้ใช้งาน
                                 </a>
+                                @endif
 
+                                @if ($canViewRoles)
                                 <a
                                     href="{{ route('admin.roles.index') }}"
                                     class="{{ request()->routeIs('admin.roles.*')
@@ -469,9 +517,11 @@
                                 >
                                     บทบาทผู้ใช้งาน
                                 </a>
+                                @endif
 
                             </div>
                         </details>
+                        @endif
 
                         <a
                             href="{{ route('admin.profile.edit') }}"

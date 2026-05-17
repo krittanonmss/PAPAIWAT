@@ -10,6 +10,7 @@ use App\Models\Content\Temple\Temple;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -100,6 +101,12 @@ class Content extends Model
     public function temple(): HasOne
     {
         return $this->hasOne(Temple::class, 'content_id');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(ContentVersion::class, 'content_id')
+            ->latest('id');
     }
 
     public function article(): HasOne

@@ -2,11 +2,38 @@
 
 use App\Http\Controllers\Admin\Content\Article\ArticleTagController;
 use App\Http\Controllers\Admin\Content\CategoryController;
+use App\Http\Controllers\Admin\Content\ContentLookupController;
 use App\Http\Controllers\Admin\Content\Media\MediaController;
 use App\Http\Controllers\Admin\Content\Media\MediaFolderController;
 use App\Http\Controllers\Admin\Content\Temple\TempleController;
 use App\Http\Controllers\Admin\Content\Article\ArticleController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('lookups')->name('lookups.')->group(function () {
+    Route::get('/categories', [ContentLookupController::class, 'categories'])
+        ->middleware('admin.permission:categories.view')
+        ->name('categories');
+
+    Route::get('/article-tags', [ContentLookupController::class, 'articleTags'])
+        ->middleware('admin.permission:articles.view')
+        ->name('article-tags');
+
+    Route::get('/articles', [ContentLookupController::class, 'articles'])
+        ->middleware('admin.permission:articles.view')
+        ->name('articles');
+
+    Route::get('/temples', [ContentLookupController::class, 'temples'])
+        ->middleware('admin.permission:temples.view')
+        ->name('temples');
+
+    Route::get('/facilities', [ContentLookupController::class, 'facilities'])
+        ->middleware('admin.permission:temples.view')
+        ->name('facilities');
+
+    Route::get('/media-folders', [ContentLookupController::class, 'mediaFolders'])
+        ->middleware('admin.permission:media.view')
+        ->name('media-folders');
+});
 
 Route::prefix('categories')->name('categories.')->group(function () {
     Route::get('/', [CategoryController::class, 'index'])->middleware('admin.permission:categories.view')->name('index');
@@ -14,6 +41,7 @@ Route::prefix('categories')->name('categories.')->group(function () {
     Route::post('/', [CategoryController::class, 'store'])->middleware('admin.permission:categories.create')->name('store');
     Route::get('/{category}/edit', [CategoryController::class, 'edit'])->middleware('admin.permission:categories.update')->name('edit');
     Route::put('/{category}', [CategoryController::class, 'update'])->middleware('admin.permission:categories.update')->name('update');
+    Route::patch('/{category}/restore', [CategoryController::class, 'restore'])->middleware('admin.permission:categories.update')->name('restore');
     Route::delete('/{category}', [CategoryController::class, 'destroy'])->middleware('admin.permission:categories.delete')->name('destroy');
 });
 
@@ -30,6 +58,7 @@ Route::prefix('media')->name('media.')->group(function () {
     Route::get('/', [MediaController::class, 'index'])->middleware('admin.permission:media.view')->name('index');
     Route::get('/create', [MediaController::class, 'create'])->middleware('admin.permission:media.create')->name('create');
     Route::post('/', [MediaController::class, 'store'])->middleware('admin.permission:media.create')->name('store');
+    Route::get('/{media}/file', [MediaController::class, 'file'])->middleware('admin.permission:media.view')->name('file');
     Route::get('/{media}/edit', [MediaController::class, 'edit'])->middleware('admin.permission:media.update')->name('edit');
     Route::put('/{media}', [MediaController::class, 'update'])->middleware('admin.permission:media.update')->name('update');
     Route::delete('/{media}', [MediaController::class, 'destroy'])->middleware('admin.permission:media.delete')->name('destroy');
@@ -42,6 +71,7 @@ Route::prefix('temples')->name('temples.')->group(function () {
     Route::get('/{temple}', [TempleController::class, 'show'])->middleware('admin.permission:temples.view')->name('show');
     Route::get('/{temple}/edit', [TempleController::class, 'edit'])->middleware('admin.permission:temples.update')->name('edit');
     Route::put('/{temple}', [TempleController::class, 'update'])->middleware('admin.permission:temples.update')->name('update');
+    Route::patch('/{temple}/publish', [TempleController::class, 'publish'])->middleware('admin.permission:temples.publish')->name('publish');
     Route::delete('/{temple}', [TempleController::class, 'destroy'])->middleware('admin.permission:temples.delete')->name('destroy');
 });
 
@@ -73,6 +103,14 @@ Route::prefix('articles')->name('content.articles.')->group(function () {
     Route::put('/{article}', [ArticleController::class, 'update'])
         ->middleware('admin.permission:articles.update')
         ->name('update');
+
+    Route::patch('/{article}/publish', [ArticleController::class, 'publish'])
+        ->middleware('admin.permission:articles.publish')
+        ->name('publish');
+
+    Route::patch('/{article}/unpublish', [ArticleController::class, 'unpublish'])
+        ->middleware('admin.permission:articles.publish')
+        ->name('unpublish');
 
     Route::delete('/{article}', [ArticleController::class, 'destroy'])
         ->middleware('admin.permission:articles.delete')

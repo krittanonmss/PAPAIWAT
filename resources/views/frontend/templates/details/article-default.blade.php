@@ -35,6 +35,9 @@
     $bodyFormat = $article?->body_format ?? 'markdown';
     $body = $article?->body ?? '';
     $safeHtmlBody = $bodyFormat === 'html' ? \App\Support\SafeRichText::clean($body) : null;
+    $safeMarkdownBody = $bodyFormat === 'markdown'
+        ? \App\Support\SafeRichText::clean(\Illuminate\Support\Str::markdown($body))
+        : null;
 
     $publishedAt = $articleContent?->published_at;
     $authorName = $article?->author_name ?: 'PAPAIWAT Editorial';
@@ -43,11 +46,15 @@
     $shareCount = (int) data_get($article?->stat, 'share_count', 0);
     $approvedComments = $approvedComments ?? collect();
     $visitorPendingComments = $visitorPendingComments ?? collect();
+    $commentsEnabled = (bool) ($article?->allow_comments ?? false);
+    $articleUrl = $articleContent?->slug
+        ? route('articles.show', $articleContent->slug)
+        : url()->current();
     $favoritePayload = $article ? [
         'type' => 'article',
         'id' => $article->id,
         'title' => $articleContent?->title,
-        'url' => route('articles.show', $articleContent?->slug),
+        'url' => $articleUrl,
         'excerpt' => $articleContent?->excerpt ?? $article?->excerpt_en,
         'image' => $coverUrl,
     ] : [];
@@ -162,7 +169,7 @@
             >
                 @if ($body)
                     @if ($bodyFormat === 'markdown')
-                        {!! \Illuminate\Support\Str::markdown($body) !!}
+                        {!! $safeMarkdownBody !!}
                     @elseif ($bodyFormat === 'html')
                         {!! $safeHtmlBody !!}
                     @else
@@ -219,6 +226,7 @@
                 </button>
             </div>
 
+            @if ($commentsEnabled)
             <section class="mt-10 border-t border-white/10 pt-8">
                 <div class="flex items-center justify-between gap-4">
                     <h2 class="text-xl font-semibold text-white">ความคิดเห็น</h2>
@@ -274,6 +282,7 @@
                     </form>
                 @endif
             </section>
+            @endif
         </section>
     </article>
 </main>

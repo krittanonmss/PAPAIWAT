@@ -38,7 +38,7 @@
         @endif
 
         {{-- Filter --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-30 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <form method="GET" action="{{ route('admin.temples.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-4">
                     <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาข้อมูล</label>
@@ -119,7 +119,7 @@
         </div>
 
         {{-- Table --}}
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">รายการข้อมูล</h2>
@@ -208,6 +208,11 @@
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
                                             Published
+                                        </span>
+                                    @elseif ($status === 'review')
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-sky-300"></span>
+                                            Review
                                         </span>
                                     @elseif ($status === 'draft')
                                         <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-400/20 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-300">

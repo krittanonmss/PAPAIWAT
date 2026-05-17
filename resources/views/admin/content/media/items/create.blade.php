@@ -59,7 +59,7 @@
         >
             @csrf
 
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <div class="space-y-6">
                     @include('admin.content.media.items._form')
                 </div>
@@ -68,29 +68,29 @@
                     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h3 class="text-sm font-semibold text-white">เช็กลิสต์ก่อนอัปโหลด</h3>
 
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">ไฟล์สื่อ</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     เลือกไฟล์ที่ถูกต้อง ขนาดเหมาะสม และอยู่ในรูปแบบที่ระบบรองรับ
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">ข้อมูลประกอบ</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     กรอกชื่อ คำอธิบาย caption และ alt text ให้ครบถ้วนเมื่อเป็นรูปภาพ
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">ขนาดรูปภาพที่สร้างอัตโนมัติ</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     หลังอัปโหลด ระบบจะสร้าง thumbnail, medium และ large สำหรับรูปภาพโดยอัตโนมัติ
                                 </p>
                             </div>
 
-                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-3.5">
                                 <p class="text-sm font-medium text-slate-200">การเข้าถึง</p>
                                 <p class="mt-1 text-xs leading-5 text-slate-500">
                                     ใช้ alt text ที่อธิบายภาพได้ชัดเจน เพื่อรองรับการใช้งานตามมาตรฐาน WCAG

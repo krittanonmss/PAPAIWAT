@@ -205,6 +205,24 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
+    public function test_article_with_comments_disabled_hides_comment_area_and_rejects_submission(): void
+    {
+        $article = $this->createPublishedArticle(allowComments: false);
+
+        $this->get(route('articles.show', $article->content->slug))
+            ->assertOk()
+            ->assertDontSee('ความคิดเห็น')
+            ->assertDontSee('เขียนความคิดเห็น')
+            ->assertDontSee('ส่งความคิดเห็น');
+
+        $this->post(route('articles.comments.store', $article), [
+            'display_name' => 'Reader',
+            'body' => 'ไม่ควรถูกบันทึก',
+        ])->assertForbidden();
+
+        $this->assertDatabaseCount('public_comments', 0);
+    }
+
     public function test_comment_goes_pending_and_reports_can_auto_hide_content(): void
     {
         $article = $this->createPublishedArticle();
@@ -284,7 +302,7 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
-    private function createPublishedArticle(): Article
+    private function createPublishedArticle(bool $allowComments = true): Article
     {
         $content = Content::query()->create([
             'content_type' => 'article',
@@ -297,6 +315,7 @@ class PublicInteractionFeatureTest extends TestCase
         return Article::query()->create([
             'content_id' => $content->id,
             'body_format' => 'markdown',
+            'allow_comments' => $allowComments,
         ]);
     }
 }
