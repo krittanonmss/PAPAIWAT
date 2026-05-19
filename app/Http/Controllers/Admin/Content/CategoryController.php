@@ -61,7 +61,7 @@ class CategoryController extends Controller
             }
         }
 
-        $categories = $query->paginate(15)->withQueryString();
+        $categories = $query->paginate($this->perPage($request, 15))->withQueryString();
 
         $selectedParent = null;
 
@@ -73,6 +73,7 @@ class CategoryController extends Controller
             'title' => 'Category Management',
             'categories' => $categories,
             'selectedParent' => $selectedParent,
+            'parentOptions' => $this->categoryParentOptions(),
             'types' => self::TYPE_OPTIONS,
         ]);
     }
@@ -83,6 +84,13 @@ class CategoryController extends Controller
             'title' => 'Create Category',
             'types' => self::TYPE_OPTIONS,
         ]);
+    }
+
+    private function perPage(Request $request, int $default): int
+    {
+        $perPage = (int) $request->input('per_page', $default);
+
+        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
     }
 
     public function store(StoreCategoryRequest $request): RedirectResponse
@@ -240,6 +248,90 @@ class CategoryController extends Controller
             ->with('success', 'กู้คืนหมวดหมู่เรียบร้อยแล้ว');
     }
 
+    public function bulkMove(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'parent_id' => ['required', 'integer', 'exists:categories,id'],
+        ]);
+
+        $parent = Category::query()->findOrFail((int) $validated['parent_id']);
+        $categories = Category::query()
+            ->whereIn('id', $validated['category_ids'])
+            ->orderBy('level')
+            ->get();
+
+        if ($categories->isEmpty()) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'กรุณาเลือกหมวดหมู่อย่างน้อย 1 รายการ');
+        }
+
+        if ($categories->contains(fn (Category $category) => (int) $category->id === (int) $parent->id)) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'ไม่สามารถย้ายหมวดหมู่เข้าไปใต้ตัวเองได้');
+        }
+
+        foreach ($categories as $category) {
+            if ($category->type_key !== $parent->type_key) {
+                return redirect()
+                    ->route('admin.categories.index')
+                    ->with('error', 'หมวดหมู่ที่เลือกต้องเป็นประเภทเดียวกับหมวดหมู่ปลายทาง');
+            }
+
+            if ($this->descendantIds($category)->contains((int) $parent->id)) {
+                return redirect()
+                    ->route('admin.categories.index')
+                    ->with('error', 'ไม่สามารถย้ายหมวดหมู่เข้าไปใต้หมวดหมู่ย่อยของตัวเองได้');
+            }
+
+            if (($parent->level + 1 + $this->subtreeHeight($category)) > Category::MAX_LEVEL) {
+                return redirect()
+                    ->route('admin.categories.index')
+                    ->with('error', 'หมวดหมู่มีลำดับชั้นได้สูงสุด '.(Category::MAX_LEVEL + 1).' ชั้น');
+            }
+        }
+
+        $movedCount = 0;
+
+        DB::transaction(function () use ($request, $categories, $parent, &$movedCount): void {
+            foreach ($categories as $category) {
+                if ((int) $category->parent_id === (int) $parent->id) {
+                    continue;
+                }
+
+                $oldData = $this->categoryAuditData($category);
+
+                $category->update([
+                    'parent_id' => $parent->id,
+                    'level' => $parent->level + 1,
+                    'updated_by_admin_id' => auth('admin')->id(),
+                ]);
+
+                $this->recalculateSubtreeLevels($category);
+                $category->refresh();
+
+                $this->writeAuditLog($request, 'category.moved', $category, $oldData, $this->categoryAuditData($category) + [
+                    'bulk_parent_id' => $parent->id,
+                ]);
+
+                $movedCount++;
+            }
+        });
+
+        if ($movedCount === 0) {
+            return redirect()
+                ->route('admin.categories.index')
+                ->with('error', 'ไม่มีหมวดหมู่ที่ต้องย้ายไปยังหมวดหมู่ปลายทางนี้');
+        }
+
+        return redirect()
+            ->route('admin.categories.index')
+            ->with('success', 'ย้ายหมวดหมู่ที่เลือกเรียบร้อยแล้ว');
+    }
+
     private function makeUniqueSlug(
         string $name,
         ?int $parentId,
@@ -291,6 +383,41 @@ class CategoryController extends Controller
 
             $this->recalculateSubtreeLevels($child);
         });
+    }
+
+    private function categoryParentOptions()
+    {
+        return Category::query()
+            ->where('status', 'active')
+            ->orderBy('type_key')
+            ->orderBy('level')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type_key', 'level', 'parent_id']);
+    }
+
+    private function descendantIds(Category $category)
+    {
+        $ids = collect();
+        $children = $category->children()->get(['id']);
+
+        foreach ($children as $child) {
+            $ids->push($child->id);
+            $ids = $ids->merge($this->descendantIds($child));
+        }
+
+        return $ids;
+    }
+
+    private function subtreeHeight(Category $category): int
+    {
+        $maxHeight = 0;
+
+        foreach ($category->children()->get(['id']) as $child) {
+            $maxHeight = max($maxHeight, 1 + $this->subtreeHeight($child));
+        }
+
+        return $maxHeight;
     }
 
     private function categoryAuditData(Category $category): array

@@ -31,13 +31,16 @@
         <label for="{{ $fieldId }}_button" class="mb-1.5 block text-sm font-medium text-slate-300">{{ $label }}</label>
     @endif
 
-    <input type="hidden" id="{{ $fieldId }}" name="{{ $fieldName }}" x-model="value">
+    <input type="hidden" id="{{ $fieldId }}" name="{{ $fieldName }}" x-ref="valueInput" x-model="value">
 
     <button
         id="{{ $fieldId }}_button"
         type="button"
+        x-ref="triggerButton"
         @click="toggle()"
         class="flex min-h-[2.75rem] w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-left text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+        :aria-expanded="open.toString()"
+        aria-haspopup="listbox"
     >
         <span class="min-w-0 truncate" :class="selectedOption ? 'text-white' : 'text-slate-500'" x-text="displayLabel"></span>
         <span class="shrink-0 text-slate-500">⌄</span>
@@ -46,7 +49,9 @@
     <div
         x-show="open"
         x-cloak
-        class="absolute z-[80] mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-slate-950/60 backdrop-blur"
+        class="absolute z-[80] max-h-72 w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-slate-950/60 backdrop-blur"
+        :class="dropUp ? 'bottom-full mb-2' : 'top-full mt-2'"
+        role="listbox"
     >
         <div class="p-2">
             <input
@@ -102,6 +107,7 @@
                 emptyLabel: config.emptyLabel,
                 placeholder: config.placeholder,
                 open: false,
+                dropUp: false,
                 search: '',
                 loading: false,
                 results: [],
@@ -167,7 +173,16 @@
                     this.open = !this.open;
 
                     if (this.open) {
-                        this.$nextTick(() => this.$refs.searchInput?.focus());
+                        this.$nextTick(() => {
+                            const rect = this.$refs.triggerButton?.getBoundingClientRect();
+                            const dropdownHeight = Math.min(288, Math.max(180, window.innerHeight * 0.45));
+
+                            this.dropUp = rect
+                                ? window.innerHeight - rect.bottom < dropdownHeight && rect.top > dropdownHeight
+                                : false;
+
+                            this.$refs.searchInput?.focus();
+                        });
                     }
                 },
 
@@ -176,6 +191,10 @@
                     this.value = option ? String(option.id) : '';
                     this.open = false;
                     this.search = '';
+                    this.$nextTick(() => {
+                        this.$refs.valueInput?.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.$refs.valueInput?.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
                 },
             };
         }

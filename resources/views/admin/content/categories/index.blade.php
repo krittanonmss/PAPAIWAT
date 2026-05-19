@@ -38,9 +38,29 @@
         @endif
 
         {{-- Filter --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
-            <form method="GET" action="{{ route('admin.categories.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                <div class="lg:col-span-3">
+        <div class="relative z-40 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            @php
+                $filterKeys = ['search', 'type_key', 'parent_id', 'status', 'deleted', 'per_page'];
+                $activeFilterCount = collect(request()->only($filterKeys))->filter(fn ($value) => filled($value))->count();
+                $filterSelectClass = 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+            @endphp
+
+            <form method="GET" action="{{ route('admin.categories.index') }}" class="space-y-4" data-ajax-list-form>
+                <div class="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white">ตัวกรองหมวดหมู่</h2>
+                        <p class="mt-0.5 text-xs text-slate-400">จัดกลุ่มตามคำค้น, โครงสร้างหมวดหมู่ และสถานะข้อมูล</p>
+                    </div>
+
+                    @if ($activeFilterCount > 0)
+                        <span class="inline-flex w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200">
+                            ใช้ตัวกรอง {{ $activeFilterCount }} รายการ
+                        </span>
+                    @endif
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div class="lg:col-span-4">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาหมวดหมู่</label>
                     <input
                         type="text"
@@ -53,29 +73,37 @@
 
                 <div class="lg:col-span-2">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">ประเภท</label>
-                    <select
-                        name="type_key"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทั้งหมด</option>
-                        @foreach ($types as $type)
-                            <option class="bg-slate-900" value="{{ $type }}" @selected(request('type_key') === $type)>
-                                {{ ucfirst($type) }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'type_key',
+                        'name' => 'type_key',
+                        'selected' => request('type_key'),
+                        'emptyLabel' => 'ทั้งหมด',
+                        'placeholder' => 'เลือกประเภท',
+                        'searchPlaceholder' => 'ค้นหาประเภท...',
+                        'inputClass' => $filterSelectClass,
+                        'options' => collect($types)->map(fn ($type) => [
+                            'value' => $type,
+                            'label' => ucfirst($type),
+                            'search' => $type . ' ' . ucfirst($type),
+                        ]),
+                    ])
                 </div>
 
-                <div class="lg:col-span-2">
+                <div class="lg:col-span-3">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่แม่</label>
                     @if (request('parent_id') === 'root')
-                        <select
-                            name="parent_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="">ทั้งหมด</option>
-                            <option value="root" selected>Root เท่านั้น</option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'filter_parent_id',
+                            'name' => 'parent_id',
+                            'selected' => 'root',
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกหมวดหมู่แม่',
+                            'searchPlaceholder' => 'ค้นหาหมวดหมู่แม่...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'root', 'label' => 'Root เท่านั้น', 'search' => 'root Root เท่านั้น'],
+                            ]),
+                        ])
                     @else
                         @include('admin.content.partials._async_select', [
                             'id' => 'filter_parent_id',
@@ -96,29 +124,57 @@
 
                 <div class="lg:col-span-2">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
-                    <select
-                        name="status"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทั้งหมด</option>
-                        <option class="bg-slate-900" value="active" @selected(request('status') === 'active')>เปิดใช้งาน</option>
-                        <option class="bg-slate-900" value="inactive" @selected(request('status') === 'inactive')>ปิดใช้งาน</option>
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'status',
+                        'name' => 'status',
+                        'selected' => request('status'),
+                        'emptyLabel' => 'ทั้งหมด',
+                        'placeholder' => 'เลือกสถานะ',
+                        'searchPlaceholder' => 'ค้นหาสถานะ...',
+                        'inputClass' => $filterSelectClass,
+                        'options' => collect([
+                            ['value' => 'active', 'label' => 'เปิดใช้งาน', 'search' => 'active เปิดใช้งาน'],
+                            ['value' => 'inactive', 'label' => 'ปิดใช้งาน', 'search' => 'inactive ปิดใช้งาน'],
+                        ]),
+                    ])
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">รายการที่ลบ</label>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'deleted',
+                        'name' => 'deleted',
+                        'selected' => request('deleted'),
+                        'emptyLabel' => 'ไม่รวมรายการที่ลบ',
+                        'placeholder' => 'เลือกรายการที่ลบ',
+                        'searchPlaceholder' => 'ค้นหารายการที่ลบ...',
+                        'inputClass' => $filterSelectClass,
+                        'options' => collect([
+                            ['value' => 'with', 'label' => 'รวมรายการที่ลบ', 'search' => 'with รวมรายการที่ลบ'],
+                            ['value' => 'only', 'label' => 'เฉพาะรายการที่ลบ', 'search' => 'only เฉพาะรายการที่ลบ'],
+                        ]),
+                    ])
                 </div>
 
                 <div class="lg:col-span-2">
-                    <label class="mb-1.5 block text-xs font-medium text-slate-400">รายการที่ลบ</label>
-                    <select
-                        name="deleted"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ไม่รวมรายการที่ลบ</option>
-                        <option value="with" class="bg-slate-900" @selected(request('deleted') === 'with')>รวมรายการที่ลบ</option>
-                        <option value="only" class="bg-slate-900" @selected(request('deleted') === 'only')>เฉพาะรายการที่ลบ</option>
-                    </select>
+                    <label for="per_page" class="mb-1.5 block text-xs font-medium text-slate-400">แสดงต่อหน้า</label>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'per_page',
+                        'name' => 'per_page',
+                        'selected' => (string) request('per_page', 15),
+                        'allowEmpty' => false,
+                        'placeholder' => 'เลือกจำนวนต่อหน้า',
+                        'searchPlaceholder' => 'ค้นหาจำนวน...',
+                        'inputClass' => $filterSelectClass,
+                        'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                            'value' => (string) $pageSize,
+                            'label' => $pageSize . ' รายการ',
+                            'search' => $pageSize . ' รายการ',
+                        ]),
+                    ])
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 lg:col-span-1 lg:self-end">
+                <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
                     <button
                         type="submit"
                         class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
@@ -128,16 +184,61 @@
 
                     <a
                         href="{{ route('admin.categories.index') }}"
+                        data-ajax-list-reset
                         class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
                     >
                         ล้าง
                     </a>
                 </div>
+                </div>
+            </form>
+        </div>
+
+        {{-- Bulk Actions --}}
+        <div class="relative z-50 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">ย้ายหลายหมวดหมู่พร้อมกัน</h2>
+                    <p class="text-sm text-slate-400">เลือกหมวดหมู่จากตาราง แล้วย้ายเข้าไปใต้หมวดหมู่ปลายทางที่สร้างไว้</p>
+                </div>
+            </div>
+
+            <form
+                method="POST"
+                action="{{ route('admin.categories.bulk-move') }}"
+                class="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-slate-950/30 p-3 md:grid-cols-[1fr_auto]"
+                data-category-bulk-move-form
+            >
+                @csrf
+                @method('PATCH')
+
+                @include('admin.content.partials._searchable_select', [
+                    'id' => 'bulk_move_parent_id',
+                    'name' => 'parent_id',
+                    'selected' => '',
+                    'allowEmpty' => false,
+                    'placeholder' => 'เลือกหมวดหมู่ปลายทาง',
+                    'searchPlaceholder' => 'พิมพ์ชื่อ / ประเภท / ID เพื่อค้นหา...',
+                    'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                    'options' => $parentOptions->map(fn ($parentOption) => [
+                        'value' => $parentOption->id,
+                        'label' => '[' . ucfirst($parentOption->type_key) . '] ' . str_repeat('— ', $parentOption->level) . $parentOption->name,
+                        'meta' => 'Level ' . $parentOption->level . ' | #' . $parentOption->id,
+                        'search' => $parentOption->name . ' ' . $parentOption->type_key . ' level ' . $parentOption->level . ' #' . $parentOption->id,
+                    ]),
+                ])
+
+                <button
+                    type="submit"
+                    class="whitespace-nowrap rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                    ย้ายเข้าหมวดหมู่
+                </button>
             </form>
         </div>
 
         {{-- Table --}}
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur transition-opacity" data-ajax-list-results>
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">รายการหมวดหมู่</h2>
@@ -151,6 +252,14 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
+                            <th class="w-20 px-4 py-3 text-center">
+                                <input
+                                    type="checkbox"
+                                    data-category-select-all
+                                    class="rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-blue-500"
+                                    aria-label="เลือกหมวดหมู่ทั้งหมดในหน้านี้"
+                                >
+                            </th>
                             <th class="px-4 py-3 text-left">ชื่อ</th>
                             <th class="px-4 py-3 text-left">ประเภท</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่แม่</th>
@@ -165,21 +274,29 @@
                     <tbody class="divide-y divide-white/10 text-slate-300">
                         @forelse ($categories as $category)
                             <tr class="transition hover:bg-white/[0.06]">
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-indigo-950/30">
-                                            {{ strtoupper(substr($category->name, 0, 1)) }}
-                                        </div>
+                                <td class="px-4 py-3 text-center">
+                                    @if (! $category->trashed())
+                                        <input
+                                            type="checkbox"
+                                            value="{{ $category->id }}"
+                                            data-category-checkbox
+                                            class="rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-blue-500"
+                                            aria-label="เลือกหมวดหมู่ {{ $category->name }}"
+                                        >
+                                    @else
+                                        <span class="text-xs text-slate-500">-</span>
+                                    @endif
+                                </td>
 
-                                        <div class="min-w-0">
-                                            <p class="truncate font-semibold text-white">
-                                                {{ $category->name }}
-                                                @if ($category->trashed())
-                                                    <span class="ml-2 rounded-full border border-red-400/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-300">ลบแล้ว</span>
-                                                @endif
-                                            </p>
-                                            <p class="truncate text-xs text-slate-400">{{ $category->slug }}</p>
-                                        </div>
+                                <td class="px-4 py-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate font-semibold text-white">
+                                            {{ $category->name }}
+                                            @if ($category->trashed())
+                                                <span class="ml-2 rounded-full border border-red-400/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-300">ลบแล้ว</span>
+                                            @endif
+                                        </p>
+                                        <p class="truncate text-xs text-slate-400">{{ $category->slug }}</p>
                                     </div>
                                 </td>
 
@@ -266,7 +383,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-10 text-center">
+                                <td colspan="9" class="px-5 py-10 text-center">
                                     <p class="text-base font-medium text-slate-300">ไม่พบข้อมูลหมวดหมู่</p>
                                     <p class="mt-1 text-sm text-slate-500">
                                         ลองเปลี่ยนเงื่อนไขการค้นหา หรือสร้างหมวดหมู่ใหม่
@@ -284,5 +401,64 @@
                 </div>
             @endif
         </div>
+
+        @include('admin.content.partials._ajax_index_loader')
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bulkForm = document.querySelector('[data-category-bulk-move-form]');
+
+            const categoryCheckboxes = () => Array.from(document.querySelectorAll('[data-category-checkbox]'));
+            const categorySelectAll = () => document.querySelector('[data-category-select-all]');
+
+            document.addEventListener('change', (event) => {
+                if (event.target.matches('[data-category-select-all]')) {
+                    categoryCheckboxes().forEach((checkbox) => {
+                        checkbox.checked = event.target.checked;
+                    });
+                    return;
+                }
+
+                if (event.target.matches('[data-category-checkbox]')) {
+                    const checkboxes = categoryCheckboxes();
+                    const selectAll = categorySelectAll();
+
+                    if (selectAll) {
+                        selectAll.checked = checkboxes.length > 0 && checkboxes.every((checkbox) => checkbox.checked);
+                    }
+                }
+            });
+
+            bulkForm?.addEventListener('submit', (event) => {
+                bulkForm.querySelectorAll('[data-injected-category-id]').forEach((input) => input.remove());
+
+                const selectedIds = categoryCheckboxes()
+                    .filter((checkbox) => checkbox.checked)
+                    .map((checkbox) => checkbox.value);
+
+                if (selectedIds.length === 0) {
+                    event.preventDefault();
+                    alert('กรุณาเลือกหมวดหมู่อย่างน้อย 1 รายการ');
+                    return;
+                }
+
+                if (! confirm('ยืนยันการย้ายหมวดหมู่ที่เลือกไปยังหมวดหมู่ปลายทางนี้?')) {
+                    event.preventDefault();
+                    return;
+                }
+
+                selectedIds.forEach((id) => {
+                    const input = document.createElement('input');
+
+                    input.type = 'hidden';
+                    input.name = 'category_ids[]';
+                    input.value = id;
+                    input.setAttribute('data-injected-category-id', 'true');
+
+                    bulkForm.appendChild(input);
+                });
+            });
+        });
+    </script>
 </x-layouts.admin>

@@ -12,15 +12,50 @@ use Illuminate\Support\Str;
 
 class MenuController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $menus = Menu::query()
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'status' => (string) $request->query('status', ''),
+            'location_key' => (string) $request->query('location_key', ''),
+            'is_default' => (string) $request->query('is_default', ''),
+            'per_page' => (int) $request->query('per_page', 15),
+        ];
+        $filters['per_page'] = in_array($filters['per_page'], [5, 10, 15, 25, 50], true)
+            ? $filters['per_page']
+            : 15;
+
+        $menusQuery = Menu::query()
             ->withCount('items')
+            ->when($filters['search'] !== '', function ($query) use ($filters) {
+                $like = '%' . $filters['search'] . '%';
+
+                $query->where(function ($query) use ($like) {
+                    $query->where('name', 'like', $like)
+                        ->orWhere('slug', 'like', $like)
+                        ->orWhere('location_key', 'like', $like)
+                        ->orWhere('description', 'like', $like);
+                });
+            })
+            ->when($filters['status'] !== '', fn ($query) => $query->where('status', $filters['status']))
+            ->when($filters['location_key'] !== '', fn ($query) => $query->where('location_key', $filters['location_key']))
+            ->when($filters['is_default'] === 'yes', fn ($query) => $query->where('is_default', true))
+            ->when($filters['is_default'] === 'no', fn ($query) => $query->where('is_default', false));
+
+        $locations = Menu::query()
+            ->whereNotNull('location_key')
+            ->where('location_key', '!=', '')
+            ->distinct()
+            ->orderBy('location_key')
+            ->pluck('location_key');
+
+        $menus = $menusQuery
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate($filters['per_page'])
+            ->withQueryString();
 
-        return view('admin.content.layout.menus.index', compact('menus'));
+        return view('admin.content.layout.menus.index', compact('menus', 'filters', 'locations'));
     }
 
     public function create(): View

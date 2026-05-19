@@ -145,6 +145,10 @@
 
                 {{-- Filters --}}
                 <form method="GET" action="{{ route('admin.media.index') }}" class="border-b border-white/10 p-5">
+                    @php
+                        $filterSelectClass = 'w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+                    @endphp
+
                     @if ($selectedFolderId !== '')
                         <input type="hidden" name="media_folder_id" value="{{ $selectedFolderId }}">
                     @endif
@@ -169,53 +173,59 @@
                             <label for="media_type" class="mb-1.5 block text-sm font-medium text-slate-300">
                                 ประเภทไฟล์
                             </label>
-
-                            <select
-                                id="media_type"
-                                name="media_type"
-                                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            >
-                                <option value="" class="bg-slate-900">ทุกประเภท</option>
-                                @foreach ($mediaTypes as $type)
-                                    <option value="{{ $type }}" class="bg-slate-900" @selected($filters['media_type'] === $type)>
-                                        {{ ucfirst($type) }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @include('admin.content.partials._searchable_select', [
+                                'id' => 'media_type',
+                                'name' => 'media_type',
+                                'selected' => $filters['media_type'],
+                                'emptyLabel' => 'ทุกประเภท',
+                                'placeholder' => 'เลือกประเภทไฟล์',
+                                'searchPlaceholder' => 'ค้นหาประเภทไฟล์...',
+                                'inputClass' => $filterSelectClass,
+                                'options' => collect($mediaTypes)->map(fn ($type) => [
+                                    'value' => $type,
+                                    'label' => ucfirst($type),
+                                    'search' => $type . ' ' . ucfirst($type),
+                                ]),
+                            ])
                         </div>
 
                         <div>
                             <label for="visibility" class="mb-1.5 block text-sm font-medium text-slate-300">
                                 การมองเห็น
                             </label>
-
-                            <select
-                                id="visibility"
-                                name="visibility"
-                                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            >
-                                <option value="" class="bg-slate-900">ทั้งหมด</option>
-                                <option value="public" class="bg-slate-900" @selected($filters['visibility'] === 'public')>สาธารณะ</option>
-                                <option value="private" class="bg-slate-900" @selected($filters['visibility'] === 'private')>ส่วนตัว</option>
-                            </select>
+                            @include('admin.content.partials._searchable_select', [
+                                'id' => 'visibility',
+                                'name' => 'visibility',
+                                'selected' => $filters['visibility'],
+                                'emptyLabel' => 'ทั้งหมด',
+                                'placeholder' => 'เลือกการมองเห็น',
+                                'searchPlaceholder' => 'ค้นหาการมองเห็น...',
+                                'inputClass' => $filterSelectClass,
+                                'options' => collect([
+                                    ['value' => 'public', 'label' => 'สาธารณะ', 'search' => 'public สาธารณะ'],
+                                    ['value' => 'private', 'label' => 'ส่วนตัว', 'search' => 'private ส่วนตัว'],
+                                ]),
+                            ])
                         </div>
 
                         <div>
                             <label for="per_page" class="mb-1.5 block text-sm font-medium text-slate-300">
                                 จำนวนการ์ด
                             </label>
-
-                            <select
-                                id="per_page"
-                                name="per_page"
-                                class="w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            >
-                                @foreach ($perPageOptions as $option)
-                                    <option value="{{ $option }}" class="bg-slate-900" @selected((int) $filters['per_page'] === $option)>
-                                        {{ $option }} ใบ
-                                    </option>
-                                @endforeach
-                            </select>
+                            @include('admin.content.partials._searchable_select', [
+                                'id' => 'per_page',
+                                'name' => 'per_page',
+                                'selected' => (string) $filters['per_page'],
+                                'allowEmpty' => false,
+                                'placeholder' => 'เลือกจำนวนการ์ด',
+                                'searchPlaceholder' => 'ค้นหาจำนวน...',
+                                'inputClass' => $filterSelectClass,
+                                'options' => collect($perPageOptions)->map(fn ($option) => [
+                                    'value' => (string) $option,
+                                    'label' => $option . ' ใบ',
+                                    'search' => $option . ' ใบ',
+                                ]),
+                            ])
                         </div>
 
                         <div class="flex gap-2">

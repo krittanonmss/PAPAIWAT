@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Content\Layout;
 
 use App\Http\Controllers\Controller;
+use App\Models\Content\Layout\Menu;
 use App\Support\FooterSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,8 +13,17 @@ class FooterSettingsController extends Controller
 {
     public function edit(): View
     {
+        $footerMenus = Menu::query()
+            ->withCount(['items', 'rootItems'])
+            ->where('location_key', 'footer')
+            ->orderByDesc('is_default')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.content.layout.footer.edit', [
             'settings' => FooterSettings::get(),
+            'footerMenus' => $footerMenus,
         ]);
     }
 

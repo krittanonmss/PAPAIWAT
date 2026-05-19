@@ -1,15 +1,17 @@
 @php
     $content = $section->content_data ?? [];
+    $settings = $section->settings_data ?? [];
     $phoneLabel = trim((string) ($content['phone_label'] ?? '')) ?: 'โทร:';
     $emailLabel = trim((string) ($content['email_label'] ?? '')) ?: 'อีเมล:';
     $mapButtonLabel = trim((string) ($content['map_button_label'] ?? '')) ?: 'เปิดแผนที่';
     $showPhone = (bool) ($content['show_phone'] ?? true);
     $showEmail = (bool) ($content['show_email'] ?? true);
     $showMapButton = (bool) ($content['show_map_button'] ?? true);
+    $cardPosition = ($settings['contact_card_position'] ?? 'right') === 'left' ? 'left' : 'right';
 @endphp
 <section class="px-4 py-16" style="@include('frontend.templates.sections._background')">
-    <div class="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_420px]">
-        <div>
+    <div class="mx-auto grid max-w-7xl gap-8 {{ $cardPosition === 'left' ? 'lg:grid-cols-[420px_1fr]' : 'lg:grid-cols-[1fr_420px]' }}">
+        <div class="{{ $cardPosition === 'left' ? 'lg:order-2' : 'lg:order-1' }}">
             @if(!empty($content['eyebrow']))
                 <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
             @endif
@@ -19,7 +21,7 @@
             @endif
         </div>
 
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+        <div class="{{ $cardPosition === 'left' ? 'lg:order-1' : 'lg:order-2' }} rounded-3xl border border-white/10 bg-white/[0.04] p-6">
             <div class="space-y-4 text-sm text-slate-300">
                 @if($showPhone && !empty($content['phone']))
                     <p><span class="text-slate-500">{{ $phoneLabel }}</span> <a href="tel:{{ $content['phone'] }}" class="hover:text-white">{{ $content['phone'] }}</a></p>

@@ -74,6 +74,28 @@ class FrontendFooterMenuTest extends TestCase
             'sort_order' => 1,
         ]);
 
+        $nestedFooterItem = MenuItem::query()->create([
+            'menu_id' => $footerMenu->id,
+            'parent_id' => $infoColumn->id,
+            'label' => 'คู่มือ Footer',
+            'menu_item_type' => 'external_url',
+            'external_url' => '/guide',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 2,
+        ]);
+
+        MenuItem::query()->create([
+            'menu_id' => $footerMenu->id,
+            'parent_id' => $nestedFooterItem->id,
+            'label' => 'คู่มือย่อย Footer',
+            'menu_item_type' => 'external_url',
+            'external_url' => '/guide/detail',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
+
         MenuItem::query()->create([
             'menu_id' => $footerMenu->id,
             'label' => 'ซ่อนใน Footer',
@@ -89,7 +111,9 @@ class FrontendFooterMenuTest extends TestCase
         $this->assertStringContainsString('หน้าแรก Footer', $footerHtml);
         $this->assertStringContainsString('ข้อมูลเว็บไซต์', $footerHtml);
         $this->assertStringContainsString('ติดต่อเรา Footer', $footerHtml);
+        $this->assertStringContainsString('คู่มือย่อย Footer', $footerHtml);
         $this->assertStringContainsString('href="/contact"', $footerHtml);
+        $this->assertStringContainsString('href="/guide/detail"', $footerHtml);
         $this->assertStringNotContainsString('Header Only', $footerHtml);
         $this->assertStringNotContainsString('ซ่อนใน Footer', $footerHtml);
     }
@@ -115,6 +139,56 @@ class FrontendFooterMenuTest extends TestCase
         $this->assertStringContainsString('ข้อความ footer ที่จัดการเอง', $footerHtml);
         $this->assertStringContainsString('หมายเหตุท้ายเว็บ', $footerHtml);
         $this->assertStringContainsString('© '.date('Y').' โดย วัดไทย Custom', $footerHtml);
+        $this->assertStringContainsString('grid h-11 w-11', $footerHtml);
         $this->assertStringNotContainsString('หน้าแรก</a>', $footerHtml);
+    }
+
+    public function test_frontend_navigation_renders_nested_dropdown_menu_items(): void
+    {
+        $headerMenu = Menu::query()->create([
+            'name' => 'Header Menu',
+            'slug' => 'header-menu',
+            'location_key' => 'header',
+            'status' => 'active',
+        ]);
+
+        $parent = MenuItem::query()->create([
+            'menu_id' => $headerMenu->id,
+            'label' => 'สถานที่',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
+
+        $child = MenuItem::query()->create([
+            'menu_id' => $headerMenu->id,
+            'parent_id' => $parent->id,
+            'label' => 'วัดภาคเหนือ',
+            'menu_item_type' => 'external_url',
+            'external_url' => '/north',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
+
+        MenuItem::query()->create([
+            'menu_id' => $headerMenu->id,
+            'parent_id' => $child->id,
+            'label' => 'เชียงใหม่',
+            'menu_item_type' => 'external_url',
+            'external_url' => '/north/chiang-mai',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 1,
+        ]);
+
+        $navigationHtml = view('frontend.partials.navigation')->render();
+
+        $this->assertStringContainsString('สถานที่', $navigationHtml);
+        $this->assertStringContainsString('วัดภาคเหนือ', $navigationHtml);
+        $this->assertStringContainsString('เชียงใหม่', $navigationHtml);
+        $this->assertStringContainsString('left-full top-0', $navigationHtml);
+        $this->assertStringContainsString('href="/north/chiang-mai"', $navigationHtml);
     }
 }

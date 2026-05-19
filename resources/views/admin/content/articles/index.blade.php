@@ -31,11 +31,42 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-3 text-sm text-red-300">
+                {{ session('error') }}
+            </div>
+        @endif
+
         {{-- Filter --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
-            <form method="GET" action="{{ route('admin.content.articles.index') }}" class="space-y-3">
-                <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                    <div class="lg:col-span-4">
+        <div class="relative z-40 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            @php
+                $filterKeys = [
+                    'search', 'status', 'body_format', 'author_name', 'category_id',
+                    'tag_id', 'allow_comments', 'show_on_homepage', 'is_featured',
+                    'is_popular', 'per_page',
+                ];
+                $activeFilterCount = collect(request()->only($filterKeys))->filter(fn ($value) => filled($value))->count();
+                $filterSelectClass = 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+            @endphp
+
+            <form method="GET" action="{{ route('admin.content.articles.index') }}" class="space-y-4" data-ajax-list-form>
+                <div class="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white">ตัวกรองบทความ</h2>
+                        <p class="mt-0.5 text-xs text-slate-400">เรียงตามข้อมูลหลัก, taxonomy และสถานะการแสดงผล</p>
+                    </div>
+
+                    @if ($activeFilterCount > 0)
+                        <span class="inline-flex w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200">
+                            ใช้ตัวกรอง {{ $activeFilterCount }} รายการ
+                        </span>
+                    @endif
+                </div>
+
+                <div>
+                    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">ข้อมูลหลัก</p>
+                    <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    <div class="lg:col-span-5">
                         <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา</label>
                         <input
                             type="text"
@@ -45,35 +76,6 @@
                             placeholder="ชื่อเรื่อง / slug / คำโปรย / รายละเอียด"
                             class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                         >
-                    </div>
-
-                    <div class="lg:col-span-2">
-                        <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
-                        <select
-                            id="status"
-                            name="status"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทุกสถานะ</option>
-                            <option value="draft" class="bg-slate-900" @selected(request('status') === 'draft')>ฉบับร่าง</option>
-                            <option value="review" class="bg-slate-900" @selected(request('status') === 'review')>รอตรวจสอบ</option>
-                            <option value="published" class="bg-slate-900" @selected(request('status') === 'published')>เผยแพร่แล้ว</option>
-                            <option value="archived" class="bg-slate-900" @selected(request('status') === 'archived')>เก็บถาวร</option>
-                        </select>
-                    </div>
-
-                    <div class="lg:col-span-2">
-                        <label for="body_format" class="mb-1.5 block text-xs font-medium text-slate-400">รูปแบบเนื้อหา</label>
-                        <select
-                            id="body_format"
-                            name="body_format"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทุกรูปแบบ</option>
-                            <option value="markdown" class="bg-slate-900" @selected(request('body_format') === 'markdown')>Markdown</option>
-                            <option value="html" class="bg-slate-900" @selected(request('body_format') === 'html')>HTML</option>
-                            <option value="editorjs" class="bg-slate-900" @selected(request('body_format') === 'editorjs')>EditorJS</option>
-                        </select>
                     </div>
 
                     <div class="lg:col-span-2">
@@ -88,24 +90,48 @@
                         >
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
-                        <button
-                            type="submit"
-                            class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                        >
-                            ค้นหา
-                        </button>
+                    <div class="lg:col-span-2">
+                        <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'status',
+                            'name' => 'status',
+                            'selected' => request('status'),
+                            'emptyLabel' => 'ทุกสถานะ',
+                            'placeholder' => 'เลือกสถานะ',
+                            'searchPlaceholder' => 'ค้นหาสถานะ...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'draft', 'label' => 'ฉบับร่าง', 'search' => 'draft ฉบับร่าง'],
+                                ['value' => 'review', 'label' => 'รอตรวจสอบ', 'search' => 'review รอตรวจสอบ'],
+                                ['value' => 'published', 'label' => 'เผยแพร่แล้ว', 'search' => 'published เผยแพร่แล้ว'],
+                                ['value' => 'archived', 'label' => 'เก็บถาวร', 'search' => 'archived เก็บถาวร'],
+                            ]),
+                        ])
+                    </div>
 
-                        <a
-                            href="{{ route('admin.content.articles.index') }}"
-                            class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
-                        >
-                            ล้าง
-                        </a>
+                    <div class="lg:col-span-3">
+                        <label for="body_format" class="mb-1.5 block text-xs font-medium text-slate-400">รูปแบบเนื้อหา</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'body_format',
+                            'name' => 'body_format',
+                            'selected' => request('body_format'),
+                            'emptyLabel' => 'ทุกรูปแบบ',
+                            'placeholder' => 'เลือกรูปแบบเนื้อหา',
+                            'searchPlaceholder' => 'ค้นหารูปแบบเนื้อหา...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'markdown', 'label' => 'Markdown', 'search' => 'markdown'],
+                                ['value' => 'html', 'label' => 'HTML', 'search' => 'html'],
+                                ['value' => 'editorjs', 'label' => 'EditorJS', 'search' => 'editorjs'],
+                            ]),
+                        ])
+                    </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+                <div>
+                    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">หมวดหมู่และแท็ก</p>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <label for="category_id" class="mb-1.5 block text-xs font-medium text-slate-400">หมวดหมู่</label>
                         @include('admin.content.partials._searchable_select', [
@@ -115,7 +141,7 @@
                             'emptyLabel' => 'ทุกหมวดหมู่',
                             'placeholder' => 'เลือกหมวดหมู่',
                             'searchPlaceholder' => 'ค้นหาหมวดหมู่...',
-                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            'inputClass' => $filterSelectClass,
                             'options' => $categories->map(fn ($category) => [
                                 'value' => $category->id,
                                 'label' => $category->name,
@@ -134,7 +160,7 @@
                             'emptyLabel' => 'ทุกแท็ก',
                             'placeholder' => 'เลือกแท็ก',
                             'searchPlaceholder' => 'ค้นหาแท็ก...',
-                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            'inputClass' => $filterSelectClass,
                             'options' => $tags->map(fn ($tag) => [
                                 'value' => $tag->id,
                                 'label' => $tag->name,
@@ -143,64 +169,161 @@
                             ]),
                         ])
                     </div>
+                    </div>
+                </div>
 
+                <div>
+                    <p class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">การแสดงผล</p>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
                     <div>
                         <label for="allow_comments" class="mb-1.5 block text-xs font-medium text-slate-400">ความคิดเห็น</label>
-                        <select
-                            id="allow_comments"
-                            name="allow_comments"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="1" class="bg-slate-900" @selected(request('allow_comments') === '1')>เปิดความคิดเห็น</option>
-                            <option value="0" class="bg-slate-900" @selected(request('allow_comments') === '0')>ปิดความคิดเห็น</option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'allow_comments',
+                            'name' => 'allow_comments',
+                            'selected' => request('allow_comments'),
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกสถานะความคิดเห็น',
+                            'searchPlaceholder' => 'ค้นหาสถานะความคิดเห็น...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => '1', 'label' => 'เปิดความคิดเห็น', 'search' => '1 เปิดความคิดเห็น'],
+                                ['value' => '0', 'label' => 'ปิดความคิดเห็น', 'search' => '0 ปิดความคิดเห็น'],
+                            ]),
+                        ])
                     </div>
 
                     <div>
                         <label for="show_on_homepage" class="mb-1.5 block text-xs font-medium text-slate-400">หน้าแรก</label>
-                        <select
-                            id="show_on_homepage"
-                            name="show_on_homepage"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="1" class="bg-slate-900" @selected(request('show_on_homepage') === '1')>แสดงหน้าแรก</option>
-                            <option value="0" class="bg-slate-900" @selected(request('show_on_homepage') === '0')>ไม่แสดงหน้าแรก</option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'show_on_homepage',
+                            'name' => 'show_on_homepage',
+                            'selected' => request('show_on_homepage'),
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกสถานะหน้าแรก',
+                            'searchPlaceholder' => 'ค้นหาสถานะหน้าแรก...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => '1', 'label' => 'แสดงหน้าแรก', 'search' => '1 แสดงหน้าแรก'],
+                                ['value' => '0', 'label' => 'ไม่แสดงหน้าแรก', 'search' => '0 ไม่แสดงหน้าแรก'],
+                            ]),
+                        ])
                     </div>
 
                     <div>
                         <label for="is_featured" class="mb-1.5 block text-xs font-medium text-slate-400">แนะนำ</label>
-                        <select
-                            id="is_featured"
-                            name="is_featured"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="1" class="bg-slate-900" @selected(request('is_featured') === '1')>แนะนำ</option>
-                            <option value="0" class="bg-slate-900" @selected(request('is_featured') === '0')>ไม่แนะนำ</option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'is_featured',
+                            'name' => 'is_featured',
+                            'selected' => request('is_featured'),
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกสถานะแนะนำ',
+                            'searchPlaceholder' => 'ค้นหาสถานะแนะนำ...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => '1', 'label' => 'แนะนำ', 'search' => '1 แนะนำ featured'],
+                                ['value' => '0', 'label' => 'ไม่แนะนำ', 'search' => '0 ไม่แนะนำ not featured'],
+                            ]),
+                        ])
                     </div>
 
                     <div>
                         <label for="is_popular" class="mb-1.5 block text-xs font-medium text-slate-400">ยอดนิยม</label>
-                        <select
-                            id="is_popular"
-                            name="is_popular"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'is_popular',
+                            'name' => 'is_popular',
+                            'selected' => request('is_popular'),
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกสถานะยอดนิยม',
+                            'searchPlaceholder' => 'ค้นหาสถานะยอดนิยม...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => '1', 'label' => 'ยอดนิยม', 'search' => '1 ยอดนิยม popular'],
+                                ['value' => '0', 'label' => 'ไม่ยอดนิยม', 'search' => '0 ไม่ยอดนิยม not popular'],
+                            ]),
+                        ])
+                    </div>
+
+                    <div>
+                        <label for="per_page" class="mb-1.5 block text-xs font-medium text-slate-400">แสดงต่อหน้า</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'per_page',
+                            'name' => 'per_page',
+                            'selected' => (string) request('per_page', 5),
+                            'allowEmpty' => false,
+                            'placeholder' => 'เลือกจำนวนต่อหน้า',
+                            'searchPlaceholder' => 'ค้นหาจำนวน...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                                'value' => (string) $pageSize,
+                                'label' => $pageSize . ' รายการ',
+                                'search' => $pageSize . ' รายการ',
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 xl:self-end">
+                        <button
+                            type="submit"
+                            class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
                         >
-                            <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="1" class="bg-slate-900" @selected(request('is_popular') === '1')>ยอดนิยม</option>
-                            <option value="0" class="bg-slate-900" @selected(request('is_popular') === '0')>ไม่ยอดนิยม</option>
-                        </select>
+                            ค้นหา
+                        </button>
+
+                        <a
+                            href="{{ route('admin.content.articles.index') }}"
+                            data-ajax-list-reset
+                            class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
+                        >
+                            ล้าง
+                        </a>
+                    </div>
                     </div>
                 </div>
             </form>
         </div>
 
+        {{-- Bulk Actions --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">จัดหมวดหมู่หลายบทความพร้อมกัน</h2>
+                    <p class="text-sm text-slate-400">เลือกบทความจากตาราง แล้วเพิ่มเข้าหมวดหมู่ที่ต้องการโดยไม่ล้างหมวดหมู่เดิม</p>
+                </div>
+            </div>
+
+            <form
+                method="POST"
+                action="{{ route('admin.content.articles.bulk-category') }}"
+                class="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-slate-950/30 p-3 md:grid-cols-[1fr_auto]"
+                data-article-bulk-category-form
+            >
+                @csrf
+                @method('PATCH')
+
+                <select
+                    name="category_id"
+                    class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                    required
+                >
+                    <option value="" class="bg-slate-900">เลือกหมวดหมู่</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}" class="bg-slate-900">
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <button
+                    type="submit"
+                    class="whitespace-nowrap rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                    เพิ่มเข้าหมวดหมู่
+                </button>
+            </form>
+        </div>
+
         {{-- Table --}}
-        <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+        <section class="relative z-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur transition-opacity" data-ajax-list-results>
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">รายการ</h2>
@@ -218,7 +341,15 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-950/30 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3 text-left"></th>
+                            <th class="w-20 px-4 py-3 text-center">
+                                <input
+                                    type="checkbox"
+                                    data-article-select-all
+                                    class="rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-blue-500"
+                                    aria-label="เลือกบทความทั้งหมดในหน้านี้"
+                                >
+                            </th>
+                            <th class="px-4 py-3 text-left">ข้อมูล</th>
                             <th class="px-4 py-3 text-left">สถานะ</th>
                             <th class="px-4 py-3 text-left">ผู้เขียน</th>
                             <th class="px-4 py-3 text-left">หมวดหมู่</th>
@@ -237,6 +368,16 @@
                             @endphp
 
                             <tr class="align-top transition hover:bg-white/[0.06]">
+                                <td class="px-4 py-3 text-center">
+                                    <input
+                                        type="checkbox"
+                                        value="{{ $article->id }}"
+                                        data-article-checkbox
+                                        class="rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-blue-500"
+                                        aria-label="เลือกบทความ {{ $content?->title ?? $article->id }}"
+                                    >
+                                </td>
+
                                 <td class="px-4 py-3">
                                     <div class="flex items-start gap-3">
                                         <div class="h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 shadow-lg shadow-slate-950/30">
@@ -408,7 +549,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-10 text-center">
+                                <td colspan="9" class="px-5 py-10 text-center">
                                     <p class="text-base font-medium text-slate-300">ไม่พบ</p>
                                     <p class="mt-1 text-sm text-slate-500">
                                         ยังไม่มีในระบบ หรือไม่มีข้อมูลที่ตรงกับตัวกรอง
@@ -434,5 +575,64 @@
                 </div>
             @endif
         </section>
+
+        @include('admin.content.partials._ajax_index_loader')
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bulkForm = document.querySelector('[data-article-bulk-category-form]');
+
+            const articleCheckboxes = () => Array.from(document.querySelectorAll('[data-article-checkbox]'));
+            const articleSelectAll = () => document.querySelector('[data-article-select-all]');
+
+            document.addEventListener('change', (event) => {
+                if (event.target.matches('[data-article-select-all]')) {
+                    articleCheckboxes().forEach((checkbox) => {
+                        checkbox.checked = event.target.checked;
+                    });
+                    return;
+                }
+
+                if (event.target.matches('[data-article-checkbox]')) {
+                    const checkboxes = articleCheckboxes();
+                    const selectAll = articleSelectAll();
+
+                    if (selectAll) {
+                        selectAll.checked = checkboxes.length > 0 && checkboxes.every((checkbox) => checkbox.checked);
+                    }
+                }
+            });
+
+            bulkForm?.addEventListener('submit', (event) => {
+                bulkForm.querySelectorAll('[data-injected-article-id]').forEach((input) => input.remove());
+
+                const selectedIds = articleCheckboxes()
+                    .filter((checkbox) => checkbox.checked)
+                    .map((checkbox) => checkbox.value);
+
+                if (selectedIds.length === 0) {
+                    event.preventDefault();
+                    alert('กรุณาเลือกบทความอย่างน้อย 1 รายการ');
+                    return;
+                }
+
+                if (! confirm('ยืนยันการเพิ่มบทความที่เลือกเข้าหมวดหมู่นี้?')) {
+                    event.preventDefault();
+                    return;
+                }
+
+                selectedIds.forEach((id) => {
+                    const input = document.createElement('input');
+
+                    input.type = 'hidden';
+                    input.name = 'article_ids[]';
+                    input.value = id;
+                    input.setAttribute('data-injected-article-id', 'true');
+
+                    bulkForm.appendChild(input);
+                });
+            });
+        });
+    </script>
 </x-layouts.admin>

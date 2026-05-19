@@ -25,6 +25,29 @@
     $summaryStats = $section->summary_stats ?? [];
     $showPrimaryButton = (bool) ($content['primary_enabled'] ?? true);
     $showSecondaryButton = (bool) ($content['secondary_enabled'] ?? true);
+    $rawContentPosition = $settings['hero_content_position'] ?? 'center';
+    $contentPosition = in_array($rawContentPosition, ['left', 'center', 'right'], true)
+        ? $rawContentPosition
+        : 'center';
+    $rawVerticalAlign = $settings['hero_vertical_align'] ?? 'center';
+    $verticalAlign = in_array($rawVerticalAlign, ['top', 'center', 'bottom'], true)
+        ? $rawVerticalAlign
+        : 'center';
+    $positionClass = match ($contentPosition) {
+        'left' => 'mr-auto text-left',
+        'right' => 'ml-auto text-right',
+        default => 'mx-auto text-center',
+    };
+    $buttonAlignClass = match ($contentPosition) {
+        'left' => 'justify-start',
+        'right' => 'justify-end',
+        default => 'justify-center',
+    };
+    $verticalAlignClass = match ($verticalAlign) {
+        'top' => 'items-start',
+        'bottom' => 'items-end',
+        default => 'items-center',
+    };
     $searchPlaceholder = trim((string) ($content['search_placeholder'] ?? '')) ?: 'พิมพ์สิ่งที่อยากค้นหา...';
     $searchButtonLabel = trim((string) ($content['search_button_label'] ?? '')) ?: 'ค้นหา';
     $templeStatLabel = trim((string) ($content['temple_stat_label'] ?? '')) ?: 'วัดทั้งหมด';
@@ -48,9 +71,10 @@
     @else
         <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950/45 to-slate-950"></div>
     @endif
+    <div class="pointer-events-none absolute inset-0" style="background-color: var(--section-hero-overlay-color); opacity: var(--section-hero-overlay-opacity, 0);"></div>
 
-    <div class="relative mx-auto flex h-full max-w-7xl items-center {{ $contentPaddingClass }} text-center">
-        <div class="mx-auto {{ $contentMaxWidthClass }}">
+    <div class="relative mx-auto flex h-full max-w-7xl {{ $verticalAlignClass }} {{ $contentPaddingClass }}">
+        <div class="{{ $positionClass }} {{ $contentMaxWidthClass }}">
             @if(!empty($content['eyebrow']))
                 <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
             @endif
@@ -58,7 +82,7 @@
             @if(!empty($content['subtitle']))
                 <p class="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">{{ $content['subtitle'] }}</p>
             @endif
-            <div class="mt-8 flex flex-wrap justify-center gap-3">
+            <div class="mt-8 flex flex-wrap {{ $buttonAlignClass }} gap-3">
                 @if($showPrimaryButton && !empty($content['primary_label']) && !empty($content['primary_url']))
                     <a href="{{ $content['primary_url'] }}" class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500">{{ $content['primary_label'] }}</a>
                 @endif

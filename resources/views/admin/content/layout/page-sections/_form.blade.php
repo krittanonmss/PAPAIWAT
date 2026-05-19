@@ -196,6 +196,30 @@
             show_search_box: @js((bool) ($initialSettings['show_search_box'] ?? false)),
             show_summary_stats: @js((bool) ($initialSettings['show_summary_stats'] ?? false)),
             text_color: @js($initialSettings['text_color'] ?? '#ffffff'),
+            heading_color: @js($initialSettings['heading_color'] ?? ($initialSettings['text_color'] ?? '#ffffff')),
+            muted_text_color: @js($initialSettings['muted_text_color'] ?? ($initialSettings['text_color'] ?? '#ffffff')),
+            accent_color: @js($initialSettings['accent_color'] ?? '#93c5fd'),
+            button_background_color: @js($initialSettings['button_background_color'] ?? '#2563eb'),
+            button_text_color: @js($initialSettings['button_text_color'] ?? '#ffffff'),
+            button_border_color: @js($initialSettings['button_border_color'] ?? ($initialSettings['button_background_color'] ?? '#2563eb')),
+            card_background_color: @js($initialSettings['card_background_color'] ?? '#ffffff'),
+            card_border_color: @js($initialSettings['card_border_color'] ?? '#ffffff'),
+            card_heading_color: @js($initialSettings['card_heading_color'] ?? ($initialSettings['heading_color'] ?? ($initialSettings['text_color'] ?? '#ffffff'))),
+            card_text_color: @js($initialSettings['card_text_color'] ?? ($initialSettings['muted_text_color'] ?? ($initialSettings['text_color'] ?? '#ffffff'))),
+            section_gap: @js($initialSettings['section_gap'] ?? 'default'),
+            card_padding: @js($initialSettings['card_padding'] ?? 'default'),
+            card_radius: @js($initialSettings['card_radius'] ?? '3xl'),
+            image_radius: @js($initialSettings['image_radius'] ?? 'none'),
+            image_aspect_ratio: @js($initialSettings['image_aspect_ratio'] ?? 'photo'),
+            filter_panel_style: @js($initialSettings['filter_panel_style'] ?? 'solid'),
+            hero_overlay_color: @js($initialSettings['hero_overlay_color'] ?? '#020617'),
+            hero_overlay_opacity: @js((int) ($initialSettings['hero_overlay_opacity'] ?? 0)),
+            hero_content_position: @js($initialSettings['hero_content_position'] ?? 'center'),
+            hero_vertical_align: @js($initialSettings['hero_vertical_align'] ?? 'center'),
+            contact_card_position: @js($initialSettings['contact_card_position'] ?? 'right'),
+            grid_columns: @js((int) ($initialSettings['grid_columns'] ?? ($initialSettings['list_columns'] ?? 4))),
+            stats_columns: @js((int) ($initialSettings['stats_columns'] ?? 4)),
+            gallery_columns: @js((int) ($initialSettings['gallery_columns'] ?? 3)),
             font_size: @js($initialSettings['font_size'] ?? 'base'),
             font_weight: @js($initialSettings['font_weight'] ?? 'normal'),
             text_align: @js($initialSettings['text_align'] ?? 'inherit'),
@@ -637,7 +661,7 @@
                         :class="activeTab === 'design' ? 'border-blue-400/30 bg-blue-500/20 text-blue-100' : 'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white'"
                         class="rounded-2xl border px-4 py-3 text-sm font-semibold transition"
                     >
-                        หน้าตา แอนิเมชัน และการแสดงผล
+                        หน้าตา
                     </button>
                 </div>
             </div>
@@ -1328,9 +1352,9 @@
 
     <div x-show="activeTab === 'design'" x-cloak class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="mb-5">
-            <p class="text-sm font-medium text-blue-300">ส่วนที่ 2</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">การแสดงผลและสถานะ</h2>
-            <p class="mt-1 text-sm text-slate-400">ตั้งพื้นหลัง รูปภาพ แหล่งข้อมูล จำนวนรายการ และสถานะการเผยแพร่</p>
+            <p class="text-sm font-medium text-blue-300">ส่วนที่ 3</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">หน้าตาเซกชัน</h2>
+            <p class="mt-1 text-sm text-slate-400">ปรับสี ตัวอักษร การ์ด รูปภาพ ระยะห่าง แอนิเมชัน และการแสดงผลของเซกชันนี้</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
@@ -1376,18 +1400,42 @@
                 </div>
             </div>
 
-            <div class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/30 p-5 lg:col-span-2">
-                <div>
-                    <h3 class="text-sm font-semibold text-white">ตั้งหน้าตา</h3>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">ปรับสี ตัวอักษร ระยะห่าง ปุ่ม ขนาด layout และ animation แบบปลอดภัยโดยไม่ใช้ JavaScript ดิบ</p>
-                </div>
+            <details open class="space-y-4 rounded-2xl border border-white/10 bg-slate-950/30 p-5 lg:col-span-2">
+                <summary class="cursor-pointer list-none">
+                    <span class="block text-sm font-semibold text-white">สีและการปรับละเอียดทั้งหมด</span>
+                    <span class="mt-1 block text-xs leading-5 text-slate-500">เปิดไว้ให้แก้ custom สี ปุ่ม การ์ด รูปภาพ ระยะห่าง และ animation ได้ทันที กดหัวข้อนี้เพื่อพับเก็บเมื่อไม่ใช้</span>
+                </summary>
 
-                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                     <label class="block">
-                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความ</span>
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความหลัก</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
                             <input type="text" x-model="settings.text_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีหัวข้อ</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.heading_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.heading_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความรอง</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.muted_text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.muted_text_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#cbd5e1">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สี accent</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.accent_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.accent_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#93c5fd">
                         </div>
                     </label>
 
@@ -1452,6 +1500,30 @@
                     </label>
 
                     <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีพื้นปุ่ม</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.button_background_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.button_background_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#2563eb">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีตัวอักษรปุ่ม</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.button_text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.button_text_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีเส้นปุ่ม</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.button_border_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.button_border_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#2563eb">
+                        </div>
+                    </label>
+
+                    <label class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งปุ่ม</span>
                         <select x-model="settings.button_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="lg" class="bg-slate-900">โค้งเล็ก</option>
@@ -1481,6 +1553,88 @@
                     </label>
 
                     <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีพื้นการ์ด</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.card_background_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.card_background_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีเส้นการ์ด</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.card_border_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.card_border_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีหัวข้อในการ์ด</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.card_heading_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.card_heading_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความในการ์ด</span>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="settings.card_text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                            <input type="text" x-model="settings.card_text_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#cbd5e1">
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะห่างชิ้นงาน</span>
+                        <select x-model="settings.section_gap" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="tight" class="bg-slate-900">แน่น</option>
+                            <option value="default" class="bg-slate-900">มาตรฐาน</option>
+                            <option value="loose" class="bg-slate-900">ห่าง</option>
+                            <option value="spacious" class="bg-slate-900">โปร่งมาก</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะด้านในการ์ด</span>
+                        <select x-model="settings.card_padding" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="compact" class="bg-slate-900">กระชับ</option>
+                            <option value="default" class="bg-slate-900">มาตรฐาน</option>
+                            <option value="spacious" class="bg-slate-900">โปร่ง</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งการ์ด</span>
+                        <select x-model="settings.card_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="none" class="bg-slate-900">ไม่มี</option>
+                            <option value="xl" class="bg-slate-900">XL</option>
+                            <option value="2xl" class="bg-slate-900">2XL</option>
+                            <option value="3xl" class="bg-slate-900">3XL</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สัดส่วนรูป</span>
+                        <select x-model="settings.image_aspect_ratio" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="photo" class="bg-slate-900">4:3</option>
+                            <option value="video" class="bg-slate-900">16:9</option>
+                            <option value="wide" class="bg-slate-900">21:9</option>
+                            <option value="square" class="bg-slate-900">1:1</option>
+                            <option value="portrait" class="bg-slate-900">3:4</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งรูป</span>
+                        <select x-model="settings.image_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <option value="none" class="bg-slate-900">ตาม template</option>
+                            <option value="xl" class="bg-slate-900">XL</option>
+                            <option value="2xl" class="bg-slate-900">2XL</option>
+                            <option value="3xl" class="bg-slate-900">3XL</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">การแสดงผลตามอุปกรณ์</span>
                         <select x-model="settings.visibility" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="all" class="bg-slate-900">ทุกอุปกรณ์</option>
@@ -1503,6 +1657,87 @@
                             <option value="zoom-out" class="bg-slate-900">ซูมออก</option>
                         </select>
                     </label>
+                </div>
+
+                <div class="rounded-2xl border border-blue-400/15 bg-blue-500/[0.04] p-4">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-semibold text-white">ตั้งค่าเฉพาะชนิดเซกชัน</h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">ช่องด้านล่างจะแสดงตาม block ที่เลือก เพื่อให้ปรับหน้าตาแยกกันโดยไม่ปนกับ section อื่น</p>
+                    </div>
+
+                    <div x-show="['hero','banner'].includes(component)" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">ตำแหน่งเนื้อหา</span>
+                            <select x-model="settings.hero_content_position" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="left" class="bg-slate-900">ซ้าย</option>
+                                <option value="center" class="bg-slate-900">กลาง</option>
+                                <option value="right" class="bg-slate-900">ขวา</option>
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">แนวตั้งเนื้อหา</span>
+                            <select x-model="settings.hero_vertical_align" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="top" class="bg-slate-900">บน</option>
+                                <option value="center" class="bg-slate-900">กลาง</option>
+                                <option value="bottom" class="bg-slate-900">ล่าง</option>
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">สี overlay</span>
+                            <div class="flex items-center gap-3">
+                                <input type="color" x-model="settings.hero_overlay_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                                <input type="text" x-model="settings.hero_overlay_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#020617">
+                            </div>
+                        </label>
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">ความทึบ overlay (%)</span>
+                            <input type="number" min="0" max="90" step="5" x-model.number="settings.hero_overlay_opacity" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                        </label>
+                    </div>
+
+                    <div x-show="['article_grid','temple_grid','article_list_full','temple_list_full','travel_discovery_bento'].includes(component)" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">จำนวนคอลัมน์การ์ด</span>
+                            <input type="number" min="1" max="6" step="1" x-model.number="settings.grid_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                        </label>
+                        <label class="block" x-show="['article_list_full','temple_list_full','travel_discovery_bento'].includes(component)" x-cloak>
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">สไตล์แผงตัวกรอง</span>
+                            <select x-model="settings.filter_panel_style" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="solid" class="bg-slate-900">ทึบ</option>
+                                <option value="soft" class="bg-slate-900">นุ่ม</option>
+                                <option value="outline" class="bg-slate-900">เส้นขอบ</option>
+                                <option value="plain" class="bg-slate-900">เรียบ</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div x-show="component === 'gallery'" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">จำนวนคอลัมน์แกลเลอรี</span>
+                            <input type="number" min="1" max="4" step="1" x-model.number="settings.gallery_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                        </label>
+                    </div>
+
+                    <div x-show="component === 'stats'" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">จำนวนคอลัมน์สถิติ</span>
+                            <input type="number" min="1" max="4" step="1" x-model.number="settings.stats_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                        </label>
+                    </div>
+
+                    <div x-show="component === 'contact'" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">ตำแหน่งกล่องติดต่อ</span>
+                            <select x-model="settings.contact_card_position" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="right" class="bg-slate-900">ขวา</option>
+                                <option value="left" class="bg-slate-900">ซ้าย</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div x-show="!['hero','banner','article_grid','temple_grid','article_list_full','temple_list_full','travel_discovery_bento','gallery','stats','contact'].includes(component)" x-cloak>
+                        <p class="rounded-xl border border-white/10 bg-slate-950/30 px-4 py-3 text-xs text-slate-400">ใช้ชุดปรับละเอียดร่วม เช่น สี, การ์ด, รูป, ระยะห่าง, ความกว้าง และปุ่ม ด้านบน</p>
+                    </div>
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">
@@ -1537,7 +1772,7 @@
 }"
                     ></textarea>
                 </div>
-            </div>
+            </details>
 
             <div x-show="component === 'image_text'" x-cloak>
                 <label class="mb-1.5 block text-sm font-medium text-slate-300">ตำแหน่งรูป</label>

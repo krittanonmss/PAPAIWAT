@@ -60,6 +60,10 @@
 
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <form method="GET" action="{{ route('admin.media-folders.index') }}" class="border-b border-white/10 p-5">
+                @php
+                    $filterSelectClass = 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+                @endphp
+
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                     <div class="lg:col-span-5">
                         <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">
@@ -80,36 +84,43 @@
                         <label for="parent_id" class="mb-1.5 block text-xs font-medium text-slate-400">
                             โฟลเดอร์แม่
                         </label>
-
-                        <select
-                            id="parent_id"
-                            name="parent_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="root" class="bg-slate-900" @selected($filters['parent_id'] === 'root')>โฟลเดอร์หลัก</option>
-                            @foreach ($parents as $parent)
-                                <option value="{{ $parent->id }}" class="bg-slate-900" @selected((string) $filters['parent_id'] === (string) $parent->id)>
-                                    {{ $parent->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'parent_id',
+                            'name' => 'parent_id',
+                            'selected' => $filters['parent_id'],
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกโฟลเดอร์แม่',
+                            'searchPlaceholder' => 'ค้นหาโฟลเดอร์แม่...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([[
+                                'value' => 'root',
+                                'label' => 'โฟลเดอร์หลัก',
+                                'search' => 'root โฟลเดอร์หลัก',
+                            ]])->merge($parents->map(fn ($parent) => [
+                                'value' => $parent->id,
+                                'label' => $parent->name,
+                                'search' => $parent->name . ' ' . $parent->id,
+                            ])),
+                        ])
                     </div>
 
                     <div class="lg:col-span-2">
                         <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">
                             สถานะ
                         </label>
-
-                        <select
-                            id="status"
-                            name="status"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="" class="bg-slate-900">ทุกสถานะ</option>
-                            <option value="active" class="bg-slate-900" @selected($filters['status'] === 'active')>เปิดใช้งาน</option>
-                            <option value="inactive" class="bg-slate-900" @selected($filters['status'] === 'inactive')>ปิดใช้งาน</option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'status',
+                            'name' => 'status',
+                            'selected' => $filters['status'],
+                            'emptyLabel' => 'ทุกสถานะ',
+                            'placeholder' => 'เลือกสถานะ',
+                            'searchPlaceholder' => 'ค้นหาสถานะ...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'active', 'label' => 'เปิดใช้งาน', 'search' => 'active เปิดใช้งาน'],
+                                ['value' => 'inactive', 'label' => 'ปิดใช้งาน', 'search' => 'inactive ปิดใช้งาน'],
+                            ]),
+                        ])
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">

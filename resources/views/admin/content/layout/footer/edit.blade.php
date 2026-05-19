@@ -1,5 +1,13 @@
 <x-layouts.admin :title="'Footer Settings'" header="ตั้ง Footer">
     <div class="space-y-6 text-white">
+        @php
+            $footerMenus = collect($footerMenus ?? []);
+            $activeFooterMenus = $footerMenus->where('status', 'active');
+            $defaultFooterMenu = $footerMenus->firstWhere('is_default', true) ?? $activeFooterMenus->first();
+            $previewColumnCount = (string) old('column_count', $settings['column_count']);
+            $previewBackground = old('background_style', $settings['background_style']);
+        @endphp
+
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 shadow-xl shadow-slate-950/30">
             <div class="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div class="max-w-2xl">
@@ -19,6 +27,23 @@
                 >
                     ไปจัดการเมนู
                 </a>
+            </div>
+
+            <div class="grid border-t border-white/10 bg-slate-950/20 sm:grid-cols-3">
+                <div class="border-b border-white/10 px-6 py-4 sm:border-b-0 sm:border-r">
+                    <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Footer Menus</p>
+                    <p class="mt-1 text-2xl font-semibold text-white">{{ number_format($footerMenus->count()) }}</p>
+                </div>
+
+                <div class="border-b border-white/10 px-6 py-4 sm:border-b-0 sm:border-r">
+                    <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Active</p>
+                    <p class="mt-1 text-2xl font-semibold text-emerald-200">{{ number_format($activeFooterMenus->count()) }}</p>
+                </div>
+
+                <div class="px-6 py-4">
+                    <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Default Structure</p>
+                    <p class="mt-1 truncate text-sm font-semibold text-white">{{ $defaultFooterMenu?->name ?? 'ยังไม่มี Footer Menu' }}</p>
+                </div>
             </div>
         </div>
 
@@ -162,12 +187,85 @@
                 </div>
 
                 <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
+                    <section class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/50 shadow-xl shadow-slate-950/30">
+                        <div class="border-b border-white/10 px-5 py-4">
+                            <p class="text-xs font-medium uppercase tracking-[0.16em] text-blue-300">Live Preview</p>
+                            <h3 class="mt-1 text-sm font-semibold text-white">ตัวอย่างโครง Footer</h3>
+                        </div>
+
+                        <div class="p-5">
+                            <div class="@if($previewBackground === 'solid') bg-slate-950 @elseif($previewBackground === 'minimal') bg-transparent @else bg-white/[0.04] @endif rounded-2xl border border-white/10 p-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/[0.06] text-sm font-bold">
+                                        {{ mb_substr(old('brand_title', $settings['brand_title']) ?: 'P', 0, 1) }}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-white">{{ old('brand_title', $settings['brand_title']) ?: 'PAPAIWAT' }}</p>
+                                        <p class="text-xs text-slate-500">{{ $previewColumnCount }} columns</p>
+                                    </div>
+                                </div>
+
+                                <p class="mt-4 text-xs leading-5 text-slate-400">
+                                    {{ old('brand_description', $settings['brand_description']) ?: 'Brand description' }}
+                                </p>
+
+                                @if (old('footer_note', $settings['footer_note']))
+                                    <p class="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-400">
+                                        {{ old('footer_note', $settings['footer_note']) }}
+                                    </p>
+                                @endif
+
+                                <div class="mt-5 grid gap-2" style="grid-template-columns: repeat({{ min((int) $previewColumnCount, 3) }}, minmax(0, 1fr));">
+                                    @for ($i = 0; $i < min((int) $previewColumnCount, 3); $i++)
+                                        <div class="space-y-2">
+                                            <span class="block h-2 w-14 rounded-full bg-slate-600"></span>
+                                            <span class="block h-2 w-20 rounded-full bg-slate-800"></span>
+                                            <span class="block h-2 w-16 rounded-full bg-slate-800"></span>
+                                        </div>
+                                    @endfor
+                                </div>
+
+                                @if (old('show_bottom_bar', $settings['show_bottom_bar']))
+                                    <div class="mt-5 border-t border-white/10 pt-3 text-[11px] text-slate-500">
+                                        {{ \App\Support\FooterSettings::copyright($settings) }}
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </section>
+
                     <section class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h3 class="text-sm font-semibold text-white">วิธีใช้งาน</h3>
+                        <h3 class="text-sm font-semibold text-white">โครงสร้างเมนู Footer</h3>
                         <div class="mt-4 space-y-3 text-xs leading-5 text-slate-400">
-                            <p>1. ปรับข้อความและรูปแบบ Footer จากหน้านี้</p>
-                            <p>2. สร้าง Menu ที่ตำแหน่งเป็น Footer เพื่อจัดคอลัมน์ลิงก์</p>
-                            <p>3. ใช้ Menu Item ประเภทหัวข้อกลุ่มสำหรับชื่อคอลัมน์ และสร้าง child เป็นลิงก์จริง</p>
+                            @if ($defaultFooterMenu)
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                    <p class="font-semibold text-slate-200">{{ $defaultFooterMenu->name }}</p>
+                                    <p class="mt-1">หัวข้อหลัก {{ number_format($defaultFooterMenu->root_items_count) }} รายการ · ลิงก์รวม {{ number_format($defaultFooterMenu->items_count) }} รายการ</p>
+                                </div>
+                            @else
+                                <div class="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4 text-yellow-100">
+                                    ยังไม่มีเมนูตำแหน่ง Footer ให้สร้างเมนูก่อนเพื่อจัดคอลัมน์ลิงก์
+                                </div>
+                            @endif
+
+                            <p>ใช้ Menu Item ประเภทหัวข้อกลุ่มเป็นชื่อคอลัมน์ และเพิ่ม child เป็นลิงก์ย่อยในคอลัมน์นั้น</p>
+
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <a
+                                    href="{{ route('admin.content.menus.index') }}"
+                                    class="inline-flex items-center justify-center rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                >
+                                    จัดการเมนู
+                                </a>
+                                <a
+                                    href="{{ url('/') }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center justify-center rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                >
+                                    ดูหน้าเว็บ
+                                </a>
+                            </div>
                         </div>
                     </section>
 

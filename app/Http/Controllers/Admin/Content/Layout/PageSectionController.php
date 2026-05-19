@@ -50,7 +50,6 @@ class PageSectionController extends Controller
         $componentKey = (string) $request->input('component_key', 'hero');
         $content = $this->prepareSectionContent($request->input('content')) ?? [];
         $settings = $this->sanitizeSectionSettings($this->decodeJson($request->input('settings')) ?? []);
-        $this->sectionSchemaValidator->validate($componentKey, $content, $settings);
 
         $section = new PageSection([
             'page_id' => $page->id,
@@ -285,9 +284,21 @@ class PageSectionController extends Controller
         $safe['background_color'] = $this->sanitizeHexColor($settings['background_color'] ?? null, '#020617');
         $safe['background_color_end'] = $this->sanitizeHexColor($settings['background_color_end'] ?? null, $safe['background_color']);
         $safe['text_color'] = $this->sanitizeHexColor($settings['text_color'] ?? null, '#ffffff');
+        $safe['heading_color'] = $this->sanitizeHexColor($settings['heading_color'] ?? null, $safe['text_color']);
+        $safe['muted_text_color'] = $this->sanitizeHexColor($settings['muted_text_color'] ?? null, $safe['text_color']);
+        $safe['accent_color'] = $this->sanitizeHexColor($settings['accent_color'] ?? null, '#93c5fd');
+        $safe['button_background_color'] = $this->sanitizeHexColor($settings['button_background_color'] ?? null, '#2563eb');
+        $safe['button_text_color'] = $this->sanitizeHexColor($settings['button_text_color'] ?? null, '#ffffff');
+        $safe['button_border_color'] = $this->sanitizeHexColor($settings['button_border_color'] ?? null, $safe['button_background_color']);
+        $safe['card_background_color'] = $this->sanitizeHexColor($settings['card_background_color'] ?? null, '#ffffff');
+        $safe['card_border_color'] = $this->sanitizeHexColor($settings['card_border_color'] ?? null, '#ffffff');
+        $safe['card_heading_color'] = $this->sanitizeHexColor($settings['card_heading_color'] ?? null, $safe['heading_color']);
+        $safe['card_text_color'] = $this->sanitizeHexColor($settings['card_text_color'] ?? null, $safe['muted_text_color']);
         $safe['background_gradient'] = (bool) ($settings['background_gradient'] ?? false);
         $safe['show_search_box'] = (bool) ($settings['show_search_box'] ?? false);
         $safe['show_summary_stats'] = (bool) ($settings['show_summary_stats'] ?? false);
+        $safe['hero_overlay_color'] = $this->sanitizeHexColor($settings['hero_overlay_color'] ?? null, '#020617');
+        $safe['hero_overlay_opacity'] = max(0, min((int) ($settings['hero_overlay_opacity'] ?? 0), 90));
 
         $safe['background_gradient_direction'] = $this->allowedValue($settings['background_gradient_direction'] ?? null, [
             'to bottom',
@@ -309,11 +320,20 @@ class PageSectionController extends Controller
         $safe['font_size'] = $this->allowedValue($settings['font_size'] ?? null, ['sm', 'base', 'lg', 'xl'], 'base');
         $safe['font_weight'] = $this->allowedValue($settings['font_weight'] ?? null, ['normal', 'medium', 'semibold', 'bold'], 'normal');
         $safe['text_align'] = $this->allowedValue($settings['text_align'] ?? null, ['inherit', 'left', 'center', 'right'], 'inherit');
+        $safe['section_gap'] = $this->allowedValue($settings['section_gap'] ?? null, ['tight', 'default', 'loose', 'spacious'], 'default');
         $safe['spacing_padding'] = $this->allowedValue($settings['spacing_padding'] ?? null, ['none', 'compact', 'default', 'spacious'], 'default');
         $safe['spacing_margin'] = $this->allowedValue($settings['spacing_margin'] ?? null, ['none', 'sm', 'md', 'lg'], 'none');
         $safe['button_style'] = $this->allowedValue($settings['button_style'] ?? null, ['solid', 'outline', 'ghost', 'glass'], 'solid');
         $safe['button_radius'] = $this->allowedValue($settings['button_radius'] ?? null, ['lg', '2xl', 'full'], '2xl');
         $safe['border_radius'] = $this->allowedValue($settings['border_radius'] ?? null, ['none', 'xl', '2xl', '3xl'], 'none');
+        $safe['card_padding'] = $this->allowedValue($settings['card_padding'] ?? null, ['compact', 'default', 'spacious'], 'default');
+        $safe['card_radius'] = $this->allowedValue($settings['card_radius'] ?? null, ['none', 'xl', '2xl', '3xl'], '3xl');
+        $safe['image_radius'] = $this->allowedValue($settings['image_radius'] ?? null, ['none', 'xl', '2xl', '3xl'], 'none');
+        $safe['image_aspect_ratio'] = $this->allowedValue($settings['image_aspect_ratio'] ?? null, ['square', 'photo', 'video', 'wide', 'portrait'], 'photo');
+        $safe['filter_panel_style'] = $this->allowedValue($settings['filter_panel_style'] ?? null, ['solid', 'soft', 'outline', 'plain'], 'solid');
+        $safe['hero_content_position'] = $this->allowedValue($settings['hero_content_position'] ?? null, ['left', 'center', 'right'], 'center');
+        $safe['hero_vertical_align'] = $this->allowedValue($settings['hero_vertical_align'] ?? null, ['top', 'center', 'bottom'], 'center');
+        $safe['contact_card_position'] = $this->allowedValue($settings['contact_card_position'] ?? null, ['left', 'right'], 'right');
         $safe['layout_width'] = $this->allowedValue($settings['layout_width'] ?? null, ['4xl', '5xl', '7xl', 'full'], '7xl');
         $safe['visibility'] = $this->allowedValue($settings['visibility'] ?? null, ['all', 'desktop', 'mobile', 'hidden'], 'all');
         $safe['animation_type'] = $this->allowedValue($settings['animation_type'] ?? null, ['none', 'fade', 'fade-up', 'fade-down', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out'], 'none');
@@ -328,6 +348,9 @@ class PageSectionController extends Controller
         $safe['slider_threshold'] = max(1, min((int) ($settings['slider_threshold'] ?? 4), 12));
         $safe['list_rows'] = max(1, min((int) ($settings['list_rows'] ?? 4), 12));
         $safe['list_columns'] = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
+        $safe['grid_columns'] = max(1, min((int) ($settings['grid_columns'] ?? $safe['list_columns']), 6));
+        $safe['stats_columns'] = max(1, min((int) ($settings['stats_columns'] ?? 4), 4));
+        $safe['gallery_columns'] = max(1, min((int) ($settings['gallery_columns'] ?? 3), 4));
         $safe['banner_height'] = in_array((int) ($settings['banner_height'] ?? 540), [540, 720], true)
             ? (int) ($settings['banner_height'] ?? 540)
             : 540;

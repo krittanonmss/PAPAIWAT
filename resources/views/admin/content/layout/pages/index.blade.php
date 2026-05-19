@@ -24,6 +24,153 @@
             </div>
         </div>
 
+        {{-- Filter --}}
+        <div class="relative z-40 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            @php
+                $filterKeys = ['search', 'status', 'page_type', 'template_id', 'is_homepage', 'per_page'];
+                $activeFilterCount = collect(request()->only($filterKeys))
+                    ->reject(fn ($value, $key) => $key === 'per_page' && (string) $value === '15')
+                    ->filter(fn ($value) => filled($value))
+                    ->count();
+                $filterSelectClass = 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+            @endphp
+
+            <form method="GET" action="{{ route('admin.content.pages.index') }}" class="space-y-4">
+                <div class="flex flex-col gap-2 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white">ตัวกรองหน้าเว็บไซต์</h2>
+                        <p class="mt-0.5 text-xs text-slate-400">ค้นหาและกรองตามสถานะ ประเภทหน้า template และหน้าแรก</p>
+                    </div>
+
+                    @if ($activeFilterCount > 0)
+                        <span class="inline-flex w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200">
+                            ใช้ตัวกรอง {{ $activeFilterCount }} รายการ
+                        </span>
+                    @endif
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                    <div class="lg:col-span-4">
+                        <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาหน้า</label>
+                        <input
+                            type="text"
+                            id="search"
+                            name="search"
+                            value="{{ $filters['search'] ?? request('search') }}"
+                            placeholder="ชื่อหน้า / slug / คำโปรย"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'status',
+                            'name' => 'status',
+                            'selected' => $filters['status'] ?? request('status'),
+                            'emptyLabel' => 'ทุกสถานะ',
+                            'placeholder' => 'เลือกสถานะ',
+                            'searchPlaceholder' => 'ค้นหาสถานะ...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'draft', 'label' => 'ฉบับร่าง', 'search' => 'draft ฉบับร่าง'],
+                                ['value' => 'published', 'label' => 'เผยแพร่', 'search' => 'published เผยแพร่'],
+                                ['value' => 'archived', 'label' => 'เก็บถาวร', 'search' => 'archived เก็บถาวร'],
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="page_type" class="mb-1.5 block text-xs font-medium text-slate-400">ประเภทหน้า</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'page_type',
+                            'name' => 'page_type',
+                            'selected' => $filters['page_type'] ?? request('page_type'),
+                            'emptyLabel' => 'ทุกประเภท',
+                            'placeholder' => 'เลือกประเภทหน้า',
+                            'searchPlaceholder' => 'ค้นหาประเภทหน้า...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => $pageTypes->map(fn ($type) => [
+                                'value' => $type,
+                                'label' => $type,
+                                'search' => $type,
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="template_id" class="mb-1.5 block text-xs font-medium text-slate-400">Template</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'template_id',
+                            'name' => 'template_id',
+                            'selected' => $filters['template_id'] ?? request('template_id'),
+                            'emptyLabel' => 'ทุก template',
+                            'placeholder' => 'เลือก template',
+                            'searchPlaceholder' => 'ค้นหา template...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => $templates->map(fn ($template) => [
+                                'value' => $template->id,
+                                'label' => $template->name,
+                                'meta' => $template->key,
+                                'search' => $template->name . ' ' . $template->key . ' ' . $template->id,
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="is_homepage" class="mb-1.5 block text-xs font-medium text-slate-400">หน้าแรก</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'is_homepage',
+                            'name' => 'is_homepage',
+                            'selected' => $filters['is_homepage'] ?? request('is_homepage'),
+                            'emptyLabel' => 'ทั้งหมด',
+                            'placeholder' => 'เลือกสถานะหน้าแรก',
+                            'searchPlaceholder' => 'ค้นหาสถานะหน้าแรก...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([
+                                ['value' => 'yes', 'label' => 'หน้าแรกเท่านั้น', 'search' => 'yes หน้าแรก homepage'],
+                                ['value' => 'no', 'label' => 'ไม่ใช่หน้าแรก', 'search' => 'no ไม่ใช่หน้าแรก'],
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label for="per_page" class="mb-1.5 block text-xs font-medium text-slate-400">แสดงต่อหน้า</label>
+                        @include('admin.content.partials._searchable_select', [
+                            'id' => 'per_page',
+                            'name' => 'per_page',
+                            'selected' => (string) ($filters['per_page'] ?? request('per_page', 15)),
+                            'allowEmpty' => false,
+                            'placeholder' => 'เลือกจำนวนต่อหน้า',
+                            'searchPlaceholder' => 'ค้นหาจำนวน...',
+                            'inputClass' => $filterSelectClass,
+                            'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                                'value' => (string) $pageSize,
+                                'label' => $pageSize . ' รายการ',
+                                'search' => $pageSize . ' รายการ',
+                            ]),
+                        ])
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
+                        <button
+                            type="submit"
+                            class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        >
+                            ค้นหา
+                        </button>
+
+                        <a
+                            href="{{ route('admin.content.pages.index') }}"
+                            class="inline-flex items-center justify-center rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5"
+                        >
+                            ล้าง
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
         {{-- Table --}}
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">

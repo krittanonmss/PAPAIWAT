@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Content\Layout;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\FrontendPageController;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
@@ -23,15 +24,56 @@ class PageController extends Controller
     ) {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $pages = Page::query()
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'status' => (string) $request->query('status', ''),
+            'page_type' => (string) $request->query('page_type', ''),
+            'template_id' => (string) $request->query('template_id', ''),
+            'is_homepage' => (string) $request->query('is_homepage', ''),
+            'per_page' => (int) $request->query('per_page', 15),
+        ];
+        $filters['per_page'] = in_array($filters['per_page'], [5, 10, 15, 25, 50], true)
+            ? $filters['per_page']
+            : 15;
+
+        $pagesQuery = Page::query()
             ->with('template')
+            ->when($filters['search'] !== '', function ($query) use ($filters) {
+                $like = '%' . $filters['search'] . '%';
+
+                $query->where(function ($query) use ($like) {
+                    $query->where('title', 'like', $like)
+                        ->orWhere('slug', 'like', $like)
+                        ->orWhere('excerpt', 'like', $like);
+                });
+            })
+            ->when($filters['status'] !== '', fn ($query) => $query->where('status', $filters['status']))
+            ->when($filters['page_type'] !== '', fn ($query) => $query->where('page_type', $filters['page_type']))
+            ->when($filters['template_id'] !== '', fn ($query) => $query->where('template_id', $filters['template_id']))
+            ->when($filters['is_homepage'] === 'yes', fn ($query) => $query->where('is_homepage', true))
+            ->when($filters['is_homepage'] === 'no', fn ($query) => $query->where('is_homepage', false));
+
+        $pageTypes = Page::query()
+            ->whereNotNull('page_type')
+            ->distinct()
+            ->orderBy('page_type')
+            ->pluck('page_type');
+
+        $templates = Template::query()
+            ->whereIn('template_type', ['page', 'list'])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'key']);
+
+        $pages = $pagesQuery
             ->orderBy('sort_order')
             ->orderBy('title')
-            ->paginate(15);
+            ->paginate($filters['per_page'])
+            ->withQueryString();
 
-        return view('admin.content.layout.pages.index', compact('pages'));
+        return view('admin.content.layout.pages.index', compact('pages', 'filters', 'pageTypes', 'templates'));
     }
 
     public function create(): View
@@ -306,11 +348,15 @@ class PageController extends Controller
             return collect();
         }
 
-        return $page->sections()
+        $sections = $page->sections()
             ->where('status', 'active')
             ->where('is_visible', true)
             ->orderBy('sort_order')
             ->get();
+
+        $page->setRelation('sections', $sections);
+
+        return app(FrontendPageController::class)->buildPageSections($page);
     }
 
     private function pageIsReferencedBySections(Page $page): bool

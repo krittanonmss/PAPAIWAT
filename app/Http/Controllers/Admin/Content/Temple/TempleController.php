@@ -7,14 +7,17 @@ use App\Http\Requests\Admin\Content\Temple\StoreTempleRequest;
 use App\Http\Requests\Admin\Content\Temple\UpdateTempleRequest;
 use App\Models\Admin\AuditLog;
 use App\Models\Content\Category;
+use App\Models\Content\Content;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
+use App\Models\Content\Temple\TempleAddress;
 use App\Services\Admin\Content\Temple\TempleDataSyncService;
 use App\Services\Admin\Content\Temple\TempleValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class TempleController extends Controller
@@ -22,6 +25,13 @@ class TempleController extends Controller
     private const STATUS_OPTIONS = [
         'draft',
         'review',
+        'archived',
+    ];
+
+    private const INDEX_STATUS_OPTIONS = [
+        'draft',
+        'review',
+        'published',
         'archived',
     ];
 
@@ -41,21 +51,36 @@ class TempleController extends Controller
                 'address',
                 'stat',
             ])
-            ->whereHas('content', function ($query) use ($request) {
-                if ($request->filled('search')) {
-                    $search = $request->string('search')->toString();
+            ->whereHas('content');
 
-                    $query->where(function ($q) use ($search) {
-                        $q->where('title', 'like', '%' . $search . '%')
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+
+            $query->where(function ($q) use ($search) {
+                $q->where('temple_type', 'like', '%' . $search . '%')
+                    ->orWhere('sect', 'like', '%' . $search . '%')
+                    ->orWhere('architecture_style', 'like', '%' . $search . '%')
+                    ->orWhereHas('content', function ($contentQuery) use ($search) {
+                        $contentQuery->where('title', 'like', '%' . $search . '%')
                             ->orWhere('slug', 'like', '%' . $search . '%')
-                            ->orWhere('excerpt', 'like', '%' . $search . '%');
+                            ->orWhere('excerpt', 'like', '%' . $search . '%')
+                            ->orWhere('description', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('address', function ($addressQuery) use ($search) {
+                        $addressQuery->where('address_line', 'like', '%' . $search . '%')
+                            ->orWhere('province', 'like', '%' . $search . '%')
+                            ->orWhere('district', 'like', '%' . $search . '%')
+                            ->orWhere('subdistrict', 'like', '%' . $search . '%')
+                            ->orWhere('postal_code', 'like', '%' . $search . '%');
                     });
-                }
-
-                if ($request->filled('status')) {
-                    $query->where('status', $request->string('status')->toString());
-                }
             });
+        }
+
+        if ($request->filled('status')) {
+            $query->whereHas('content', function ($q) use ($request) {
+                $q->where('status', $request->string('status')->toString());
+            });
+        }
 
         if ($request->filled('category_id')) {
             $categoryId = (int) $request->input('category_id');
@@ -63,6 +88,99 @@ class TempleController extends Controller
             $query->whereHas('content.categories', function ($q) use ($categoryId) {
                 $q->where('categories.id', $categoryId);
             });
+        }
+
+        if ($request->filled('template_id')) {
+            $templateId = (int) $request->input('template_id');
+
+            $query->whereHas('content', fn ($q) => $q->where('template_id', $templateId));
+        }
+
+        if ($request->filled('featured')) {
+            $featured = $request->string('featured')->toString();
+
+            if (in_array($featured, ['yes', 'no'], true)) {
+                $query->whereHas('content', fn ($q) => $q->where('is_featured', $featured === 'yes'));
+            }
+        }
+
+        if ($request->filled('temple_type')) {
+            $query->where('temple_type', $request->string('temple_type')->toString());
+        }
+
+        if ($request->filled('sect')) {
+            $query->where('sect', $request->string('sect')->toString());
+        }
+
+        if ($request->filled('province')) {
+            $query->whereHas('address', fn ($q) => $q->where('province', $request->string('province')->toString()));
+        }
+
+        if ($request->filled('district')) {
+            $query->whereHas('address', fn ($q) => $q->where('district', $request->string('district')->toString()));
+        }
+
+        if ($request->filled('has_location')) {
+            $locationFilter = $request->string('has_location')->toString();
+
+            if ($locationFilter === 'yes') {
+                $query->whereHas('address', fn ($q) => $q->whereNotNull('latitude')->whereNotNull('longitude'));
+            } elseif ($locationFilter === 'no') {
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('address')
+                        ->orWhereHas('address', fn ($addressQuery) => $addressQuery->whereNull('latitude')->orWhereNull('longitude'));
+                });
+            }
+        }
+
+        if ($request->filled('has_media')) {
+            $mediaFilter = $request->string('has_media')->toString();
+
+            if ($mediaFilter === 'cover') {
+                $query->whereHas('content.mediaUsages', fn ($q) => $q->where('role_key', 'cover'));
+            } elseif ($mediaFilter === 'missing_cover') {
+                $query->whereDoesntHave('content.mediaUsages', fn ($q) => $q->where('role_key', 'cover'));
+            } elseif ($mediaFilter === 'gallery') {
+                $query->whereHas('content.mediaUsages', fn ($q) => $q->where('role_key', 'gallery'));
+            } elseif ($mediaFilter === 'missing_gallery') {
+                $query->whereDoesntHave('content.mediaUsages', fn ($q) => $q->where('role_key', 'gallery'));
+            } elseif ($mediaFilter === 'any') {
+                $query->whereHas('content.mediaUsages');
+            } elseif ($mediaFilter === 'none') {
+                $query->whereDoesntHave('content.mediaUsages');
+            }
+        }
+
+        if ($request->filled('published_from')) {
+            $publishedFrom = $this->dateInput($request, 'published_from');
+
+            if ($publishedFrom) {
+                $query->whereHas('content', fn ($q) => $q->whereDate('published_at', '>=', $publishedFrom));
+            }
+        }
+
+        if ($request->filled('published_to')) {
+            $publishedTo = $this->dateInput($request, 'published_to');
+
+            if ($publishedTo) {
+                $query->whereHas('content', fn ($q) => $q->whereDate('published_at', '<=', $publishedTo));
+            }
+        }
+
+        if ($request->filled('created_from')) {
+            $createdFrom = $this->dateInput($request, 'created_from');
+
+            if ($createdFrom) {
+                $query->whereDate('created_at', '>=', $createdFrom);
+            }
+        }
+
+        if ($request->filled('created_to')) {
+            $createdTo = $this->dateInput($request, 'created_to');
+
+            if ($createdTo) {
+                $query->whereDate('created_at', '<=', $createdTo);
+            }
         }
 
         if ($request->filled('sort')) {
@@ -74,6 +192,23 @@ class TempleController extends Controller
                     ->orderByDesc('temple_stats.score')
                     ->orderByDesc('temple_stats.favorite_count')
                     ->orderByDesc('temple_stats.review_count');
+            } elseif ($sort === 'reviews') {
+                $query->leftJoin('temple_stats', 'temple_stats.temple_id', '=', 'temples.id')
+                    ->select('temples.*')
+                    ->orderByDesc('temple_stats.review_count')
+                    ->orderByDesc('temple_stats.average_rating');
+            } elseif ($sort === 'favorites') {
+                $query->leftJoin('temple_stats', 'temple_stats.temple_id', '=', 'temples.id')
+                    ->select('temples.*')
+                    ->orderByDesc('temple_stats.favorite_count');
+            } elseif ($sort === 'title_asc') {
+                $query->orderBy(Content::query()->select('title')->whereColumn('contents.id', 'temples.content_id'));
+            } elseif ($sort === 'title_desc') {
+                $query->orderByDesc(Content::query()->select('title')->whereColumn('contents.id', 'temples.content_id'));
+            } elseif ($sort === 'published_newest') {
+                $query->orderByDesc(Content::query()->select('published_at')->whereColumn('contents.id', 'temples.content_id'));
+            } elseif ($sort === 'published_oldest') {
+                $query->orderBy(Content::query()->select('published_at')->whereColumn('contents.id', 'temples.content_id'));
             } elseif ($sort === 'oldest') {
                 $query->orderBy('id');
             } else {
@@ -83,7 +218,7 @@ class TempleController extends Controller
             $query->latest('id');
         }
 
-        $temples = $query->paginate(5)->withQueryString();
+        $temples = $query->paginate($this->perPage($request, 5))->withQueryString();
 
         $categories = Category::query()
             ->where('type_key', 'temple')
@@ -94,7 +229,12 @@ class TempleController extends Controller
             'title' => 'Temple Management',
             'temples' => $temples,
             'categories' => $categories,
-            'statuses' => self::STATUS_OPTIONS,
+            'statuses' => self::INDEX_STATUS_OPTIONS,
+            'detailTemplates' => $this->detailTemplates('temple'),
+            'templeTypes' => $this->distinctTempleOptions('temple_type'),
+            'sects' => $this->distinctTempleOptions('sect'),
+            'provinces' => $this->distinctAddressOptions('province'),
+            'districts' => $this->distinctAddressOptions('district'),
         ]);
     }
 
@@ -241,6 +381,73 @@ class TempleController extends Controller
             ->with('success', 'เผยแพร่ข้อมูลวัดเรียบร้อยแล้ว');
     }
 
+    public function bulkAssignCategory(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'temple_ids' => ['required', 'array', 'min:1'],
+            'temple_ids.*' => ['integer', 'exists:temples,id'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+        ]);
+
+        $category = Category::query()
+            ->whereKey($validated['category_id'])
+            ->where('type_key', 'temple')
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $updatedCount = 0;
+
+        DB::transaction(function () use ($request, $validated, $category, &$updatedCount): void {
+            $temples = Temple::query()
+                ->with('content.categories')
+                ->whereIn('id', $validated['temple_ids'])
+                ->whereHas('content', fn ($query) => $query
+                    ->where('content_type', 'temple')
+                    ->whereNull('deleted_at'))
+                ->get();
+
+            foreach ($temples as $temple) {
+                if (! $temple->content) {
+                    continue;
+                }
+
+                $categoryIds = $temple->content->categories->pluck('id')->map(fn ($id) => (int) $id);
+
+                if ($categoryIds->contains((int) $category->id)) {
+                    continue;
+                }
+
+                $oldData = $this->templeAuditData($temple);
+                $hasPrimary = $temple->content->categories->contains(fn (Category $item) => (bool) $item->pivot?->is_primary);
+
+                $temple->content->categories()->attach($category->id, [
+                    'is_primary' => ! $hasPrimary && $categoryIds->isEmpty(),
+                    'sort_order' => $categoryIds->count(),
+                    'created_at' => now(),
+                ]);
+
+                $temple->content->update(['updated_by_admin_id' => auth('admin')->id()]);
+                $temple->refresh()->load('content.mediaUsages', 'content.categories');
+
+                $this->writeAuditLog($request, 'temple.category_assigned', $temple, $oldData, $this->templeAuditData($temple) + [
+                    'assigned_category_id' => $category->id,
+                ]);
+
+                $updatedCount++;
+            }
+        });
+
+        if ($updatedCount === 0) {
+            return redirect()
+                ->route('admin.temples.index')
+                ->with('error', 'ไม่มีข้อมูลวัดที่ต้องเพิ่มเข้าหมวดหมู่นี้');
+        }
+
+        return redirect()
+            ->route('admin.temples.index')
+            ->with('success', 'เพิ่มข้อมูลวัดที่เลือกเข้าหมวดหมู่เรียบร้อยแล้ว');
+    }
+
     public function destroy(Request $request, Temple $temple): RedirectResponse
     {
         $temple->load('content.mediaUsages');
@@ -373,6 +580,42 @@ class TempleController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+    }
+
+    private function distinctTempleOptions(string $column)
+    {
+        return Temple::query()
+            ->whereNotNull($column)
+            ->where($column, '<>', '')
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column);
+    }
+
+    private function distinctAddressOptions(string $column)
+    {
+        return TempleAddress::query()
+            ->whereNotNull($column)
+            ->where($column, '<>', '')
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column);
+    }
+
+    private function dateInput(Request $request, string $key): ?string
+    {
+        try {
+            return $request->date($key)?->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function perPage(Request $request, int $default): int
+    {
+        $perPage = (int) $request->input('per_page', $default);
+
+        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
     }
 
     private function templeAuditData(Temple $temple): array

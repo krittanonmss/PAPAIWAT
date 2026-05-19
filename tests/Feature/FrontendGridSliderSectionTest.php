@@ -79,6 +79,48 @@ class FrontendGridSliderSectionTest extends TestCase
             ->assertSee('grid gap-6 md:grid-cols-2 xl:grid-cols-4', false);
     }
 
+    public function test_section_design_colors_override_template_text_classes(): void
+    {
+        $page = $this->createPageWithSection('section-design-colors', 'hero', [
+            'background_color' => '#111111',
+            'text_color' => '#123456',
+            'heading_color' => '#abcdef',
+            'muted_text_color' => '#654321',
+            'accent_color' => '#fedcba',
+            'button_background_color' => '#112233',
+            'button_text_color' => '#eeeeee',
+            'button_border_color' => '#334455',
+            'card_background_color' => '#778899',
+            'card_border_color' => '#998877',
+            'section_gap' => 'spacious',
+            'card_padding' => 'spacious',
+            'card_radius' => 'xl',
+            'image_aspect_ratio' => 'video',
+            'image_radius' => '2xl',
+            'hero_overlay_color' => '#010203',
+            'hero_overlay_opacity' => 35,
+            'hero_content_position' => 'left',
+            'hero_vertical_align' => 'bottom',
+        ]);
+
+        $this->get(route('pages.show', $page->slug))
+            ->assertOk()
+            ->assertSee('--section-text-color: #123456', false)
+            ->assertSee('--section-heading-color: #abcdef', false)
+            ->assertSee('--section-muted-color: #654321', false)
+            ->assertSee('--section-accent-color: #fedcba', false)
+            ->assertSee('--section-button-bg: #112233', false)
+            ->assertSee('--section-button-color: #eeeeee', false)
+            ->assertSee('--section-gap: 3rem', false)
+            ->assertSee('--section-card-padding: 1.75rem', false)
+            ->assertSee('--section-image-aspect: 16 / 9', false)
+            ->assertSee('--section-hero-overlay-color: #010203', false)
+            ->assertSee('--section-hero-overlay-opacity: 0.35', false)
+            ->assertSee('[class~="text-white"], [class*="text-white/"]', false)
+            ->assertSee('mr-auto text-left', false)
+            ->assertSee('items-end', false);
+    }
+
     private function createPageWithSection(string $slug, string $componentKey, array $settings): Page
     {
         $page = Page::query()->create([

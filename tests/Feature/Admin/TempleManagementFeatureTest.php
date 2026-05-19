@@ -259,6 +259,61 @@ class TempleManagementFeatureTest extends TestCase
             });
     }
 
+    public function test_admin_can_bulk_assign_selected_temples_to_category_without_replacing_existing_categories(): void
+    {
+        $oldCategory = $this->createTempleCategory();
+        $newCategory = Category::query()->create([
+            'name' => 'วัดในแคมเปญใหม่',
+            'slug' => 'new-campaign-temple',
+            'type_key' => 'temple',
+            'status' => 'active',
+        ]);
+
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'title' => 'วัดแรก',
+            'slug' => 'first-bulk-temple',
+            'category_ids' => [$oldCategory->id],
+            'primary_category_id' => $oldCategory->id,
+        ]))->assertRedirect(route('admin.temples.index'));
+
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'title' => 'วัดสอง',
+            'slug' => 'second-bulk-temple',
+            'category_ids' => [$oldCategory->id],
+            'primary_category_id' => $oldCategory->id,
+        ]))->assertRedirect(route('admin.temples.index'));
+
+        $temples = Temple::query()->with('content')->orderBy('id')->get();
+
+        $this->patch(route('admin.temples.bulk-category'), [
+            'temple_ids' => $temples->pluck('id')->all(),
+            'category_id' => $newCategory->id,
+        ])->assertRedirect(route('admin.temples.index'))
+            ->assertSessionHas('success');
+
+        foreach ($temples as $temple) {
+            $this->assertDatabaseHas('categorizables', [
+                'category_id' => $oldCategory->id,
+                'categorizable_type' => 'content',
+                'categorizable_id' => $temple->content_id,
+                'is_primary' => true,
+            ]);
+
+            $this->assertDatabaseHas('categorizables', [
+                'category_id' => $newCategory->id,
+                'categorizable_type' => 'content',
+                'categorizable_id' => $temple->content_id,
+                'is_primary' => false,
+            ]);
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'temple.category_assigned',
+            'table_name' => 'temples',
+            'record_id' => $temples->first()->id,
+        ]);
+    }
+
     private function templePayload(array $overrides = []): array
     {
         return array_replace([

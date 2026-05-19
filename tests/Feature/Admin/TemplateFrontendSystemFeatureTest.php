@@ -10,6 +10,7 @@ use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Temple\Temple;
+use App\Support\TemplateRegistry;
 use Database\Seeders\SystemAccessSeeder;
 use Database\Seeders\SystemTemplateSeeder;
 use Tests\Concerns\MigratesAppDatabase;
@@ -51,6 +52,34 @@ class TemplateFrontendSystemFeatureTest extends TestCase
         ]);
     }
 
+    public function test_template_registry_views_and_seeded_templates_stay_in_sync(): void
+    {
+        $registry = app(TemplateRegistry::class);
+
+        foreach ($registry->templates() as $template) {
+            $this->assertTrue(
+                view()->exists($template['view_path']),
+                "Missing template view for {$template['key']}: {$template['view_path']}"
+            );
+
+            $this->assertDatabaseHas('templates', [
+                'key' => $template['key'],
+                'view_path' => $template['view_path'],
+                'template_type' => $template['template_type'],
+                'content_type' => $template['content_type'],
+            ]);
+        }
+
+        foreach ($registry->sections() as $section) {
+            $viewPath = 'frontend.templates.sections.' . str_replace('-', '_', $section['key']);
+
+            $this->assertTrue(
+                view()->exists($viewPath),
+                "Missing section view for {$section['key']}: {$viewPath}"
+            );
+        }
+    }
+
     public function test_template_delete_is_blocked_when_default_or_used_by_page(): void
     {
         $defaultTemplate = Template::query()->where('key', 'page-builder')->firstOrFail();
@@ -87,6 +116,70 @@ class TemplateFrontendSystemFeatureTest extends TestCase
             'status' => 'active',
             'is_visible' => '1',
         ])->assertSessionHasErrors('content');
+    }
+
+    public function test_section_preview_renders_incomplete_required_content_instead_of_422(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'Preview Page',
+            'slug' => 'preview-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+
+        $this->postJson(route('admin.content.pages.sections.preview', $page), [
+            'component_key' => 'rich_text',
+            'content' => json_encode(['title' => 'ข้อความ section']),
+            'settings' => json_encode([]),
+        ])
+            ->assertOk()
+            ->assertJsonStructure(['html'])
+            ->assertJsonPath('html', fn ($html) => is_string($html)
+                && str_contains($html, 'ข้อความ section')
+                && ! str_contains($html, 'ตัวอย่างเซกชันมีข้อผิดพลาด'));
+    }
+
+    public function test_page_preview_uses_frontend_section_pipeline(): void
+    {
+        $pageTemplate = Template::query()->where('key', 'page-builder')->firstOrFail();
+        $page = Page::query()->create([
+            'template_id' => $pageTemplate->id,
+            'title' => 'Preview Pipeline Page',
+            'slug' => 'preview-pipeline-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+
+        PageSection::query()->create([
+            'page_id' => $page->id,
+            'name' => 'Preview Hero',
+            'section_key' => 'preview-hero',
+            'component_key' => 'hero',
+            'content' => [
+                'title' => 'Preview Pipeline Hero',
+                'subtitle' => 'Rendered through buildPageSections',
+            ],
+            'settings' => [
+                'text_color' => '#123456',
+                'heading_color' => '#abcdef',
+            ],
+            'status' => 'active',
+            'is_visible' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->postJson(route('admin.content.pages.preview', $page), [
+            'template_id' => $pageTemplate->id,
+            'title' => 'Preview Pipeline Page',
+            'slug' => 'preview-pipeline-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ])
+            ->assertOk()
+            ->assertJsonPath('html', fn ($html) => is_string($html)
+                && str_contains($html, 'Preview Pipeline Hero')
+                && str_contains($html, 'Rendered through buildPageSections')
+                && str_contains($html, '--section-heading-color: #abcdef'));
     }
 
     public function test_page_version_history_can_rollback_page_and_sections(): void

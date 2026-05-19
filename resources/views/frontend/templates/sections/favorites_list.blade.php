@@ -69,14 +69,31 @@
             const readFavorites = () => {
                 try {
                     const value = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                    return Array.isArray(value) ? value : [];
+                    if (!Array.isArray(value)) {
+                        return [];
+                    }
+
+                    return value
+                        .filter((item) => item?.type && item?.id)
+                        .map((item) => ({
+                            type: item.type,
+                            id: Number(item.id),
+                            addedAt: item.addedAt || null,
+                        }));
                 } catch (error) {
                     return [];
                 }
             };
 
             const writeFavorites = (items) => {
-                localStorage.setItem(storageKey, JSON.stringify(items));
+                localStorage.setItem(storageKey, JSON.stringify(items
+                    .filter((item) => item?.type && item?.id)
+                    .map((item) => ({
+                        type: item.type,
+                        id: Number(item.id),
+                        addedAt: item.addedAt || null,
+                    }))
+                ));
             };
 
             const itemKey = (item) => `${item.type}:${Number(item.id)}`;
@@ -125,12 +142,24 @@
                     const data = await response.json();
                     const serverItems = new Map((data.items || []).map((item) => [itemKey(item), item]));
 
-                    return items.map((item) => ({
-                        ...item,
-                        ...(serverItems.get(itemKey(item)) || {}),
-                    }));
+                    const hydratedItems = items
+                        .map((item) => {
+                            const serverItem = serverItems.get(itemKey(item));
+
+                            return serverItem
+                                ? {
+                                    ...serverItem,
+                                    addedAt: item.addedAt || null,
+                                }
+                                : null;
+                        })
+                        .filter(Boolean);
+
+                    writeFavorites(hydratedItems);
+
+                    return hydratedItems;
                 } catch (error) {
-                    return items;
+                    return [];
                 }
             };
 

@@ -39,6 +39,7 @@ Route::prefix('categories')->name('categories.')->group(function () {
     Route::get('/', [CategoryController::class, 'index'])->middleware('admin.permission:categories.view')->name('index');
     Route::get('/create', [CategoryController::class, 'create'])->middleware('admin.permission:categories.create')->name('create');
     Route::post('/', [CategoryController::class, 'store'])->middleware('admin.permission:categories.create')->name('store');
+    Route::patch('/bulk-move', [CategoryController::class, 'bulkMove'])->middleware('admin.permission:categories.update')->name('bulk-move');
     Route::get('/{category}/edit', [CategoryController::class, 'edit'])->middleware('admin.permission:categories.update')->name('edit');
     Route::put('/{category}', [CategoryController::class, 'update'])->middleware('admin.permission:categories.update')->name('update');
     Route::patch('/{category}/restore', [CategoryController::class, 'restore'])->middleware('admin.permission:categories.update')->name('restore');
@@ -68,6 +69,7 @@ Route::prefix('temples')->name('temples.')->group(function () {
     Route::get('/', [TempleController::class, 'index'])->middleware('admin.permission:temples.view')->name('index');
     Route::get('/create', [TempleController::class, 'create'])->middleware('admin.permission:temples.create')->name('create');
     Route::post('/', [TempleController::class, 'store'])->middleware('admin.permission:temples.create')->name('store');
+    Route::patch('/bulk-category', [TempleController::class, 'bulkAssignCategory'])->middleware('admin.permission:temples.update')->name('bulk-category');
     Route::get('/{temple}', [TempleController::class, 'show'])->middleware('admin.permission:temples.view')->name('show');
     Route::get('/{temple}/edit', [TempleController::class, 'edit'])->middleware('admin.permission:temples.update')->name('edit');
     Route::put('/{temple}', [TempleController::class, 'update'])->middleware('admin.permission:temples.update')->name('update');
@@ -91,6 +93,10 @@ Route::prefix('articles')->name('content.articles.')->group(function () {
     Route::post('/', [ArticleController::class, 'store'])
         ->middleware('admin.permission:articles.create')
         ->name('store');
+
+    Route::patch('/bulk-category', [ArticleController::class, 'bulkAssignCategory'])
+        ->middleware('admin.permission:articles.update')
+        ->name('bulk-category');
 
     Route::get('/{article}', [ArticleController::class, 'show'])
         ->middleware('admin.permission:articles.view')

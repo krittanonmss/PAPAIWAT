@@ -13,16 +13,40 @@ class TempleReviewModerationController extends Controller
 {
     public function index(Request $request): View
     {
-        $status = $request->string('status')->toString();
+        $filters = [
+            'search' => trim($request->string('search')->toString()),
+            'status' => $request->string('status')->toString(),
+            'rating' => $request->string('rating')->toString(),
+            'reported' => $request->string('reported')->toString(),
+            'per_page' => (int) $request->query('per_page', 20),
+        ];
+        $filters['per_page'] = in_array($filters['per_page'], [10, 20, 50, 100], true)
+            ? $filters['per_page']
+            : 20;
 
         $reviews = TempleReview::query()
             ->with(['temple.content'])
-            ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($filters['search'] !== '', function ($query) use ($filters) {
+                $like = '%' . $filters['search'] . '%';
+
+                $query->where(function ($query) use ($like) {
+                    $query->where('comment', 'like', $like)
+                        ->orWhere('display_name', 'like', $like)
+                        ->orWhereHas('temple.content', function ($query) use ($like) {
+                            $query->where('title', 'like', $like)
+                                ->orWhere('slug', 'like', $like);
+                        });
+                });
+            })
+            ->when($filters['status'] !== '', fn ($query) => $query->where('status', $filters['status']))
+            ->when($filters['rating'] !== '', fn ($query) => $query->where('rating', (int) $filters['rating']))
+            ->when($filters['reported'] === 'yes', fn ($query) => $query->where('report_count', '>', 0))
+            ->when($filters['reported'] === 'no', fn ($query) => $query->where('report_count', 0))
             ->latest()
-            ->paginate(20)
+            ->paginate($filters['per_page'])
             ->withQueryString();
 
-        return view('admin.interactions.reviews.index', compact('reviews', 'status'));
+        return view('admin.interactions.reviews.index', compact('reviews', 'filters'));
     }
 
     public function approve(TempleReview $review, PublicInteractionService $interactionService): RedirectResponse

@@ -314,6 +314,58 @@ class ArticleManagementFeatureTest extends TestCase
             });
     }
 
+    public function test_admin_can_bulk_assign_selected_articles_to_category_without_replacing_existing_categories(): void
+    {
+        $oldCategory = $this->createCategory('article', 'หมวดเดิม');
+        $newCategory = $this->createCategory('article', 'หมวดใหม่');
+
+        $this->post(route('admin.content.articles.store'), [
+            'title' => 'บทความแรก',
+            'slug' => 'first-bulk-article',
+            'status' => 'draft',
+            'body_format' => 'markdown',
+            'category_ids' => [$oldCategory->id],
+        ])->assertRedirect(route('admin.content.articles.index'));
+
+        $this->post(route('admin.content.articles.store'), [
+            'title' => 'บทความสอง',
+            'slug' => 'second-bulk-article',
+            'status' => 'draft',
+            'body_format' => 'markdown',
+            'category_ids' => [$oldCategory->id],
+        ])->assertRedirect(route('admin.content.articles.index'));
+
+        $articles = Article::query()->with('content')->orderBy('id')->get();
+
+        $this->patch(route('admin.content.articles.bulk-category'), [
+            'article_ids' => $articles->pluck('id')->all(),
+            'category_id' => $newCategory->id,
+        ])->assertRedirect(route('admin.content.articles.index'))
+            ->assertSessionHas('success');
+
+        foreach ($articles as $article) {
+            $this->assertDatabaseHas('categorizables', [
+                'category_id' => $oldCategory->id,
+                'categorizable_type' => 'content',
+                'categorizable_id' => $article->content_id,
+                'is_primary' => true,
+            ]);
+
+            $this->assertDatabaseHas('categorizables', [
+                'category_id' => $newCategory->id,
+                'categorizable_type' => 'content',
+                'categorizable_id' => $article->content_id,
+                'is_primary' => false,
+            ]);
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'article.category_assigned',
+            'table_name' => 'articles',
+            'record_id' => $articles->first()->id,
+        ]);
+    }
+
     public function test_article_template_live_preview_uses_fallback_slug_for_thai_title(): void
     {
         $this->postJson(route('admin.content.template-preview.live', ['type' => 'article']), [

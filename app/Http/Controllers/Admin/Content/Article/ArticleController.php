@@ -103,7 +103,7 @@ class ArticleController extends Controller
 
         $articles = $query
             ->latest('id')
-            ->paginate(5)
+            ->paginate($this->perPage($request, 5))
             ->withQueryString();
 
         $categories = Category::query()
@@ -392,6 +392,73 @@ class ArticleController extends Controller
             ->with('success', 'ยกเลิกการเผยแพร่บทความเรียบร้อยแล้ว');
     }
 
+    public function bulkAssignCategory(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'article_ids' => ['required', 'array', 'min:1'],
+            'article_ids.*' => ['integer', 'exists:articles,id'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+        ]);
+
+        $category = Category::query()
+            ->whereKey($validated['category_id'])
+            ->where('type_key', 'article')
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $updatedCount = 0;
+
+        DB::transaction(function () use ($request, $validated, $category, &$updatedCount): void {
+            $articles = Article::query()
+                ->with('content.categories')
+                ->whereIn('id', $validated['article_ids'])
+                ->whereHas('content', fn (Builder $query) => $query
+                    ->where('content_type', 'article')
+                    ->whereNull('deleted_at'))
+                ->get();
+
+            foreach ($articles as $article) {
+                if (! $article->content) {
+                    continue;
+                }
+
+                $categoryIds = $article->content->categories->pluck('id')->map(fn ($id) => (int) $id);
+
+                if ($categoryIds->contains((int) $category->id)) {
+                    continue;
+                }
+
+                $oldData = $this->articleAuditData($article);
+                $hasPrimary = $article->content->categories->contains(fn (Category $item) => (bool) $item->pivot?->is_primary);
+
+                $article->content->categories()->attach($category->id, [
+                    'is_primary' => ! $hasPrimary && $categoryIds->isEmpty(),
+                    'sort_order' => $categoryIds->count(),
+                    'created_at' => now(),
+                ]);
+
+                $article->content->update(['updated_by_admin_id' => auth('admin')->id()]);
+                $article->refresh()->load('content.mediaUsages', 'content.categories');
+
+                $this->writeAuditLog($request, 'article.category_assigned', $article, $oldData, $this->articleAuditData($article) + [
+                    'assigned_category_id' => $category->id,
+                ]);
+
+                $updatedCount++;
+            }
+        });
+
+        if ($updatedCount === 0) {
+            return redirect()
+                ->route('admin.content.articles.index')
+                ->with('error', 'ไม่มีบทความที่ต้องเพิ่มเข้าหมวดหมู่นี้');
+        }
+
+        return redirect()
+            ->route('admin.content.articles.index')
+            ->with('success', 'เพิ่มบทความที่เลือกเข้าหมวดหมู่เรียบร้อยแล้ว');
+    }
+
     public function destroy(Request $request, Article $article): RedirectResponse
     {
         $article->load('content.mediaUsages');
@@ -641,6 +708,13 @@ class ArticleController extends Controller
             ],
             'created_by_admin_id' => auth('admin')->id(),
         ]);
+    }
+
+    private function perPage(Request $request, int $default): int
+    {
+        $perPage = (int) $request->input('per_page', $default);
+
+        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
     }
 
     private function articleAuditData(Article $article): array

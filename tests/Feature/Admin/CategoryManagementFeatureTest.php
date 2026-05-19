@@ -216,6 +216,69 @@ class CategoryManagementFeatureTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_bulk_move_categories_under_new_parent(): void
+    {
+        $newParent = Category::query()->create([
+            'name' => 'หมวดหลักใหม่',
+            'slug' => 'bulk-new-parent',
+            'type_key' => 'temple',
+            'status' => 'active',
+            'level' => 0,
+        ]);
+
+        $oldParent = Category::query()->create([
+            'name' => 'หมวดหลักเดิม',
+            'slug' => 'bulk-old-parent',
+            'type_key' => 'temple',
+            'status' => 'active',
+            'level' => 0,
+        ]);
+
+        $first = Category::query()->create([
+            'parent_id' => $oldParent->id,
+            'name' => 'หมวดย่อยแรก',
+            'slug' => 'bulk-first-child',
+            'type_key' => 'temple',
+            'status' => 'active',
+            'level' => 1,
+        ]);
+
+        $second = Category::query()->create([
+            'parent_id' => $oldParent->id,
+            'name' => 'หมวดย่อยสอง',
+            'slug' => 'bulk-second-child',
+            'type_key' => 'temple',
+            'status' => 'active',
+            'level' => 1,
+        ]);
+
+        $grandchild = Category::query()->create([
+            'parent_id' => $first->id,
+            'name' => 'หมวดชั้นสาม',
+            'slug' => 'bulk-grandchild',
+            'type_key' => 'temple',
+            'status' => 'active',
+            'level' => 2,
+        ]);
+
+        $this->patch(route('admin.categories.bulk-move'), [
+            'category_ids' => [$first->id, $second->id],
+            'parent_id' => $newParent->id,
+        ])->assertRedirect(route('admin.categories.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame($newParent->id, $first->fresh()->parent_id);
+        $this->assertSame(1, $first->fresh()->level);
+        $this->assertSame($newParent->id, $second->fresh()->parent_id);
+        $this->assertSame(1, $second->fresh()->level);
+        $this->assertSame(2, $grandchild->fresh()->level);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'category.moved',
+            'table_name' => 'categories',
+            'record_id' => $first->id,
+        ]);
+    }
+
     public function test_category_max_depth_is_enforced(): void
     {
         $parent = null;

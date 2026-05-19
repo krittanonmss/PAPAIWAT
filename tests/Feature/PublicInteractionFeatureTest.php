@@ -78,6 +78,18 @@ class PublicInteractionFeatureTest extends TestCase
             ->assertSee('เอาออก');
     }
 
+    public function test_favorites_remain_local_pointer_based_without_server_favorites_table(): void
+    {
+        $this->assertFalse(Schema::hasTable('favorites'));
+
+        $script = file_get_contents(resource_path('views/frontend/templates/sections/favorites_list.blade.php'));
+
+        $this->assertStringContainsString('type: item.type', $script);
+        $this->assertStringContainsString('id: Number(item.id)', $script);
+        $this->assertStringContainsString('writeFavorites(hydratedItems)', $script);
+        $this->assertStringNotContainsString('...(serverItems.get(itemKey(item)) || {})', $script);
+    }
+
     public function test_temple_detail_renders_parseable_favorite_payload_and_count(): void
     {
         $temple = $this->createPublishedTemple();
