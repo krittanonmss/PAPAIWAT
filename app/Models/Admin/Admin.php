@@ -53,6 +53,11 @@ class Admin extends Authenticatable
         return $this->hasMany(AdminSession::class, 'admin_id');
     }
 
+    public function preferences(): HasMany
+    {
+        return $this->hasMany(AdminPreference::class, 'admin_id');
+    }
+
     public function loginLogs(): HasMany
     {
         return $this->hasMany(LoginLog::class, 'admin_id');

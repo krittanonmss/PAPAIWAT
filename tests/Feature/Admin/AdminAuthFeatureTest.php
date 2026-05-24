@@ -4,8 +4,11 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminNotification;
+use App\Models\Admin\AdminPreference;
 use App\Models\Admin\AdminSession;
 use App\Models\Admin\LoginLog;
+use App\Services\Admin\AdminNotificationService;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -54,11 +57,14 @@ class AdminAuthFeatureTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertHeader('Content-Security-Policy')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Referrer-Policy', 'same-origin')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        $this->assertStringContainsString("object-src 'none'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('https://cdn.tailwindcss.com', $response->headers->get('Content-Security-Policy'));
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
         $this->assertStringContainsString('no-cache', $response->headers->get('Cache-Control'));
     }
@@ -169,6 +175,22 @@ class AdminAuthFeatureTest extends TestCase
         $this->assertGuest('admin');
     }
 
+    public function test_tracked_admin_session_allows_stored_ip_mismatch_for_same_user_agent(): void
+    {
+        $session = new AdminSession([
+            'ip_address' => '203.0.113.10',
+            'user_agent' => 'Symfony',
+        ]);
+        $request = \Illuminate\Http\Request::create(
+            uri: '/admin/dashboard',
+            server: ['HTTP_USER_AGENT' => 'Symfony', 'REMOTE_ADDR' => '127.0.0.1']
+        );
+
+        $method = new \ReflectionMethod(AdminAuthenticate::class, 'requestMatchesTrackedSession');
+
+        $this->assertTrue($method->invoke(new AdminAuthenticate, $session, $request));
+    }
+
     public function test_remembered_admin_without_tracked_session_must_login_again(): void
     {
         $admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
@@ -244,7 +266,7 @@ class AdminAuthFeatureTest extends TestCase
             'current_password' => 'wrong-password',
             'password' => 'NewPassword12345',
             'password_confirmation' => 'NewPassword12345',
-        ])->assertSessionHasErrors('current_password');
+        ])->assertSessionHasErrors('current_password', null, 'password');
 
         $this->put(route('admin.profile.password.update'), [
             'current_password' => 'ChangeMe12345',
@@ -277,6 +299,114 @@ class AdminAuthFeatureTest extends TestCase
             'username' => 'profile-owner',
             'email' => 'profile-owner@example.com',
             'phone' => '0812345678',
+        ]);
+    }
+
+    public function test_profile_owner_can_update_user_preferences(): void
+    {
+        $this->withoutMiddleware(AdminAuthenticate::class);
+
+        $admin = $this->authenticateAsDefaultAdminWithTrackedSession();
+
+        $this->get(route('admin.preferences.edit'))
+            ->assertOk()
+            ->assertSee('การตั้งค่าส่วนตัว');
+
+        $this->get(route('admin.profile.edit'))
+            ->assertOk()
+            ->assertDontSee('User Preference');
+
+        $this->put(route('admin.preferences.update'), [
+            'display' => [
+                'theme' => 'light',
+                'density' => 'compact',
+                'sidebar_collapsed' => '1',
+                'scale' => '90',
+            ],
+            'tables' => [
+                'default_per_page' => '15',
+                'remember_filters' => '1',
+                'open_detail_in_new_tab' => '1',
+            ],
+            'editor' => [
+                'autosave_drafts' => '0',
+                'preview_panel_open' => '1',
+            ],
+            'media' => [
+                'default_view_mode' => 'list',
+            ],
+            'notifications' => [
+                'in_app' => '1',
+                'email' => '0',
+                'moderation_alerts' => '1',
+            ],
+            'accessibility' => [
+                'reduced_motion' => '1',
+                'high_contrast' => '0',
+            ],
+        ])->assertRedirect(route('admin.preferences.edit'))
+            ->assertCookie('papaiwat_admin_theme', 'light');
+
+        $this->get(route('admin.preferences.edit'))
+            ->assertOk()
+            ->assertSee("document.body.dataset.adminTheme = 'light';", false)
+            ->assertSee("document.body.dataset.adminDetailNewTab = '1';", false)
+            ->assertSee("document.body.dataset.adminReducedMotion = '1';", false);
+
+        $this->assertDatabaseMissing('admin_preferences', [
+            'admin_id' => $admin->id,
+            'key' => 'editor.default_body_format',
+        ]);
+
+        $this->assertTrue(
+            AdminPreference::query()
+                ->where('admin_id', $admin->id)
+                ->where('key', 'display.sidebar_collapsed')
+                ->value('value')['value']
+        );
+    }
+
+    public function test_admin_login_page_uses_saved_theme_cookie(): void
+    {
+        $this->withCookie('papaiwat_admin_theme', 'light')
+            ->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee('data-admin-theme="light"', false)
+            ->assertSee('admin-guest-card', false);
+    }
+
+    public function test_admin_notification_service_respects_in_app_and_moderation_preferences(): void
+    {
+        $admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        AdminPreference::query()->updateOrCreate(
+            ['admin_id' => $admin->id, 'key' => 'notifications.in_app'],
+            ['value' => ['value' => false]]
+        );
+
+        app(AdminNotificationService::class)->notify($admin, 'system', 'System notice', 'This should not be stored.');
+
+        $this->assertSame(0, AdminNotification::query()->count());
+
+        AdminPreference::query()->updateOrCreate(
+            ['admin_id' => $admin->id, 'key' => 'notifications.in_app'],
+            ['value' => ['value' => true]]
+        );
+        AdminPreference::query()->updateOrCreate(
+            ['admin_id' => $admin->id, 'key' => 'notifications.moderation_alerts'],
+            ['value' => ['value' => false]]
+        );
+
+        app(AdminNotificationService::class)->notify($admin, 'moderation', 'Moderation notice', 'This should be muted.');
+
+        $this->assertSame(0, AdminNotification::query()->count());
+
+        app(AdminNotificationService::class)->notify($admin, 'system', 'System notice', 'This should be stored.');
+
+        $this->assertDatabaseHas('admin_notifications', [
+            'admin_id' => $admin->id,
+            'title' => 'System notice',
+            'type' => 'system',
         ]);
     }
 

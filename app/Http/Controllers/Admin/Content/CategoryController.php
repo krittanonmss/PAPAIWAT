@@ -7,10 +7,11 @@ use App\Http\Requests\Admin\Content\Category\StoreCategoryRequest;
 use App\Http\Requests\Admin\Content\Category\UpdateCategoryRequest;
 use App\Models\Admin\AuditLog;
 use App\Models\Content\Category;
+use App\Services\Admin\AdminPreferenceService;
+use App\Support\SlugGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -88,9 +89,11 @@ class CategoryController extends Controller
 
     private function perPage(Request $request, int $default): int
     {
+        $allowed = AdminPreferenceService::PER_PAGE_OPTIONS;
+        $default = app(AdminPreferenceService::class)->preferredPerPage($request->user('admin'), $allowed, $default);
         $perPage = (int) $request->input('per_page', $default);
 
-        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
+        return in_array($perPage, $allowed, true) ? $perPage : $default;
     }
 
     public function store(StoreCategoryRequest $request): RedirectResponse
@@ -108,7 +111,7 @@ class CategoryController extends Controller
                 'parent_id' => $validated['parent_id'] ?? null,
                 'name' => $validated['name'],
                 'slug' => $this->makeUniqueSlug(
-                    $validated['name'],
+                    ($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name'],
                     $validated['parent_id'] ?? null,
                     $validated['type_key']
                 ),
@@ -162,7 +165,7 @@ class CategoryController extends Controller
                 'parent_id' => $validated['parent_id'] ?? null,
                 'name' => $validated['name'],
                 'slug' => $this->makeUniqueSlug(
-                    $validated['name'],
+                    ($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name'],
                     $validated['parent_id'] ?? null,
                     $validated['type_key'],
                     $category
@@ -338,11 +341,10 @@ class CategoryController extends Controller
         string $typeKey,
         ?Category $ignoreCategory = null
     ): string {
-        $baseSlug = Str::slug($name);
-
-        if ($baseSlug === '') {
-            $baseSlug = 'category-'.substr(sha1($typeKey.'|'.($parentId ?? 'root').'|'.$name), 0, 10);
-        }
+        $baseSlug = SlugGenerator::make(
+            $name,
+            'category-'.substr(sha1($typeKey.'|'.($parentId ?? 'root').'|'.$name), 0, 10)
+        );
 
         $slug = $baseSlug;
         $suffix = 2;

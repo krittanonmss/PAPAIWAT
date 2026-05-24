@@ -8,12 +8,15 @@
             '_preview_ts' => time(),
         ]))
         : null;
+    $previewPanelOpen = (bool) (app(\App\Services\Admin\AdminPreferenceService::class)
+        ->forAdmin(auth('admin')->user())['editor.preview_panel_open'] ?? true);
 @endphp
 
 @if ($templatePreviewSrc)
     <section
         class="overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60 shadow-xl shadow-slate-950/30 backdrop-blur"
         data-template-preview-live-url="{{ $templatePreviewLiveUrl ?? '' }}"
+        x-data="{ previewOpen: @js($previewPanelOpen) }"
     >
         <div class="border-b border-white/10 px-5 py-4">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -24,6 +27,13 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        @click="previewOpen = !previewOpen"
+                        class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        x-text="previewOpen ? 'พับ preview' : 'เปิด preview'"
+                    ></button>
+
                     <button
                         type="button"
                         data-template-preview-refresh
@@ -45,7 +55,7 @@
             </div>
         </div>
 
-        <div class="relative h-[360px] bg-slate-950 md:h-[460px] xl:h-[560px]">
+        <div x-show="previewOpen" class="relative h-[360px] bg-slate-950 md:h-[460px] xl:h-[560px]">
             <iframe
                 id="temple-template-preview"
                 src="{{ $templatePreviewSrc }}"
@@ -97,7 +107,7 @@
                             updateStaticUrl();
 
                             if (!form || !frame || !liveUrl) {
-                                return;
+                                return '';
                             }
 
                             previewController?.abort();
@@ -119,10 +129,17 @@
 
                                 const payload = await response.json();
                                 frame.srcdoc = payload.html || '';
+
+                                return payload.html || '';
                             } catch (error) {
                                 if (error.name !== 'AbortError') {
-                                    frame.srcdoc = '<div style="font-family: sans-serif; padding: 2rem; color: white; background: #020617;">Preview failed</div>';
+                                    const fallbackHtml = '<div style="font-family: sans-serif; padding: 2rem; color: white; background: #020617;">Preview failed</div>';
+                                    frame.srcdoc = fallbackHtml;
+
+                                    return fallbackHtml;
                                 }
+
+                                return '';
                             }
                         };
 
@@ -138,6 +155,32 @@
                         previewBox
                             ?.querySelector('[data-template-preview-refresh]')
                             ?.addEventListener('click', renderLivePreview);
+
+                        previewBox
+                            ?.querySelector('[data-template-preview-open]')
+                            ?.addEventListener('click', async (event) => {
+                                event.preventDefault();
+
+                                const previewWindow = window.open('about:blank', '_blank');
+
+                                if (!previewWindow) {
+                                    return;
+                                }
+
+                                previewWindow.document.open();
+                                previewWindow.document.write('<!doctype html><html><head><title>Loading preview...</title></head><body style="margin:0;background:#020617;color:#fff;font-family:sans-serif;padding:2rem;">Loading preview...</body></html>');
+                                previewWindow.document.close();
+
+                                const html = await renderLivePreview();
+
+                                if (!html) {
+                                    return;
+                                }
+
+                                previewWindow.document.open();
+                                previewWindow.document.write(html);
+                                previewWindow.document.close();
+                            });
 
                         renderLivePreview();
                     });

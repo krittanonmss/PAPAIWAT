@@ -119,7 +119,26 @@
             </aside>
 
             {{-- Content --}}
-            <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div data-ajax-list-results class="transition-opacity">
+                <section
+                    class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur"
+                    x-data="{
+                        selectedMedia: [],
+                        pageMediaIds: @js($mediaItems->pluck('id')->map(fn ($id) => (string) $id)->values()),
+                        get selectedCount() {
+                            return this.selectedMedia.length;
+                        },
+                        get isPageSelected() {
+                            return this.pageMediaIds.length > 0 && this.pageMediaIds.every((id) => this.selectedMedia.includes(id));
+                        },
+                        togglePage(checked) {
+                            this.selectedMedia = checked ? [...this.pageMediaIds] : [];
+                        },
+                        clearSelection() {
+                            this.selectedMedia = [];
+                        },
+                    }"
+                >
                 {{-- Current Folder Bar --}}
                 <div class="border-b border-white/10 bg-slate-950/30 px-5 py-4">
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -137,14 +156,37 @@
                             </h2>
                         </div>
 
-                        <div class="text-sm text-slate-400">
-                            แสดง {{ $mediaItems->count() }} จาก {{ number_format($mediaItems->total()) }} ไฟล์
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div class="text-sm text-slate-400">
+                                แสดง {{ $mediaItems->count() }} จาก {{ number_format($mediaItems->total()) }} ไฟล์
+                            </div>
+
+                            @php
+                                $gridViewUrl = route('admin.media.index', array_merge(request()->except(['view_mode', 'page']), ['view_mode' => 'grid']));
+                                $listViewUrl = route('admin.media.index', array_merge(request()->except(['view_mode', 'page']), ['view_mode' => 'list']));
+                            @endphp
+
+                            <div class="inline-flex overflow-hidden rounded-xl border border-white/10 bg-slate-950/40 p-1">
+                                <a
+                                    href="{{ $gridViewUrl }}"
+                                    class="{{ $filters['view_mode'] === 'grid' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/[0.06] hover:text-white' }} rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                                >
+                                    Grid
+                                </a>
+
+                                <a
+                                    href="{{ $listViewUrl }}"
+                                    class="{{ $filters['view_mode'] === 'list' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/[0.06] hover:text-white' }} rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                                >
+                                    List
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {{-- Filters --}}
-                <form method="GET" action="{{ route('admin.media.index') }}" class="border-b border-white/10 p-5">
+                <form method="GET" action="{{ route('admin.media.index') }}" class="border-b border-white/10 p-5" data-ajax-list-form>
                     @php
                         $filterSelectClass = 'w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
                     @endphp
@@ -152,6 +194,7 @@
                     @if ($selectedFolderId !== '')
                         <input type="hidden" name="media_folder_id" value="{{ $selectedFolderId }}">
                     @endif
+                    <input type="hidden" name="view_mode" value="{{ $filters['view_mode'] }}">
 
                     <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_160px_160px_140px_auto] xl:items-end">
                         <div>
@@ -210,20 +253,20 @@
 
                         <div>
                             <label for="per_page" class="mb-1.5 block text-sm font-medium text-slate-300">
-                                จำนวนการ์ด
+                                จำนวนรายการ
                             </label>
                             @include('admin.content.partials._searchable_select', [
                                 'id' => 'per_page',
                                 'name' => 'per_page',
                                 'selected' => (string) $filters['per_page'],
                                 'allowEmpty' => false,
-                                'placeholder' => 'เลือกจำนวนการ์ด',
+                                'placeholder' => 'เลือกจำนวนรายการ',
                                 'searchPlaceholder' => 'ค้นหาจำนวน...',
                                 'inputClass' => $filterSelectClass,
                                 'options' => collect($perPageOptions)->map(fn ($option) => [
                                     'value' => (string) $option,
-                                    'label' => $option . ' ใบ',
-                                    'search' => $option . ' ใบ',
+                                    'label' => $option . ' รายการ',
+                                    'search' => $option . ' รายการ',
                                 ]),
                             ])
                         </div>
@@ -237,7 +280,11 @@
                             </button>
 
                             <a
-                                href="{{ route('admin.media.index', $selectedFolderId !== '' ? ['media_folder_id' => $selectedFolderId] : []) }}"
+                                href="{{ route('admin.media.index', array_filter([
+                                    'media_folder_id' => $selectedFolderId !== '' ? $selectedFolderId : null,
+                                    'view_mode' => $filters['view_mode'],
+                                ], fn ($value) => $value !== null)) }}"
+                                data-ajax-list-reset
                                 class="inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06]"
                             >
                                 ล้าง
@@ -246,17 +293,84 @@
                     </div>
                 </form>
 
-                {{-- Media Grid --}}
+                {{-- Media Items --}}
                 <div class="p-5">
                     @if ($mediaItems->count())
-                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                        <div class="mb-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.08]">
+                                        <input
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-white/20 bg-slate-950/60 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
+                                            :checked="isPageSelected"
+                                            @change="togglePage($event.target.checked)"
+                                        >
+                                        <span>เลือกทั้งหมดในหน้านี้</span>
+                                    </label>
+
+                                    <div class="text-sm text-slate-400">
+                                        เลือกแล้ว <span class="font-semibold text-white" x-text="selectedCount"></span> ไฟล์
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        x-show="selectedCount > 0"
+                                        x-cloak
+                                        @click="clearSelection()"
+                                        class="rounded-xl px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+                                    >
+                                        ล้างที่เลือก
+                                    </button>
+                                </div>
+
+                                <form
+                                    id="media-bulk-folder-form"
+                                    method="POST"
+                                    action="{{ route('admin.media.bulk-folder') }}"
+                                    class="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto] xl:min-w-[520px]"
+                                    @submit="if (selectedCount === 0) { $event.preventDefault(); alert('กรุณาเลือกไฟล์ก่อน'); }"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <div>
+                                        <label for="bulk_media_folder_id" class="mb-1.5 block text-xs font-medium text-slate-400">
+                                            ย้ายไปโฟลเดอร์
+                                        </label>
+                                        @include('admin.content.partials._async_select', [
+                                            'id' => 'bulk_media_folder_id',
+                                            'name' => 'media_folder_id',
+                                            'selected' => '',
+                                            'searchUrl' => route('admin.lookups.media-folders'),
+                                            'placeholder' => 'ค้นหาโฟลเดอร์',
+                                            'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                                            'emptyLabel' => 'ไม่มีโฟลเดอร์',
+                                        ])
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        class="mt-auto inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        :disabled="selectedCount === 0"
+                                    >
+                                        ย้ายไฟล์ที่เลือก
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        @if ($filters['view_mode'] === 'grid')
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4" data-media-view="grid">
                             @foreach ($mediaItems as $media)
                                 @php
                                     $thumbnail = $media->variants->firstWhere('variant_name', 'thumbnail');
                                     $previewPath = $thumbnail?->path ?? $media->path;
                                 @endphp
 
-                                <article class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]">
+                                <article class="group overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:bg-white/[0.06]"
+                                    :class="selectedMedia.includes('{{ $media->id }}') ? 'border-blue-400/60 ring-2 ring-blue-500/30' : ''"
+                                >
                                     <div class="relative aspect-[4/3] bg-slate-950">
                                         @if ($media->media_type === 'image')
                                             <img
@@ -273,9 +387,21 @@
                                             </div>
                                         @endif
 
-                                        <div class="absolute left-3 top-3">
+                                        <label class="absolute left-3 top-3 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs font-medium text-white shadow">
+                                            <input
+                                                type="checkbox"
+                                                name="media_ids[]"
+                                                value="{{ $media->id }}"
+                                                form="media-bulk-folder-form"
+                                                x-model="selectedMedia"
+                                                class="h-4 w-4 rounded border-white/20 bg-slate-950/60 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
+                                            >
+                                            <span>{{ ucfirst($media->media_type) }}</span>
+                                        </label>
+
+                                        <div class="absolute left-3 top-12">
                                             <span class="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-xs font-medium text-white shadow">
-                                                {{ ucfirst($media->media_type) }}
+                                                #{{ $media->id }}
                                             </span>
                                         </div>
 
@@ -367,6 +493,121 @@
                                 </article>
                             @endforeach
                         </div>
+                        @else
+                        <div class="overflow-hidden rounded-2xl border border-white/10" data-media-view="list">
+                            <div class="hidden grid-cols-[minmax(0,1.7fr)_120px_120px_140px_160px] gap-4 border-b border-white/10 bg-slate-950/50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid">
+                                <div>ไฟล์</div>
+                                <div>ประเภท</div>
+                                <div>ขนาด</div>
+                                <div>การมองเห็น</div>
+                                <div class="text-right">จัดการ</div>
+                            </div>
+
+                            <div class="divide-y divide-white/10">
+                                @foreach ($mediaItems as $media)
+                                    @php
+                                        $thumbnail = $media->variants->firstWhere('variant_name', 'thumbnail');
+                                        $previewPath = $thumbnail?->path ?? $media->path;
+                                    @endphp
+
+                                    <article
+                                        class="grid gap-4 bg-slate-950/30 px-4 py-4 transition hover:bg-white/[0.06] lg:grid-cols-[minmax(0,1.7fr)_120px_120px_140px_160px] lg:items-center"
+                                        :class="selectedMedia.includes('{{ $media->id }}') ? 'bg-blue-500/10' : ''"
+                                    >
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                name="media_ids[]"
+                                                value="{{ $media->id }}"
+                                                form="media-bulk-folder-form"
+                                                x-model="selectedMedia"
+                                                class="h-4 w-4 shrink-0 rounded border-white/20 bg-slate-950/60 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
+                                                aria-label="เลือก {{ $media->original_filename }}"
+                                            >
+
+                                            <div class="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-950">
+                                                @if ($media->media_type === 'image')
+                                                    <img
+                                                        src="{{ $media->visibility === 'private' ? route('admin.media.file', $media) : asset('storage/' . $previewPath) }}"
+                                                        alt="{{ $media->alt_text ?: $media->title ?: $media->original_filename }}"
+                                                        class="h-full w-full object-cover"
+                                                        loading="lazy"
+                                                    >
+                                                @else
+                                                    <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-400">
+                                                        {{ strtoupper($media->extension ?: 'FILE') }}
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <div class="min-w-0">
+                                                <h3 class="truncate text-sm font-semibold text-white">
+                                                    {{ $media->title ?: $media->original_filename }}
+                                                </h3>
+
+                                                <p class="mt-1 truncate text-xs text-slate-400">
+                                                    {{ $media->original_filename }}
+                                                </p>
+
+                                                <p class="mt-1 truncate text-xs text-slate-500">
+                                                    โฟลเดอร์: {{ $media->folder?->name ?? 'ไม่มีโฟลเดอร์' }}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-sm text-slate-300">
+                                            <span class="lg:hidden text-xs text-slate-500">ประเภท: </span>{{ ucfirst($media->media_type) }}
+                                        </div>
+
+                                        <div class="text-sm text-slate-300">
+                                            <span class="lg:hidden text-xs text-slate-500">ขนาด: </span>{{ number_format($media->file_size / 1024, 1) }} KB
+                                        </div>
+
+                                        <div>
+                                            <span class="{{ $media->visibility === 'public' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-amber-400/20 bg-amber-500/10 text-amber-300' }} inline-flex rounded-full border px-2.5 py-1 text-xs">
+                                                {{ $media->visibility }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center gap-2 lg:justify-end">
+                                            <a
+                                                href="{{ $media->visibility === 'private' ? route('admin.media.file', $media) : asset('storage/' . $media->path) }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+                                            >
+                                                ดูไฟล์
+                                            </a>
+
+                                            <a
+                                                href="{{ route('admin.media.edit', $media) }}"
+                                                class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-blue-300 transition hover:bg-white/[0.06] hover:text-blue-200"
+                                            >
+                                                แก้ไข
+                                            </a>
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route('admin.media.destroy', $media) }}"
+                                                onsubmit="return confirm('ต้องการลบไฟล์นี้ใช่หรือไม่? หากไฟล์ถูกใช้งานอยู่ ระบบจะไม่อนุญาตให้ลบ');"
+                                                class="inline-flex"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-red-300 transition hover:bg-white/[0.06] hover:text-red-200"
+                                                >
+                                                    ลบ
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </article>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
 
                         @if ($mediaItems->hasPages())
                             <div class="mt-5 border-t border-white/10 pt-4">
@@ -389,7 +630,10 @@
                         </div>
                     @endif
                 </div>
-            </section>
+                </section>
+            </div>
         </div>
+
+        @include('admin.content.partials._ajax_index_loader')
     </div>
 </x-layouts.admin>

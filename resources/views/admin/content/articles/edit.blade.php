@@ -104,9 +104,13 @@
             {{-- Sticky การจัดการ Bar --}}
             <div class="sticky bottom-0 z-20 -mx-2 rounded-t-3xl border border-white/10 bg-slate-950/90 px-4 py-4 shadow-2xl shadow-slate-950 backdrop-blur">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-xs text-slate-500">
-                        ตรวจสอบข้อมูลก่อนบันทึกการแก้ไข
-                    </p>
+                    <button
+                        type="submit"
+                        form="delete-article-form"
+                        class="inline-flex items-center justify-center rounded-xl border border-rose-400/30 bg-rose-500/10 px-5 py-2.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20"
+                    >
+                        ลบบทความ
+                    </button>
 
                     <div class="flex items-center justify-end gap-3">
                         @if (in_array($article->content?->status, ['draft', 'review'], true))
@@ -153,6 +157,17 @@
         <form id="unpublish-article-form" method="POST" action="{{ route('admin.content.articles.unpublish', $article) }}" class="hidden">
             @csrf
             @method('PATCH')
+        </form>
+
+        <form
+            id="delete-article-form"
+            method="POST"
+            action="{{ route('admin.content.articles.destroy', $article) }}"
+            class="hidden"
+            onsubmit="return confirm('ยืนยันการลบบทความนี้หรือไม่?');"
+        >
+            @csrf
+            @method('DELETE')
         </form>
     </div>
 </x-layouts.admin>

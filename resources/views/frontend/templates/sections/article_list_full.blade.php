@@ -5,22 +5,28 @@
     $itemCollection = collect(method_exists($items, 'items') ? $items->items() : $items);
     $filters = $section->filters ?? [];
     $totalItems = method_exists($items, 'total') ? $items->total() : $itemCollection->count();
-    $activeSearch = request('search');
-    $activeCategory = request('category');
-    $activeTag = request('tag');
-    $activeAuthor = request('author');
-    $activeSort = request('sort');
+    $filterKey = $section->filter_key ?? 'section_preview';
+    $activeFilters = $section->active_filters ?? [];
+    $activeSearch = $activeFilters['search'] ?? '';
+    $activeCategory = $activeFilters['category'] ?? '';
+    $activeTag = $activeFilters['tag'] ?? '';
+    $activeAuthor = $activeFilters['author'] ?? '';
+    $activeCollection = $activeFilters['collection'] ?? '';
+    $activeSort = $activeFilters['sort'] ?? '';
     $categories = collect($filters['categories'] ?? []);
     $tags = collect($filters['tags'] ?? []);
     $authors = collect($filters['authors'] ?? []);
-    $hasActiveFilters = $activeSearch || $activeCategory || $activeTag || $activeAuthor || $activeSort;
+    $hasActiveFilters = $activeSearch || $activeCategory || $activeTag || $activeAuthor || $activeCollection || $activeSort;
     $searchLabel = trim((string) ($content['search_label'] ?? '')) ?: 'ค้นหา';
     $searchPlaceholder = trim((string) ($content['search_placeholder'] ?? '')) ?: 'ชื่อบทความ, ผู้เขียน, tag, keyword';
     $categoryLabel = trim((string) ($content['category_filter_label'] ?? '')) ?: 'หมวดหมู่';
     $tagLabel = trim((string) ($content['tag_filter_label'] ?? '')) ?: 'แท็ก';
     $authorLabel = trim((string) ($content['author_filter_label'] ?? '')) ?: 'ผู้เขียน';
+    $collectionLabel = trim((string) ($content['collection_filter_label'] ?? '')) ?: 'ประเภทรายการ';
     $sortLabel = trim((string) ($content['sort_filter_label'] ?? '')) ?: 'เรียงตาม';
     $allOptionLabel = trim((string) ($content['all_option_label'] ?? '')) ?: 'ทั้งหมด';
+    $featuredOptionLabel = trim((string) ($content['featured_option_label'] ?? '')) ?: 'รายการแนะนำ';
+    $popularFilterOptionLabel = trim((string) ($content['popular_filter_option_label'] ?? '')) ?: 'ยอดนิยม';
     $latestOptionLabel = trim((string) ($content['latest_option_label'] ?? '')) ?: 'ล่าสุด';
     $popularOptionLabel = trim((string) ($content['popular_option_label'] ?? '')) ?: 'ยอดเข้าชมสูงสุด';
     $likesOptionLabel = trim((string) ($content['likes_option_label'] ?? '')) ?: 'ถูกใจมากสุด';
@@ -33,6 +39,15 @@
     $emptyExcerpt = trim((string) ($content['empty_excerpt'] ?? '')) ?: 'ยังไม่มีคำโปรย';
     $emptyImageText = trim((string) ($content['empty_image_text'] ?? '')) ?: 'No Image';
     $emptyListText = trim((string) ($content['empty_text'] ?? '')) ?: 'ยังไม่มีบทความ';
+    $filterColumns = max(2, min((int) ($settings['filter_columns'] ?? 3), 4));
+    $filterColumnClass = [2 => 'xl:grid-cols-2', 3 => 'xl:grid-cols-3', 4 => 'xl:grid-cols-4'][$filterColumns];
+    $rawFilterPanelSpacing = $settings['filter_panel_spacing'] ?? 'comfortable';
+    $filterPanelSpacing = in_array($rawFilterPanelSpacing, ['compact', 'comfortable', 'spacious'], true)
+        ? $rawFilterPanelSpacing
+        : 'comfortable';
+    $filterPanelPaddingClass = ['compact' => 'p-4', 'comfortable' => 'p-6', 'spacious' => 'p-8'][$filterPanelSpacing];
+    $filterGroupClass = ['compact' => 'mt-4 pt-4', 'comfortable' => 'mt-6 pt-6', 'spacious' => 'mt-8 pt-8'][$filterPanelSpacing];
+    $filterGapClass = ['compact' => 'gap-3', 'comfortable' => 'gap-4', 'spacious' => 'gap-5'][$filterPanelSpacing];
     $listColumns = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
     $gridColumnClass = [
         1 => 'grid-cols-1',
@@ -51,6 +66,12 @@
         6 => 'md:col-span-2 lg:col-span-3 xl:col-span-6',
     ][$listColumns] ?? 'md:col-span-2 xl:col-span-4';
     $sectionFilterId = 'section-filter-' . ($section->id ?: 'preview');
+    $clearQuery = request()->query();
+    unset($clearQuery['section_filters'][$filterKey], $clearQuery[$section->pagination_key ?? 'section_page_preview']);
+    if (($clearQuery['section_filters'] ?? []) === []) {
+        unset($clearQuery['section_filters']);
+    }
+    $clearUrl = url()->current() . ($clearQuery ? '?' . http_build_query($clearQuery) : '') . '#' . $sectionFilterId;
 @endphp
 <section id="{{ $sectionFilterId }}" class="px-4 py-16 text-white" data-section-filter-root style="@include('frontend.templates.sections._background')">
     <div class="mx-auto max-w-7xl">
@@ -64,69 +85,78 @@
             @endif
         </div>
 
-        <div class="mb-8 rounded-3xl border border-white/10 bg-slate-900/75 p-5 shadow-2xl shadow-slate-950/50 backdrop-blur-xl">
-            <form action="{{ url()->current() }}#{{ $sectionFilterId }}" method="GET" data-section-filter-form>
-                <div class="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_140px] xl:items-end">
+        <form action="{{ url()->current() }}#{{ $sectionFilterId }}" method="GET" class="mb-8 rounded-3xl border border-white/10 bg-slate-900/75 {{ $filterPanelPaddingClass }} shadow-2xl shadow-slate-950/50 backdrop-blur-xl" data-section-filter-form data-section-page-key="{{ $section->pagination_key ?? 'section_page_preview' }}">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_9rem] lg:items-end">
+                <label class="block">
+                    <span class="mb-2 block text-xs font-medium text-slate-400">{{ $searchLabel }}</span>
+                    <input type="search" name="section_filters[{{ $filterKey }}][search]" value="{{ $activeSearch }}" placeholder="{{ $searchPlaceholder }}" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white placeholder:text-slate-500 focus:border-blue-400/50 focus:outline-none">
+                </label>
+
+                <button data-section-button class="h-12 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $submitLabel }}</button>
+            </div>
+
+            <div class="{{ $filterGroupClass }} border-t border-white/10">
+                <div data-section-filter-controls class="grid {{ $filterGapClass }} sm:grid-cols-2 {{ $filterColumnClass }}">
                     <label class="block">
-                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $searchLabel }}</span>
-                        <input type="search" name="search" value="{{ $activeSearch }}" placeholder="{{ $searchPlaceholder }}" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white placeholder:text-slate-500 focus:border-blue-400/50 focus:outline-none">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $categoryLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][category]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $allOptionLabel }}</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->slug ?? $category->id }}" @selected((string) $activeCategory === (string) ($category->slug ?? $category->id))>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
                     </label>
 
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-medium text-slate-400">{{ $categoryLabel }}</span>
-                            <select name="category" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
-                                <option value="">{{ $allOptionLabel }}</option>
-                                @foreach ($categories as $category)
-                                    <option value="{{ $category->slug ?? $category->id }}" @selected((string) $activeCategory === (string) ($category->slug ?? $category->id))>{{ $category->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $tagLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][tag]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $allOptionLabel }}</option>
+                            @foreach ($tags as $tag)
+                                <option value="{{ $tag->slug ?? $tag->id }}" @selected((string) $activeTag === (string) ($tag->slug ?? $tag->id))>#{{ $tag->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
 
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-medium text-slate-400">{{ $tagLabel }}</span>
-                            <select name="tag" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
-                                <option value="">{{ $allOptionLabel }}</option>
-                                @foreach ($tags as $tag)
-                                    <option value="{{ $tag->slug ?? $tag->id }}" @selected((string) $activeTag === (string) ($tag->slug ?? $tag->id))>#{{ $tag->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $authorLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][author]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $allOptionLabel }}</option>
+                            @foreach ($authors as $author)
+                                <option value="{{ $author }}" @selected($activeAuthor === $author)>{{ $author }}</option>
+                            @endforeach
+                        </select>
+                    </label>
 
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-medium text-slate-400">{{ $authorLabel }}</span>
-                            <select name="author" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
-                                <option value="">{{ $allOptionLabel }}</option>
-                                @foreach ($authors as $author)
-                                    <option value="{{ $author }}" @selected($activeAuthor === $author)>{{ $author }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $collectionLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][collection]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $allOptionLabel }}</option>
+                            <option value="featured" @selected($activeCollection === 'featured')>{{ $featuredOptionLabel }}</option>
+                            <option value="popular" @selected($activeCollection === 'popular')>{{ $popularFilterOptionLabel }}</option>
+                        </select>
+                    </label>
 
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-medium text-slate-400">{{ $sortLabel }}</span>
-                            <select name="sort" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
-                                <option value="">{{ $latestOptionLabel }}</option>
-                                <option value="popular" @selected($activeSort === 'popular')>{{ $popularOptionLabel }}</option>
-                                <option value="likes" @selected($activeSort === 'likes')>{{ $likesOptionLabel }}</option>
-                                <option value="oldest" @selected($activeSort === 'oldest')>{{ $oldestOptionLabel }}</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <button class="h-12 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $submitLabel }}</button>
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $sortLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][sort]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $latestOptionLabel }}</option>
+                            <option value="popular" @selected($activeSort === 'popular')>{{ $popularOptionLabel }}</option>
+                            <option value="likes" @selected($activeSort === 'likes')>{{ $likesOptionLabel }}</option>
+                            <option value="oldest" @selected($activeSort === 'oldest')>{{ $oldestOptionLabel }}</option>
+                        </select>
+                    </label>
                 </div>
-            </form>
+            </div>
 
-            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="{{ $filterPanelSpacing === 'compact' ? 'mt-4' : 'mt-6' }} flex flex-wrap items-center justify-between gap-3">
                 <span class="rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-200">{{ $totalLabel }} {{ number_format($totalItems) }}</span>
                 @if ($hasActiveFilters)
-                    <a href="{{ url()->current() }}#{{ $sectionFilterId }}" class="rounded-full border border-blue-300/20 bg-blue-300/10 px-3 py-1 text-xs font-medium text-blue-100 transition hover:bg-blue-300/15" data-section-filter-link>{{ $clearLabel }}</a>
+                    <a href="{{ $clearUrl }}" class="rounded-full border border-blue-300/20 bg-blue-300/10 px-3 py-1 text-xs font-medium text-blue-100 transition hover:bg-blue-300/15" data-section-button data-section-filter-link>{{ $clearLabel }}</a>
                 @endif
             </div>
-        </div>
+        </form>
 
-        <div class="grid gap-7 {{ $gridColumnClass }}">
+        <div data-section-items class="grid gap-7 {{ $gridColumnClass }}">
             @forelse ($itemCollection as $articleContent)
                 @php
                     $mediaUsages = ($articleContent && $articleContent->relationLoaded('mediaUsages')) ? $articleContent->mediaUsages : collect();
@@ -142,9 +172,9 @@
                     $authorText = trim((string) ($article?->author_name ?? ''));
                     $readingTime = (int) ($article?->reading_time_minutes ?? 0);
                 @endphp
-                <article class="group flex h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
+                <article data-section-card class="group flex h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
                     <a href="{{ route('articles.show', $articleContent->slug) }}" class="flex h-full w-full flex-col">
-                        <div class="relative h-56 overflow-hidden bg-slate-900">
+                        <div data-section-image class="relative aspect-[4/3] overflow-hidden bg-slate-900">
                             @if ($imageUrl)
                                 <img src="{{ $imageUrl }}" alt="{{ $articleContent?->title ?: 'Article image' }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
                             @else
@@ -163,7 +193,7 @@
                                 {{ $articleContent->published_at?->format('d M Y') ?? $publishedFallback }}
                             </div>
                         </div>
-                        <div class="flex flex-1 flex-col p-5">
+                        <div data-section-card-padding class="flex flex-1 flex-col p-5">
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-blue-300">
                                 @if($authorText !== '')
                                     <span>{{ $authorText }}</span>
@@ -210,7 +240,7 @@
                     </a>
                 </article>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 {{ $emptyColumnClass }}">{{ $emptyListText }}</div>
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 {{ $emptyColumnClass }}">{{ $emptyListText }}</div>
             @endforelse
         </div>
 

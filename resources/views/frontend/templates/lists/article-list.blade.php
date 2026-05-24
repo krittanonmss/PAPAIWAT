@@ -16,6 +16,7 @@
     $activeCategory = request('category');
     $activeTag = request('tag');
     $activeAuthor = request('author');
+    $activeCollection = request('collection');
     $activeSort = request('sort');
     $heroContent = $itemCollection->first();
     $heroMediaUsages = ($heroContent && $heroContent->relationLoaded('mediaUsages')) ? $heroContent->mediaUsages : collect();
@@ -30,7 +31,7 @@
         ->values());
     $tags = collect($filters['tags'] ?? []);
     $authors = collect($filters['authors'] ?? []);
-    $hasActiveFilters = $activeSearch || $activeCategory || $activeTag || $activeAuthor || $activeSort;
+    $hasActiveFilters = $activeSearch || $activeCategory || $activeTag || $activeAuthor || $activeCollection || $activeSort;
 @endphp
 
 @if($sections->isNotEmpty())
@@ -74,7 +75,7 @@
                         >
                     </label>
 
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <label class="block">
                             <span class="mb-2 block text-xs font-medium text-slate-400">หมวดหมู่</span>
                             <select name="category" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
@@ -106,6 +107,15 @@
                                 @foreach ($authors as $author)
                                     <option value="{{ $author }}" @selected($activeAuthor === $author)>{{ $author }}</option>
                                 @endforeach
+                            </select>
+                        </label>
+
+                        <label class="block">
+                            <span class="mb-2 block text-xs font-medium text-slate-400">ประเภทรายการ</span>
+                            <select name="collection" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                                <option value="">ทั้งหมด</option>
+                                <option value="featured" @selected($activeCollection === 'featured')>รายการแนะนำ</option>
+                                <option value="popular" @selected($activeCollection === 'popular')>ยอดนิยม</option>
                             </select>
                         </label>
 

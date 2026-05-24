@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Content\Media\StoreMediaFolderRequest;
 use App\Http\Requests\Admin\Content\Media\UpdateMediaFolderRequest;
 use App\Models\Content\Media\MediaFolder;
+use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class MediaFolderController extends Controller
@@ -111,7 +111,7 @@ class MediaFolderController extends Controller
         $folder = MediaFolder::query()->create([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            'slug' => $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name'], $validated['parent_id'] ?? null),
             'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'status' => $validated['status'],
@@ -147,7 +147,7 @@ class MediaFolderController extends Controller
         $mediaFolder->update([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
+            'slug' => $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name'], $validated['parent_id'] ?? null, $mediaFolder),
             'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'status' => $validated['status'],
@@ -180,5 +180,25 @@ class MediaFolderController extends Controller
         return redirect()
             ->route('admin.media.index')
             ->with('success', 'ลบโฟลเดอร์สื่อเรียบร้อยแล้ว');
+    }
+
+    private function makeUniqueSlug(string $value, ?int $parentId, ?MediaFolder $ignoreFolder = null): string
+    {
+        $baseSlug = SlugGenerator::make($value, 'media-folder');
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while (
+            MediaFolder::query()
+                ->where('parent_id', $parentId)
+                ->where('slug', $slug)
+                ->when($ignoreFolder, fn ($query) => $query->whereKeyNot($ignoreFolder->id))
+                ->exists()
+        ) {
+            $slug = $baseSlug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
     }
 }

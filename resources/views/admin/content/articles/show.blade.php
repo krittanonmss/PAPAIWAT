@@ -45,6 +45,22 @@
                         แก้ไข
                     </a>
 
+                    <form
+                        method="POST"
+                        action="{{ route('admin.content.articles.destroy', $article) }}"
+                        onsubmit="return confirm('ยืนยันการลบบทความนี้หรือไม่?');"
+                    >
+                        @csrf
+                        @method('DELETE')
+
+                        <button
+                            type="submit"
+                            class="inline-flex items-center justify-center rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20"
+                        >
+                            ลบ
+                        </button>
+                    </form>
+
                     <a
                         href="{{ route('admin.content.articles.index') }}"
                         class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"

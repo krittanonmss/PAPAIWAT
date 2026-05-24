@@ -20,16 +20,16 @@
             <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-400">{{ $content['subtitle'] }}</p>
         @endif
 
-        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-section-items class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @forelse($items as $item)
-                <figure class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
-                    <img src="{{ $item['url'] }}" alt="{{ $item['caption'] ?: ($content['title'] ?? 'Gallery image') }}" class="aspect-[4/3] w-full object-cover" loading="lazy">
+                <figure data-section-card class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+                    <img data-section-image src="{{ $item['url'] }}" alt="{{ $item['caption'] ?: ($content['title'] ?? 'Gallery image') }}" class="aspect-[4/3] w-full object-cover" loading="lazy">
                     @if($item['caption'])
-                        <figcaption class="px-4 py-3 text-sm text-slate-400">{{ $item['caption'] }}</figcaption>
+                        <figcaption data-section-card-padding class="px-4 py-3 text-sm text-slate-400">{{ $item['caption'] }}</figcaption>
                     @endif
                 </figure>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-3">{{ $emptyText }}</div>
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-3">{{ $emptyText }}</div>
             @endforelse
         </div>
     </div>

@@ -27,7 +27,7 @@ class UserManagementFeatureTest extends TestCase
         $this->seed(SystemAccessSeeder::class);
         $this->withoutMiddleware(AdminAuthenticate::class);
 
-        $this->admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+        $this->admin = Admin::query()->where('status', 'active')->firstOrFail();
         $this->actingAs($this->admin, 'admin');
     }
 
@@ -50,6 +50,28 @@ class UserManagementFeatureTest extends TestCase
         $this->assertSame('editor-user', $created->username);
         $this->assertSame($role->id, $created->role_id);
         $this->assertTrue(Hash::check('StrongPassword123', $created->password_hash));
+    }
+
+    public function test_user_management_pages_render_searchable_dropdowns(): void
+    {
+        $target = $this->createAdmin('render-target', 'render-target@example.com', Role::query()->where('name', 'Editor')->firstOrFail());
+
+        $this->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('พิมพ์ชื่อบทบาท...')
+            ->assertSee('พิมพ์สถานะ...')
+            ->assertSee('name="role_id"', false)
+            ->assertSee('name="status"', false);
+
+        $this->get(route('admin.users.create'))
+            ->assertOk()
+            ->assertSee('พิมพ์ชื่อบทบาท...')
+            ->assertSee('พิมพ์สถานะ...');
+
+        $this->get(route('admin.users.edit', $target))
+            ->assertOk()
+            ->assertSee('พิมพ์ชื่อบทบาท...')
+            ->assertSee('พิมพ์สถานะ...');
     }
 
     public function test_admin_can_update_user_without_replacing_password_then_change_password(): void

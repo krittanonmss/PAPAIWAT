@@ -4,8 +4,10 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminPreference;
 use App\Models\Content\Content;
 use App\Models\Content\Media\Media;
+use App\Models\Content\Media\MediaFolder;
 use App\Models\Content\Media\MediaUsage;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Http\UploadedFile;
@@ -77,6 +79,23 @@ class MediaUploadFeatureTest extends TestCase
         $this->assertSame(0, Media::query()->count());
     }
 
+    public function test_media_upload_rejects_unsupported_file_types(): void
+    {
+        Storage::fake('public');
+
+        $this->from(route('admin.media.create'))
+            ->post(route('admin.media.store'), [
+                'files' => [
+                    UploadedFile::fake()->create('payload.html', 1, 'text/html'),
+                ],
+                'visibility' => 'public',
+            ])
+            ->assertRedirect(route('admin.media.create'))
+            ->assertSessionHasErrors('files.0');
+
+        $this->assertSame(0, Media::query()->count());
+    }
+
     public function test_media_index_renders_items_as_cards(): void
     {
         Media::query()->create([
@@ -93,10 +112,70 @@ class MediaUploadFeatureTest extends TestCase
 
         $this->get(route('admin.media.index'))
             ->assertOk()
+            ->assertSee('data-ajax-list-form', false)
+            ->assertSee('data-ajax-list-results', false)
+            ->assertSee('data-ajax-list-reset', false)
             ->assertSee('<article class="group overflow-hidden rounded-2xl', false)
             ->assertSee('card-image.jpg')
             ->assertDontSee('< class="group', false)
             ->assertDontSee('</>', false);
+    }
+
+    public function test_media_index_uses_preferred_view_mode_and_allows_query_override(): void
+    {
+        $admin = Admin::query()->firstOrFail();
+
+        AdminPreference::query()->create([
+            'admin_id' => $admin->id,
+            'key' => 'media.default_view_mode',
+            'value' => ['value' => 'list'],
+        ]);
+
+        Media::query()->create([
+            'filename' => 'list-image.jpg',
+            'path' => 'uploads/list-image.jpg',
+            'original_filename' => 'list-image.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => $admin->id,
+            'uploaded_at' => now(),
+        ]);
+
+        $this->get(route('admin.media.index'))
+            ->assertOk()
+            ->assertSee('data-media-view="list"', false)
+            ->assertDontSee('data-media-view="grid"', false)
+            ->assertSee('list-image.jpg');
+
+        $this->get(route('admin.media.index', ['view_mode' => 'grid']))
+            ->assertOk()
+            ->assertSee('data-media-view="grid"', false)
+            ->assertDontSee('data-media-view="list"', false);
+    }
+
+    public function test_media_index_remembers_last_filters_when_preference_is_enabled(): void
+    {
+        $admin = Admin::query()->firstOrFail();
+
+        AdminPreference::query()->updateOrCreate(
+            ['admin_id' => $admin->id, 'key' => 'tables.remember_filters'],
+            ['value' => ['value' => true]]
+        );
+
+        $this->get(route('admin.media.index', [
+            'search' => 'cover',
+            'visibility' => 'public',
+            'per_page' => 12,
+        ]))->assertOk();
+
+        $this->get(route('admin.media.index'))
+            ->assertRedirect(route('admin.media.index', [
+                'search' => 'cover',
+                'visibility' => 'public',
+                'per_page' => 12,
+            ]));
     }
 
     public function test_media_index_limits_cards_by_selected_per_page(): void
@@ -118,9 +197,80 @@ class MediaUploadFeatureTest extends TestCase
         $this->get(route('admin.media.index', ['per_page' => 12]))
             ->assertOk()
             ->assertSee('แสดง 12 จาก 15 ไฟล์')
-            ->assertSee('12 ใบ')
+            ->assertSee('12 รายการ')
             ->assertSee('card-image-15.jpg')
             ->assertDontSee('card-image-3.jpg');
+    }
+
+    public function test_admin_can_bulk_move_selected_media_to_folder(): void
+    {
+        $admin = Admin::query()->firstOrFail();
+
+        $folder = MediaFolder::query()->create([
+            'name' => 'Gallery Set',
+            'slug' => 'gallery-set',
+            'status' => 'active',
+        ]);
+
+        $first = Media::query()->create([
+            'filename' => 'bulk-first.jpg',
+            'path' => 'uploads/bulk-first.jpg',
+            'original_filename' => 'bulk-first.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => $admin->id,
+            'uploaded_at' => now(),
+        ]);
+
+        $second = Media::query()->create([
+            'filename' => 'bulk-second.jpg',
+            'path' => 'uploads/bulk-second.jpg',
+            'original_filename' => 'bulk-second.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => $admin->id,
+            'uploaded_at' => now(),
+        ]);
+
+        $this->get(route('admin.media.index'))
+            ->assertOk()
+            ->assertSee('media-bulk-folder-form', false)
+            ->assertSee('ย้ายไฟล์ที่เลือก')
+            ->assertSee('เลือกทั้งหมดในหน้านี้');
+
+        $this->patch(route('admin.media.bulk-folder'), [
+            'media_ids' => [$first->id, $second->id],
+            'media_folder_id' => $folder->id,
+        ])->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('media', [
+            'id' => $first->id,
+            'media_folder_id' => $folder->id,
+        ]);
+        $this->assertDatabaseHas('media', [
+            'id' => $second->id,
+            'media_folder_id' => $folder->id,
+        ]);
+
+        $this->patch(route('admin.media.bulk-folder'), [
+            'media_ids' => [$first->id, $second->id],
+            'media_folder_id' => '',
+        ])->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('media', [
+            'id' => $first->id,
+            'media_folder_id' => null,
+        ]);
+        $this->assertDatabaseHas('media', [
+            'id' => $second->id,
+            'media_folder_id' => null,
+        ]);
     }
 
     public function test_media_create_and_edit_render_preview_ui(): void

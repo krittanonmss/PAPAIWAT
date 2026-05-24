@@ -84,10 +84,10 @@
             @endif
             <div class="mt-8 flex flex-wrap {{ $buttonAlignClass }} gap-3">
                 @if($showPrimaryButton && !empty($content['primary_label']) && !empty($content['primary_url']))
-                    <a href="{{ $content['primary_url'] }}" class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500">{{ $content['primary_label'] }}</a>
+                    <a href="{{ $content['primary_url'] }}" data-section-button class="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500">{{ $content['primary_label'] }}</a>
                 @endif
                 @if($showSecondaryButton && !empty($content['secondary_label']) && !empty($content['secondary_url']))
-                    <a href="{{ $content['secondary_url'] }}" class="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">{{ $content['secondary_label'] }}</a>
+                    <a href="{{ $content['secondary_url'] }}" data-section-button class="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white">{{ $content['secondary_label'] }}</a>
                 @endif
             </div>
             @if($showSearchBox)
@@ -108,15 +108,15 @@
             @endif
             @if($showSummaryStats)
                 <div class="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                    <div data-section-card data-section-card-padding class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
                         <p class="text-xs text-slate-300">{{ $templeStatLabel }}</p>
                         <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['temples'] ?? 0)) }}</p>
                     </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                    <div data-section-card data-section-card-padding class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
                         <p class="text-xs text-slate-300">{{ $articleStatLabel }}</p>
                         <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['articles'] ?? 0)) }}</p>
                     </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                    <div data-section-card data-section-card-padding class="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
                         <p class="text-xs text-slate-300">{{ $viewStatLabel }}</p>
                         <p class="mt-2 text-2xl font-bold text-white">{{ number_format((int) ($summaryStats['views'] ?? 0)) }}</p>
                     </div>

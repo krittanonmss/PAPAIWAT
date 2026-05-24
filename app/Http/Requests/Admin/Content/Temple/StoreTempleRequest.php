@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin\Content\Temple;
 
+use App\Support\SlugGenerator;
+use App\Support\SiteSettings;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,12 +11,23 @@ class StoreTempleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth('admin')->check();
     }
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
+        $defaults = [];
+
+        if (! $this->exists('status')) {
+            $defaults['status'] = SiteSettings::get('content', 'default_status', 'draft');
+        }
+
+        if (! $this->exists('template_id') && SiteSettings::get('content', 'temple_default_template_id')) {
+            $defaults['template_id'] = SiteSettings::get('content', 'temple_default_template_id');
+        }
+
+        $this->merge($defaults + [
+            'slug' => SlugGenerator::make($this->input('slug') ?: $this->input('title'), 'temple'),
             'is_featured' => $this->boolean('is_featured'),
             'is_popular' => $this->boolean('is_popular'),
             'cover_media_id' => $this->integerOrNull($this->input('cover_media_id')),
@@ -62,7 +75,7 @@ class StoreTempleRequest extends FormRequest
             ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(['draft', 'review', 'archived'])],
+            'status' => ['required', 'string', Rule::in($this->allowedStatuses())],
             'is_featured' => ['nullable', 'boolean'],
             'is_popular' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
@@ -157,5 +170,16 @@ class StoreTempleRequest extends FormRequest
             'nearby_places.*.score' => ['nullable', 'numeric', 'min:0'],
             'nearby_places.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    private function allowedStatuses(): array
+    {
+        $statuses = ['draft', 'review', 'archived'];
+
+        if ($this->user('admin')?->hasPermission('temples.publish')) {
+            $statuses[] = 'published';
+        }
+
+        return $statuses;
     }
 }

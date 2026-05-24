@@ -3,6 +3,10 @@
     $currentType = old('menu_item_type', $menuItem->menu_item_type ?? ($menu->location_key === 'footer' ? 'heading' : 'route'));
     $currentPage = $pages->first();
     $currentContent = $contents->first();
+    $currentRouteName = old('route_name', $menuItem->route_name ?? 'home');
+    $currentRouteParams = old('route_params', isset($menuItem) && $menuItem->route_params ? json_encode($menuItem->route_params, JSON_UNESCAPED_UNICODE) : '');
+    $parameterlessRoutes = $routesWithoutParams;
+    $currentRouteParams = in_array($currentRouteName, $parameterlessRoutes, true) ? '' : $currentRouteParams;
 @endphp
 
 <div
@@ -10,14 +14,27 @@
     x-data="{
         type: @js($currentType),
         target: @js(old('target', $menuItem->target ?? '_self')),
-        routeName: @js(old('route_name', $menuItem->route_name ?? 'home')),
+        routeName: @js($currentRouteName),
+        routeParams: @js($currentRouteParams),
+        parameterlessRoutes: @js($parameterlessRoutes),
         externalUrl: @js(old('external_url', $menuItem->external_url ?? '')),
         anchor: @js(old('anchor', $menuItem->anchor ?? '')),
         apply(type, data = {}) {
             this.type = type;
             this.routeName = data.routeName || '';
+            this.routeParams = '';
             this.externalUrl = data.externalUrl || '';
             this.anchor = data.anchor || '';
+        },
+        needsRouteParams() {
+            return this.type === 'route' && ! this.parameterlessRoutes.includes(this.routeName);
+        },
+        init() {
+            this.$watch('routeName', (routeName) => {
+                if (this.parameterlessRoutes.includes(routeName)) {
+                    this.routeParams = '';
+                }
+            });
         }
     }"
 >
@@ -43,16 +60,19 @@
                     @error('label')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
-                    <label for="parent_id" class="mb-1.5 block text-sm font-medium text-slate-300">อยู่ใต้เมนู</label>
-                    <select id="parent_id" name="parent_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
-                        <option value="">Root menu</option>
-                        @foreach($parentItems as $item)
-                            <option value="{{ $item->id }}" @selected((string) old('parent_id', $menuItem->parent_id ?? '') === (string) $item->id)>{{ $item->label }}</option>
-                        @endforeach
-                    </select>
-                    @error('parent_id')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
-                </div>
+	                <div>
+	                    <label for="parent_id" class="mb-1.5 block text-sm font-medium text-slate-300">อยู่ใต้เมนู</label>
+	                    <select id="parent_id" name="parent_id" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+	                        <option value="">Root menu</option>
+	                        @foreach($parentItems as $item)
+	                            <option value="{{ $item->id }}" @selected((string) old('parent_id', $menuItem->parent_id ?? '') === (string) $item->id)>
+	                                {{ str_repeat('— ', (int) ($item->depth ?? 0)) }}{{ $item->label }}
+	                            </option>
+	                        @endforeach
+	                    </select>
+	                    <p class="mt-1 text-xs text-slate-500">แนะนำไม่เกิน 3 ชั้น เพื่อให้เมนูใช้งานง่ายบนมือถือ</p>
+	                    @error('parent_id')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+	                </div>
             </div>
 
             <div class="mt-6">
@@ -91,11 +111,19 @@
             </div>
 
             <div class="mt-6 space-y-5">
-                <div x-show="type === 'route'" x-cloak>
-                    <label for="route_name" class="mb-1.5 block text-sm font-medium text-slate-300">Route name</label>
-                    <input id="route_name" name="route_name" x-model="routeName" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="home">
-                    @error('route_name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
-                </div>
+	                <div x-show="type === 'route'" x-cloak>
+	                    <label for="route_name" class="mb-1.5 block text-sm font-medium text-slate-300">Route name</label>
+	                    <select id="route_name_select" x-model="routeName" class="mb-3 w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+	                        @foreach($routeChoices as $routeName => $routeLabel)
+	                            <option value="{{ $routeName }}">{{ $routeLabel }} ({{ $routeName }})</option>
+	                        @endforeach
+	                        <option value="">กำหนดเอง</option>
+	                    </select>
+	                    <input id="route_name" name="route_name" x-model="routeName" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="home">
+	                    <p class="mt-1 text-xs text-slate-500">เลือก route ที่ใช้บ่อย หรือพิมพ์ route name เองได้ถ้าเป็นหน้าพิเศษ</p>
+                        <p x-show="!needsRouteParams()" x-cloak class="mt-1 text-xs text-emerald-300">Route นี้ใช้งานได้ทันที ไม่ต้องกรอก Route params</p>
+	                    @error('route_name')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
+	                </div>
 
                 <div x-show="type === 'page'" x-cloak>
                     @include('admin.content.partials._async_select', [
@@ -148,9 +176,10 @@
                 <details class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                     <summary class="cursor-pointer text-sm font-medium text-slate-300">ตัวเลือกขั้นสูง</summary>
                     <div class="mt-4 grid gap-5 lg:grid-cols-2">
-                        <div>
+                        <div x-show="needsRouteParams()" x-cloak>
                             <label for="route_params" class="mb-1.5 block text-sm font-medium text-slate-300">Route params JSON</label>
-                            <input id="route_params" name="route_params" value="{{ old('route_params', isset($menuItem) && $menuItem->route_params ? json_encode($menuItem->route_params, JSON_UNESCAPED_UNICODE) : '') }}" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 font-mono text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder='{"slug":"about"}'>
+                            <input id="route_params" name="route_params" x-model="routeParams" class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 font-mono text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder='{"slug":"about"}'>
+                            <p class="mt-1 text-xs text-slate-500">ใช้เฉพาะ route ที่ต้องส่งค่าเพิ่ม เช่น slug หรือ id</p>
                             @error('route_params')<p class="mt-1 text-sm text-rose-300">{{ $message }}</p>@enderror
                         </div>
                         <div>

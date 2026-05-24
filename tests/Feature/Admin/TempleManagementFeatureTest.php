@@ -4,12 +4,16 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminPreference;
 use App\Models\Admin\AuditLog;
+use App\Models\Admin\Role;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
 use App\Models\Content\ContentVersion;
 use App\Models\Content\Temple\Temple;
 use Database\Seeders\SystemAccessSeeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\MigratesAppDatabase;
 use Tests\TestCase;
 
@@ -27,7 +31,7 @@ class TempleManagementFeatureTest extends TestCase
         $this->seed(SystemAccessSeeder::class);
         $this->withoutMiddleware(AdminAuthenticate::class);
 
-        $this->admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+        $this->admin = Admin::query()->where('status', 'active')->firstOrFail();
         $this->actingAs($this->admin, 'admin');
     }
 
@@ -42,6 +46,10 @@ class TempleManagementFeatureTest extends TestCase
 
         $content = Content::query()->where('slug', 'test-temple')->firstOrFail();
         $temple = Temple::query()->where('content_id', $content->id)->firstOrFail();
+
+        $this->get(route('admin.temples.show', $temple))
+            ->assertOk()
+            ->assertSee('Temple Detail');
 
         $this->assertSame('temple', $content->content_type);
         $this->assertSame('draft', $content->status);
@@ -132,6 +140,27 @@ class TempleManagementFeatureTest extends TestCase
         ]);
     }
 
+    public function test_temple_edit_keeps_primary_category_with_async_category_picker(): void
+    {
+        $category = $this->createTempleCategory();
+
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'title' => 'วัดมีหมวดหลัก',
+            'slug' => 'temple-with-primary-category',
+            'category_ids' => [$category->id],
+            'primary_category_id' => $category->id,
+        ]))->assertRedirect(route('admin.temples.index'));
+
+        $temple = Temple::query()->with('content.categories')->firstOrFail();
+
+        $this->get(route('admin.temples.edit', $temple))
+            ->assertOk()
+            ->assertSee('data-async-multi-field="category_ids"', false)
+            ->assertSee('primary_category_id', false)
+            ->assertSee((string) $category->id, false)
+            ->assertSee("input.type !== 'checkbox' || input.checked", false);
+    }
+
     public function test_admin_can_soft_delete_temple_content(): void
     {
         $this->post(route('admin.temples.store'), $this->templePayload())
@@ -147,6 +176,13 @@ class TempleManagementFeatureTest extends TestCase
 
     public function test_admin_can_publish_temple_through_publish_permission_flow(): void
     {
+        Mail::fake();
+        AdminPreference::query()->create([
+            'admin_id' => $this->admin->id,
+            'key' => 'notifications.email',
+            'value' => ['value' => true],
+        ]);
+
         $category = $this->createTempleCategory();
 
         $this->post(route('admin.temples.store'), $this->templePayload([
@@ -174,15 +210,72 @@ class TempleManagementFeatureTest extends TestCase
             'content_type' => 'temple',
             'version_name' => 'published',
         ]);
+        $this->assertDatabaseHas('admin_notifications', [
+            'admin_id' => $this->admin->id,
+            'type' => 'content',
+            'title' => 'เผยแพร่ข้อมูลวัดแล้ว',
+        ]);
+        Mail::assertQueuedCount(2);
     }
 
-    public function test_temple_save_blocks_publish_status_without_publish_action(): void
+    public function test_direct_temple_publish_requires_ready_content_and_records_publication(): void
     {
+        $category = $this->createTempleCategory();
+        $editor = Admin::query()->create([
+            'username' => 'temple-editor',
+            'email' => 'temple-editor@example.com',
+            'password_hash' => Hash::make('EditorPassword12345'),
+            'role_id' => Role::query()->where('role_key', 'editor')->firstOrFail()->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($editor, 'admin');
         $this->post(route('admin.temples.store'), $this->templePayload([
+            'slug' => 'cannot-direct-publish-temple',
             'status' => 'published',
+            'category_ids' => [$category->id],
+            'primary_category_id' => $category->id,
         ]))->assertSessionHasErrors('status');
 
+        $this->actingAs($this->admin, 'admin');
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'status' => 'published',
+            'opening_hours' => [],
+        ]))->assertSessionHasErrors(['category_ids', 'opening_hours']);
+
         $this->assertSame(0, Temple::query()->count());
+
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'status' => 'published',
+            'category_ids' => [$category->id],
+            'primary_category_id' => $category->id,
+        ]))->assertRedirect(route('admin.temples.index'));
+
+        $temple = Temple::query()->with('content')->firstOrFail();
+
+        $this->assertSame('published', $temple->content->status);
+        $this->assertNotNull($temple->content->published_at);
+        $this->assertDatabaseHas('content_versions', [
+            'content_id' => $temple->content_id,
+            'version_name' => 'published',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'temple.published',
+            'table_name' => 'temples',
+            'record_id' => $temple->id,
+        ]);
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'content',
+            'title' => 'เผยแพร่ข้อมูลวัดแล้ว',
+        ]);
+
+        $this->patch(route('admin.temples.publish', $temple))
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(1, ContentVersion::query()
+            ->where('content_id', $temple->content_id)
+            ->where('version_name', 'published')
+            ->count());
     }
 
     public function test_temple_validation_blocks_opening_hour_primary_category_and_nearby_edge_cases(): void
@@ -284,6 +377,13 @@ class TempleManagementFeatureTest extends TestCase
         ]))->assertRedirect(route('admin.temples.index'));
 
         $temples = Temple::query()->with('content')->orderBy('id')->get();
+
+        $this->get(route('admin.temples.index'))
+            ->assertOk()
+            ->assertSee('bulk_temple_category_id', false)
+            ->assertSee('type=temple', false)
+            ->assertSee('status=active', false)
+            ->assertSee('ค้นหาหมวดหมู่วัด');
 
         $this->patch(route('admin.temples.bulk-category'), [
             'temple_ids' => $temples->pluck('id')->all(),

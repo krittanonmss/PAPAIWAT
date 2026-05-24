@@ -13,6 +13,8 @@ use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use App\Models\Content\Temple\TempleAddress;
+use App\Services\Admin\AdminNotificationService;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Admin\Content\Temple\TempleDataSyncService;
 use App\Services\Admin\Content\Temple\TempleValidationService;
 use Illuminate\Http\RedirectResponse;
@@ -265,6 +267,12 @@ class TempleController extends Controller
 
         $this->writeAuditLog($request, 'temple.created', $temple, null, $this->templeAuditData($temple));
 
+        if ($temple->content?->status === 'published') {
+            $this->recordPublishedTransition($request, $temple, null);
+        } else {
+            $this->notifyReviewRequestedIfNeeded(null, $temple);
+        }
+
         return redirect()
             ->route('admin.temples.index')
             ->with('success', 'สร้างข้อมูลวัดเรียบร้อยแล้ว');
@@ -345,6 +353,12 @@ class TempleController extends Controller
 
         if (($oldData['status'] ?? null) !== ($newData['status'] ?? null)) {
             $this->writeAuditLog($request, 'temple.status_changed', $temple, ['status' => $oldData['status']], ['status' => $newData['status']]);
+
+            if (($newData['status'] ?? null) === 'published') {
+                $this->recordPublishedTransition($request, $temple, $oldData);
+            } else {
+                $this->notifyReviewRequestedIfNeeded($oldData['status'] ?? null, $temple);
+            }
         }
 
         if (($oldData['template_id'] ?? null) !== ($newData['template_id'] ?? null)) {
@@ -369,16 +383,39 @@ class TempleController extends Controller
             'updated_by_admin_id' => auth('admin')->id(),
         ])->save();
 
-        $this->templeDataSyncService->createVersion($temple, 'published');
-
-        $temple->refresh()->load('content.mediaUsages');
-        $newData = $this->templeAuditData($temple);
-
-        $this->writeAuditLog($request, 'temple.published', $temple, $oldData, $newData);
+        $this->recordPublishedTransition($request, $temple, $oldData);
 
         return redirect()
             ->route('admin.temples.edit', $temple)
             ->with('success', 'เผยแพร่ข้อมูลวัดเรียบร้อยแล้ว');
+    }
+
+    private function recordPublishedTransition(Request $request, Temple $temple, ?array $oldData): void
+    {
+        $this->templeDataSyncService->createVersion($temple, 'published');
+
+        $temple->refresh()->load('content.mediaUsages');
+        $this->writeAuditLog($request, 'temple.published', $temple, $oldData, $this->templeAuditData($temple));
+        $this->notifyContent('เผยแพร่ข้อมูลวัดแล้ว', 'ข้อมูลวัด "'.($temple->content?->title ?? '#'.$temple->id).'" ถูกเผยแพร่แล้ว');
+    }
+
+    private function notifyContent(string $title, string $message): void
+    {
+        app(AdminNotificationService::class)->notifyAdmins('content', $title, $message);
+    }
+
+    private function notifyReviewRequestedIfNeeded(?string $oldStatus, Temple $temple): void
+    {
+        if ($oldStatus === 'review' || $temple->content?->status !== 'review') {
+            return;
+        }
+
+        app(AdminNotificationService::class)->notifyAdminsWithPermission(
+            'temples.publish',
+            'content',
+            'มีข้อมูลวัดรอตรวจสอบ',
+            'ข้อมูลวัด "'.($temple->content?->title ?? '#'.$temple->id).'" รอผู้มีสิทธิ์เผยแพร่อนุมัติ'
+        );
     }
 
     public function bulkAssignCategory(Request $request): RedirectResponse
@@ -613,9 +650,11 @@ class TempleController extends Controller
 
     private function perPage(Request $request, int $default): int
     {
+        $allowed = AdminPreferenceService::PER_PAGE_OPTIONS;
+        $default = app(AdminPreferenceService::class)->preferredPerPage($request->user('admin'), $allowed, $default);
         $perPage = (int) $request->input('per_page', $default);
 
-        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
+        return in_array($perPage, $allowed, true) ? $perPage : $default;
     }
 
     private function templeAuditData(Temple $temple): array

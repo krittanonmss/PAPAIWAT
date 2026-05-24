@@ -17,6 +17,7 @@
 
 <div
     class="relative"
+    :class="open ? 'z-[90]' : 'z-0'"
     x-data="asyncSelect({
         url: @js($searchUrl),
         value: @js($selected),

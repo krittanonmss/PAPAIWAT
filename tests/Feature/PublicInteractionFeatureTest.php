@@ -4,16 +4,20 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminPreference;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Content;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Temple\Temple;
 use App\Models\Interaction\AnonymousVisitor;
+use App\Models\Interaction\InteractionReport;
 use App\Models\Interaction\PublicComment;
 use App\Models\Interaction\TempleReview;
 use App\Services\Interaction\PublicInteractionService;
 use Database\Seeders\SystemAccessSeeder;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Tests\Concerns\MigratesAppDatabase;
 use Tests\TestCase;
@@ -28,6 +32,24 @@ class PublicInteractionFeatureTest extends TestCase
 
         $this->migrateAdminContentTables();
         $this->seed(SystemAccessSeeder::class);
+    }
+
+    public function test_public_write_interaction_routes_are_throttled(): void
+    {
+        foreach ([
+            'interactions.favorite' => 'throttle:60,1',
+            'interactions.share' => 'throttle:60,1',
+            'temples.reviews.store' => 'throttle:10,1',
+            'temples.comments.store' => 'throttle:10,1',
+            'reviews.report' => 'throttle:10,1',
+            'articles.comments.store' => 'throttle:10,1',
+            'comments.report' => 'throttle:10,1',
+        ] as $routeName => $middleware) {
+            $route = Route::getRoutes()->getByName($routeName);
+
+            $this->assertNotNull($route, "Route [{$routeName}] is not registered.");
+            $this->assertContains($middleware, $route->gatherMiddleware());
+        }
     }
 
     public function test_favorites_page_has_no_default_public_page_without_admin_page(): void
@@ -106,6 +128,9 @@ class PublicInteractionFeatureTest extends TestCase
 
     public function test_temple_review_waits_for_admin_approval_before_updating_rating(): void
     {
+        Mail::fake();
+        $this->enableModerationEmailAlerts();
+
         $temple = $this->createPublishedTemple();
 
         $this->post(route('temples.reviews.store', $temple), [
@@ -124,6 +149,11 @@ class PublicInteractionFeatureTest extends TestCase
             'review_count' => 0,
             'average_rating' => 0,
         ]);
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'moderation',
+            'title' => 'มีรีวิววัดรอตรวจสอบ',
+        ]);
+        Mail::assertQueuedCount(1);
     }
 
     public function test_same_visitor_can_update_existing_temple_review(): void
@@ -172,7 +202,7 @@ class PublicInteractionFeatureTest extends TestCase
         $this->assertNull($review->approved_at);
 
         $this->withoutMiddleware(AdminAuthenticate::class);
-        $this->actingAs(Admin::query()->where('email', 'admin@example.com')->firstOrFail(), 'admin');
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
 
         $this->patch(route('admin.interactions.reviews.approve', $review))
             ->assertRedirect();
@@ -190,6 +220,9 @@ class PublicInteractionFeatureTest extends TestCase
 
     public function test_public_comment_waits_for_admin_approval_and_admin_can_reject_it(): void
     {
+        Mail::fake();
+        $this->enableModerationEmailAlerts();
+
         $article = $this->createPublishedArticle();
 
         $this->post(route('articles.comments.store', $article), [
@@ -202,9 +235,14 @@ class PublicInteractionFeatureTest extends TestCase
 
         $this->assertSame('pending', $comment->status);
         $this->assertNull($comment->approved_at);
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'moderation',
+            'title' => 'มีความคิดเห็นรอตรวจสอบ',
+        ]);
+        Mail::assertQueuedCount(1);
 
         $this->withoutMiddleware(AdminAuthenticate::class);
-        $this->actingAs(Admin::query()->where('email', 'admin@example.com')->firstOrFail(), 'admin');
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
 
         $this->patch(route('admin.interactions.comments.reject', $comment))
             ->assertRedirect();
@@ -299,6 +337,86 @@ class PublicInteractionFeatureTest extends TestCase
             ->assertSee('อนุมัติแล้ว');
     }
 
+    public function test_admin_can_bulk_moderate_reviews_with_reason_and_note(): void
+    {
+        $temple = $this->createPublishedTemple();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $review = TempleReview::query()->create([
+            'temple_id' => $temple->id,
+            'anonymous_visitor_id' => $visitor->id,
+            'rating' => 1,
+            'comment' => 'ไม่เกี่ยวข้อง',
+            'status' => 'pending',
+        ]);
+
+        $this->withoutMiddleware(AdminAuthenticate::class);
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
+
+        $this->patch(route('admin.interactions.reviews.bulk'), [
+            'review_ids' => [$review->id],
+            'action' => 'reject',
+            'moderation_reason' => 'off_topic',
+            'moderation_note' => 'ไม่เกี่ยวกับเนื้อหา',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('temple_reviews', [
+            'id' => $review->id,
+            'status' => 'rejected',
+            'moderation_reason' => 'off_topic',
+            'moderation_note' => 'ไม่เกี่ยวกับเนื้อหา',
+        ]);
+    }
+
+    public function test_admin_detail_pages_show_reports_and_can_ban_visitor(): void
+    {
+        $article = $this->createPublishedArticle();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $comment = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $article->id,
+            'display_name' => 'Reader',
+            'body' => 'spam text',
+            'status' => 'pending',
+            'report_count' => 1,
+        ]);
+        InteractionReport::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'reportable_type' => PublicComment::class,
+            'reportable_id' => $comment->id,
+            'reason' => 'spam',
+        ]);
+
+        $this->withoutMiddleware(AdminAuthenticate::class);
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
+
+        $this->get(route('admin.interactions.comments.show', $comment))
+            ->assertOk()
+            ->assertSee('spam text')
+            ->assertSee('spam');
+
+        $this->patch(route('admin.interactions.comments.ban-visitor', $comment), [
+            'reason' => 'spam',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('anonymous_visitors', [
+            'id' => $visitor->id,
+            'status' => 'banned',
+        ]);
+        $this->assertDatabaseHas('interaction_bans', [
+            'ban_type' => 'visitor',
+            'reason' => 'spam',
+        ]);
+    }
+
     private function createPublishedTemple(): Temple
     {
         $content = Content::query()->create([
@@ -312,6 +430,22 @@ class PublicInteractionFeatureTest extends TestCase
         return Temple::query()->create([
             'content_id' => $content->id,
         ]);
+    }
+
+    private function enableModerationEmailAlerts(): void
+    {
+        $admin = Admin::query()->where('status', 'active')->firstOrFail();
+
+        foreach ([
+            'notifications.in_app' => true,
+            'notifications.email' => true,
+            'notifications.moderation_alerts' => true,
+        ] as $key => $value) {
+            AdminPreference::query()->updateOrCreate(
+                ['admin_id' => $admin->id, 'key' => $key],
+                ['value' => ['value' => $value]]
+            );
+        }
     }
 
     private function createPublishedArticle(bool $allowComments = true): Article

@@ -23,10 +23,10 @@ use App\Models\Content\Temple\TempleTravelInfo;
 use App\Models\Content\Temple\TempleVisitRule;
 use App\Support\SafeRichText;
 use App\Support\ContentTemplateResolver;
+use App\Support\SlugGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ContentTemplatePreviewController extends Controller
@@ -270,8 +270,7 @@ class ContentTemplatePreviewController extends Controller
     private function liveContent(Request $request, string $type): Content
     {
         $title = $request->input('title') ?: ($type === 'temple' ? 'รายละเอียดวัด' : 'รายละเอียดบทความ');
-        $slug = $request->input('slug') ?: Str::slug($title);
-        $slug = $slug !== '' ? $slug : $type . '-preview';
+        $slug = SlugGenerator::make($request->input('slug') ?: $title, $type . '-preview');
 
         $content = new Content([
             'content_type' => $type,

@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\PermissionController;
 
-Route::prefix('admin')->name('admin.')->middleware(['admin.auth', 'admin.active', 'admin.activity'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['admin.auth', 'admin.active', 'admin.activity', 'admin.remember_filters'])->group(function () {
 
     Route::patch('/users/{admin}/status', [UserManagementController::class, 'updateStatus'])
         ->middleware('admin.permission:users.update')

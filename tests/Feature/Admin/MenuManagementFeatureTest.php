@@ -167,6 +167,165 @@ class MenuManagementFeatureTest extends TestCase
             ->assertJsonPath('items.0.label', 'Lookup Content Target');
     }
 
+    public function test_parameterless_route_ignores_stale_route_params_while_custom_route_validates_json(): void
+    {
+        $menu = $this->menu();
+        $home = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'หน้าแรก',
+            'slug' => 'home',
+            'menu_item_type' => 'route',
+            'route_name' => 'home',
+            'route_params' => ['stale' => 'value'],
+            'target' => '_self',
+            'is_enabled' => true,
+        ]);
+
+        $this->put(route('admin.content.menu-items.update', [$menu, $home]), [
+            'label' => 'หน้าแรก',
+            'menu_item_type' => 'route',
+            'route_name' => 'home',
+            'route_params' => 'not-json-from-old-field',
+            'target' => '_self',
+            'is_enabled' => '1',
+        ])->assertRedirect(route('admin.content.menus.show', $menu));
+
+        $this->assertNull($home->fresh()->route_params);
+
+        $this->post(route('admin.content.menu-items.store', $menu), [
+            'label' => 'Article Route',
+            'menu_item_type' => 'route',
+            'route_name' => 'articles.show',
+            'route_params' => 'not-json',
+            'target' => '_self',
+            'is_enabled' => '1',
+        ])->assertSessionHasErrors('route_params');
+    }
+
+    public function test_editor_can_update_menu_structure_in_one_submission(): void
+    {
+        $menu = $this->menu();
+        $first = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'First',
+            'slug' => 'first',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 0,
+        ]);
+        $second = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Second',
+            'slug' => 'second',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 10,
+        ]);
+
+        $this->patch(route('admin.content.menus.structure.update', $menu), [
+            'items' => [
+                ['id' => $first->id, 'parent_id' => $second->id, 'sort_order' => 5],
+                ['id' => $second->id, 'parent_id' => null, 'sort_order' => 0],
+            ],
+        ])->assertRedirect(route('admin.content.menus.show', $menu));
+
+        $this->assertDatabaseHas('menu_items', [
+            'id' => $first->id,
+            'parent_id' => $second->id,
+            'sort_order' => 5,
+        ]);
+    }
+
+    public function test_menu_show_handles_route_items_missing_params_as_warning(): void
+    {
+        $menu = $this->menu();
+        MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Article Detail',
+            'slug' => 'article-detail',
+            'menu_item_type' => 'route',
+            'route_name' => 'articles.show',
+            'target' => '_self',
+            'is_enabled' => true,
+        ]);
+
+        $this->get(route('admin.content.menus.show', $menu))
+            ->assertOk()
+            ->assertSee('ยังหา URL ปลายทางไม่ได้');
+    }
+
+    public function test_menu_structure_blocks_cycles_and_excessive_depth(): void
+    {
+        $menu = $this->menu();
+        $root = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Root',
+            'slug' => 'root',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 0,
+        ]);
+        $child = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'parent_id' => $root->id,
+            'label' => 'Child',
+            'slug' => 'child',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 0,
+        ]);
+        $grandchild = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'parent_id' => $child->id,
+            'label' => 'Grandchild',
+            'slug' => 'grandchild',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 0,
+        ]);
+        $deep = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Deep',
+            'slug' => 'deep',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+            'sort_order' => 0,
+        ]);
+
+        $this->patch(route('admin.content.menus.structure.update', $menu), [
+            'items' => [
+                ['id' => $root->id, 'parent_id' => $grandchild->id, 'sort_order' => 0],
+                ['id' => $child->id, 'parent_id' => $root->id, 'sort_order' => 0],
+                ['id' => $grandchild->id, 'parent_id' => $child->id, 'sort_order' => 0],
+                ['id' => $deep->id, 'parent_id' => null, 'sort_order' => 0],
+            ],
+        ])->assertSessionHasErrors('items');
+
+        $this->patch(route('admin.content.menus.structure.update', $menu), [
+            'items' => [
+                ['id' => $root->id, 'parent_id' => null, 'sort_order' => 0],
+                ['id' => $child->id, 'parent_id' => $root->id, 'sort_order' => 0],
+                ['id' => $grandchild->id, 'parent_id' => $child->id, 'sort_order' => 0],
+                ['id' => $deep->id, 'parent_id' => $grandchild->id, 'sort_order' => 0],
+            ],
+        ])->assertSessionHasErrors('items');
+
+        $this->patch(route('admin.content.menus.structure.update', $menu), [
+            'items' => [
+                ['id' => $root->id, 'parent_id' => null, 'sort_order' => 0],
+                ['id' => $child->id, 'parent_id' => $root->id, 'sort_order' => 0],
+                ['id' => $grandchild->id, 'parent_id' => $child->id, 'sort_order' => 0],
+                ['id' => $deep->id, 'parent_id' => null, 'sort_order' => 10],
+            ],
+        ])->assertRedirect(route('admin.content.menus.show', $menu));
+    }
+
     public function test_menu_item_create_permission_is_denied_without_specific_permission(): void
     {
         $viewerRole = Role::query()->where('role_key', 'viewer')->firstOrFail();

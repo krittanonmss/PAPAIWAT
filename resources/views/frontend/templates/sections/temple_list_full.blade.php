@@ -4,16 +4,31 @@
     $items = $section->items ?? collect();
     $filters = $section->filters ?? [];
     $totalItems = method_exists($items, 'total') ? $items->total() : collect($items)->count();
-    $activeSearch = request('search');
-    $activeProvince = request('province');
-    $activeCategory = request('category');
-    $activeSort = request('sort');
+    $filterKey = $section->filter_key ?? 'section_preview';
+    $activeFilters = $section->active_filters ?? [];
+    $activeSearch = $activeFilters['search'] ?? '';
+    $activeProvince = $activeFilters['province'] ?? '';
+    $activeTempleType = $activeFilters['temple_type'] ?? '';
+    $activeCategory = $activeFilters['category'] ?? '';
+    $activeCollection = $activeFilters['collection'] ?? '';
+    $activeSort = $activeFilters['sort'] ?? '';
     $categories = collect($filters['categories'] ?? []);
     $provinces = collect($filters['provinces'] ?? []);
-    $hasActiveFilters = $activeSearch || $activeProvince || $activeCategory || $activeSort;
+    $templeTypes = collect($filters['templeTypes'] ?? []);
+    $hasActiveFilters = $activeSearch || $activeProvince || $activeTempleType || $activeCategory || $activeCollection || $activeSort;
+    $searchLabel = trim((string) ($content['search_label'] ?? '')) ?: 'ค้นหา';
     $searchPlaceholder = trim((string) ($content['search_placeholder'] ?? '')) ?: 'ค้นหาวัด, จังหวัด, หรือสิ่งที่คุณต้องการ...';
+    $provinceLabel = trim((string) ($content['province_filter_label'] ?? '')) ?: 'จังหวัด';
+    $templeTypeLabel = trim((string) ($content['temple_type_filter_label'] ?? '')) ?: 'ประเภทวัด';
+    $categoryLabel = trim((string) ($content['category_filter_label'] ?? '')) ?: 'หมวดหมู่';
+    $collectionLabel = trim((string) ($content['collection_filter_label'] ?? '')) ?: 'ประเภทรายการ';
+    $sortLabel = trim((string) ($content['sort_filter_label'] ?? '')) ?: 'เรียงตาม';
     $provinceAllLabel = trim((string) ($content['province_all_label'] ?? '')) ?: 'ทุกจังหวัด';
+    $templeTypeAllLabel = trim((string) ($content['temple_type_all_label'] ?? '')) ?: 'ทุกประเภท';
     $categoryAllLabel = trim((string) ($content['category_all_label'] ?? '')) ?: 'ทุกหมวดหมู่';
+    $allOptionLabel = trim((string) ($content['all_option_label'] ?? '')) ?: 'ทั้งหมด';
+    $featuredOptionLabel = trim((string) ($content['featured_option_label'] ?? '')) ?: 'รายการแนะนำ';
+    $popularFilterOptionLabel = trim((string) ($content['popular_filter_option_label'] ?? '')) ?: 'ยอดนิยม';
     $sortDefaultLabel = trim((string) ($content['sort_default_label'] ?? '')) ?: 'เรียงตามระบบ';
     $popularOptionLabel = trim((string) ($content['popular_option_label'] ?? '')) ?: 'คะแนนสูงสุด';
     $ratingOptionLabel = trim((string) ($content['rating_option_label'] ?? '')) ?: 'รีวิวดีที่สุด';
@@ -26,6 +41,15 @@
     $emptyExcerpt = trim((string) ($content['empty_excerpt'] ?? '')) ?: 'ยังไม่มีคำโปรย';
     $emptyImageText = trim((string) ($content['empty_image_text'] ?? '')) ?: 'No Image';
     $emptyListText = trim((string) ($content['empty_text'] ?? '')) ?: 'ยังไม่มีวัด';
+    $filterColumns = max(2, min((int) ($settings['filter_columns'] ?? 3), 4));
+    $filterColumnClass = [2 => 'xl:grid-cols-2', 3 => 'xl:grid-cols-3', 4 => 'xl:grid-cols-4'][$filterColumns];
+    $rawFilterPanelSpacing = $settings['filter_panel_spacing'] ?? 'comfortable';
+    $filterPanelSpacing = in_array($rawFilterPanelSpacing, ['compact', 'comfortable', 'spacious'], true)
+        ? $rawFilterPanelSpacing
+        : 'comfortable';
+    $filterPanelPaddingClass = ['compact' => 'p-4', 'comfortable' => 'p-6', 'spacious' => 'p-8'][$filterPanelSpacing];
+    $filterGroupClass = ['compact' => 'mt-4 pt-4', 'comfortable' => 'mt-6 pt-6', 'spacious' => 'mt-8 pt-8'][$filterPanelSpacing];
+    $filterGapClass = ['compact' => 'gap-3', 'comfortable' => 'gap-4', 'spacious' => 'gap-5'][$filterPanelSpacing];
     $listColumns = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
     $gridColumnClass = [
         1 => 'grid-cols-1',
@@ -44,6 +68,12 @@
         6 => 'md:col-span-2 lg:col-span-3 xl:col-span-6',
     ][$listColumns] ?? 'md:col-span-2 xl:col-span-4';
     $sectionFilterId = 'section-filter-' . ($section->id ?: 'preview');
+    $clearQuery = request()->query();
+    unset($clearQuery['section_filters'][$filterKey], $clearQuery[$section->pagination_key ?? 'section_page_preview']);
+    if (($clearQuery['section_filters'] ?? []) === []) {
+        unset($clearQuery['section_filters']);
+    }
+    $clearUrl = url()->current() . ($clearQuery ? '?' . http_build_query($clearQuery) : '') . '#' . $sectionFilterId;
 @endphp
 <section id="{{ $sectionFilterId }}" class="px-4 py-16 text-white" data-section-filter-root style="@include('frontend.templates.sections._background')">
     <div class="mx-auto max-w-7xl">
@@ -57,44 +87,78 @@
             @endif
         </div>
 
-        <form action="{{ url()->current() }}#{{ $sectionFilterId }}" method="GET" class="mb-8 rounded-3xl border border-white/10 bg-slate-900/75 p-5 shadow-2xl shadow-slate-950/50 backdrop-blur-xl" data-section-filter-form>
-            <input type="search" name="search" value="{{ $activeSearch }}" placeholder="{{ $searchPlaceholder }}" class="w-full rounded-2xl border border-white/10 bg-white/10 py-4 px-5 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-blue-400/50">
+        <form action="{{ url()->current() }}#{{ $sectionFilterId }}" method="GET" class="mb-8 rounded-3xl border border-white/10 bg-slate-900/75 {{ $filterPanelPaddingClass }} shadow-2xl shadow-slate-950/50 backdrop-blur-xl" data-section-filter-form data-section-page-key="{{ $section->pagination_key ?? 'section_page_preview' }}">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_9rem] lg:items-end">
+                <label class="block">
+                    <span class="mb-2 block text-xs font-medium text-slate-400">{{ $searchLabel }}</span>
+                    <input type="search" name="section_filters[{{ $filterKey }}][search]" value="{{ $activeSearch }}" placeholder="{{ $searchPlaceholder }}" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white placeholder:text-slate-500 focus:border-blue-400/50 focus:outline-none">
+                </label>
 
-            <div class="mt-5 grid gap-3 sm:grid-cols-3">
-                <select name="province" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-200 outline-none">
-                    <option value="">{{ $provinceAllLabel }}</option>
-                    @foreach ($provinces as $province)
-                        <option value="{{ $province }}" @selected($activeProvince === $province)>{{ $province }}</option>
-                    @endforeach
-                </select>
-
-                <select name="category" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-200 outline-none">
-                    <option value="">{{ $categoryAllLabel }}</option>
-                    @foreach ($categories as $category)
-                        <option value="{{ $category->slug ?? $category->id }}" @selected((string) $activeCategory === (string) ($category->slug ?? $category->id))>{{ $category->name }}</option>
-                    @endforeach
-                </select>
-
-                <select name="sort" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-200 outline-none">
-                    <option value="">{{ $sortDefaultLabel }}</option>
-                    <option value="popular" @selected($activeSort === 'popular')>{{ $popularOptionLabel }}</option>
-                    <option value="rating" @selected($activeSort === 'rating')>{{ $ratingOptionLabel }}</option>
-                    <option value="latest" @selected($activeSort === 'latest')>{{ $latestOptionLabel }}</option>
-                </select>
+                <button data-section-button class="h-12 rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $submitLabel }}</button>
             </div>
 
-            <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <span class="rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-200">{{ $totalLabel }} {{ number_format($totalItems) }} {{ $totalSuffix }}</span>
-                <div class="flex gap-2">
-                    @if ($hasActiveFilters)
-                        <a href="{{ url()->current() }}#{{ $sectionFilterId }}" class="rounded-2xl border border-blue-300/20 bg-blue-300/10 px-4 py-2.5 text-sm font-medium text-blue-100" data-section-filter-link>{{ $clearLabel }}</a>
-                    @endif
-                    <button class="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $submitLabel }}</button>
+            <div class="{{ $filterGroupClass }} border-t border-white/10">
+                <div data-section-filter-controls class="grid {{ $filterGapClass }} sm:grid-cols-2 {{ $filterColumnClass }}">
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $provinceLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][province]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $provinceAllLabel }}</option>
+                            @foreach ($provinces as $province)
+                                <option value="{{ $province }}" @selected($activeProvince === $province)>{{ $province }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $templeTypeLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][temple_type]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $templeTypeAllLabel }}</option>
+                            @foreach ($templeTypes as $templeType)
+                                <option value="{{ $templeType }}" @selected($activeTempleType === $templeType)>{{ $templeType }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $categoryLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][category]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $categoryAllLabel }}</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->slug ?? $category->id }}" @selected((string) $activeCategory === (string) ($category->slug ?? $category->id))>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $collectionLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][collection]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $allOptionLabel }}</option>
+                            <option value="featured" @selected($activeCollection === 'featured')>{{ $featuredOptionLabel }}</option>
+                            <option value="popular" @selected($activeCollection === 'popular')>{{ $popularFilterOptionLabel }}</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-medium text-slate-400">{{ $sortLabel }}</span>
+                        <select name="section_filters[{{ $filterKey }}][sort]" class="h-12 w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white focus:border-blue-400/50 focus:outline-none">
+                            <option value="">{{ $sortDefaultLabel }}</option>
+                            <option value="popular" @selected($activeSort === 'popular')>{{ $popularOptionLabel }}</option>
+                            <option value="rating" @selected($activeSort === 'rating')>{{ $ratingOptionLabel }}</option>
+                            <option value="latest" @selected($activeSort === 'latest')>{{ $latestOptionLabel }}</option>
+                        </select>
+                    </label>
                 </div>
+            </div>
+
+            <div class="{{ $filterPanelSpacing === 'compact' ? 'mt-4' : 'mt-6' }} flex flex-wrap items-center justify-between gap-3">
+                <span class="rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-200">{{ $totalLabel }} {{ number_format($totalItems) }} {{ $totalSuffix }}</span>
+                @if ($hasActiveFilters)
+                    <a href="{{ $clearUrl }}" class="rounded-full border border-blue-300/20 bg-blue-300/10 px-3 py-1 text-xs font-medium text-blue-100 transition hover:bg-blue-300/15" data-section-button data-section-filter-link>{{ $clearLabel }}</a>
+                @endif
             </div>
         </form>
 
-        <div class="grid gap-7 {{ $gridColumnClass }}">
+        <div data-section-items class="grid gap-7 {{ $gridColumnClass }}">
             @forelse ($items as $temple)
                 @php
                     $templeContent = $temple->relationLoaded('content') ? $temple->content : null;
@@ -118,9 +182,9 @@
                         ? ($fee->amount !== null ? number_format((float) $fee->amount, 0) . ' ' . ($fee->currency ?: 'บาท') : ($fee->label ?: $fee->fee_type))
                         : null;
                 @endphp
-                <article class="group flex h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
+                <article data-section-card class="group flex h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
                     <a href="{{ route('temples.show', $temple) }}" class="flex h-full w-full flex-col">
-                        <div class="relative h-56 overflow-hidden bg-slate-900">
+                        <div data-section-image class="relative aspect-[4/3] overflow-hidden bg-slate-900">
                             @if ($imageUrl)
                                 <img src="{{ $imageUrl }}" alt="{{ $templeContent?->title ?? 'Temple image' }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
                             @else
@@ -142,7 +206,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="flex flex-1 flex-col p-5">
+                        <div data-section-card-padding class="flex flex-1 flex-col p-5">
                             <p class="text-xs font-medium text-blue-300">{{ $locationText }}</p>
                             <h2 class="mt-2 line-clamp-2 text-xl font-semibold leading-snug">{{ $templeContent?->title ?? '-' }}</h2>
                             <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $templeContent?->excerpt ?? $emptyExcerpt }}</p>
@@ -193,7 +257,7 @@
                     </a>
                 </article>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 {{ $emptyColumnClass }}">{{ $emptyListText }}</div>
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 {{ $emptyColumnClass }}">{{ $emptyListText }}</div>
             @endforelse
         </div>
 

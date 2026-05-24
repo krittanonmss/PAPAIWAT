@@ -3,6 +3,7 @@
 namespace App\Services\Content\Media;
 
 use App\Models\Content\Media\Media;
+use App\Support\SiteSettings;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -129,10 +130,13 @@ class MediaVariantService
 
     private function saveImage(mixed $image, string $path, string $mimeType): void
     {
+        $quality = max(40, min(100, (int) SiteSettings::get('media', 'image_quality', 82)));
+        $pngCompression = max(0, min(9, (int) round((100 - $quality) / 11.1)));
+
         match ($mimeType) {
-            'image/jpeg', 'image/jpg' => imagejpeg($image, $path, 85),
-            'image/png' => imagepng($image, $path, 8),
-            'image/webp' => imagewebp($image, $path, 85),
+            'image/jpeg', 'image/jpg' => imagejpeg($image, $path, $quality),
+            'image/png' => imagepng($image, $path, $pngCompression),
+            'image/webp' => imagewebp($image, $path, $quality),
             default => null,
         };
     }

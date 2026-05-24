@@ -13,8 +13,11 @@ use App\Models\Content\Content;
 use App\Models\Content\ContentVersion;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
+use App\Services\Admin\AdminNotificationService;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Admin\Content\Article\ArticleValidationService;
 use App\Support\SafeRichText;
+use App\Support\SlugGenerator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -160,7 +163,7 @@ class ArticleController extends Controller
                 'is_popular' => $validated['is_popular'] ?? false,
                 'meta_title' => $validated['meta_title'] ?? null,
                 'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? null,
+                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? now() : null),
                 'created_by_admin_id' => auth('admin')->id(),
                 'updated_by_admin_id' => auth('admin')->id(),
             ]);
@@ -201,6 +204,12 @@ class ArticleController extends Controller
 
         $article->load('content.mediaUsages');
         $this->writeAuditLog($request, 'article.created', $article, null, $this->articleAuditData($article));
+
+        if ($article->content?->status === 'published') {
+            $this->recordPublishedTransition($request, $article, null);
+        } else {
+            $this->notifyReviewRequestedIfNeeded(null, $article);
+        }
 
         return redirect()
             ->route('admin.content.articles.index')
@@ -286,7 +295,7 @@ class ArticleController extends Controller
                 'is_popular' => $validated['is_popular'] ?? false,
                 'meta_title' => $validated['meta_title'] ?? null,
                 'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? null,
+                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? ($article->content->published_at ?? now()) : null),
                 'updated_by_admin_id' => auth('admin')->id(),
             ]);
 
@@ -334,6 +343,12 @@ class ArticleController extends Controller
 
         if (($oldData['status'] ?? null) !== ($newData['status'] ?? null)) {
             $this->writeAuditLog($request, 'article.status_changed', $article, ['status' => $oldData['status']], ['status' => $newData['status']]);
+
+            if (($newData['status'] ?? null) === 'published') {
+                $this->recordPublishedTransition($request, $article, $oldData);
+            } else {
+                $this->notifyReviewRequestedIfNeeded($oldData['status'] ?? null, $article);
+            }
         }
 
         if (($oldData['template_id'] ?? null) !== ($newData['template_id'] ?? null)) {
@@ -362,10 +377,7 @@ class ArticleController extends Controller
             'updated_by_admin_id' => auth('admin')->id(),
         ])->save();
 
-        $this->createVersion($article, 'published');
-
-        $article->refresh()->load('content.mediaUsages');
-        $this->writeAuditLog($request, 'article.published', $article, $oldData, $this->articleAuditData($article));
+        $this->recordPublishedTransition($request, $article, $oldData);
 
         return redirect()
             ->route('admin.content.articles.edit', $article)
@@ -375,6 +387,7 @@ class ArticleController extends Controller
     public function unpublish(Request $request, Article $article): RedirectResponse
     {
         $article->load('content.mediaUsages');
+        $this->articleValidationService->validateForUnpublish($article);
         $oldData = $this->articleAuditData($article);
 
         $article->content->forceFill([
@@ -386,10 +399,39 @@ class ArticleController extends Controller
 
         $article->refresh()->load('content.mediaUsages');
         $this->writeAuditLog($request, 'article.unpublished', $article, $oldData, $this->articleAuditData($article));
+        $this->notifyContent('ยกเลิกเผยแพร่บทความแล้ว', 'บทความ "'.($article->content?->title ?? '#'.$article->id).'" ถูกยกเลิกเผยแพร่แล้ว');
 
         return redirect()
             ->route('admin.content.articles.edit', $article)
             ->with('success', 'ยกเลิกการเผยแพร่บทความเรียบร้อยแล้ว');
+    }
+
+    private function recordPublishedTransition(Request $request, Article $article, ?array $oldData): void
+    {
+        $this->createVersion($article, 'published');
+
+        $article->refresh()->load('content.mediaUsages');
+        $this->writeAuditLog($request, 'article.published', $article, $oldData, $this->articleAuditData($article));
+        $this->notifyContent('เผยแพร่บทความแล้ว', 'บทความ "'.($article->content?->title ?? '#'.$article->id).'" ถูกเผยแพร่แล้ว');
+    }
+
+    private function notifyContent(string $title, string $message): void
+    {
+        app(AdminNotificationService::class)->notifyAdmins('content', $title, $message);
+    }
+
+    private function notifyReviewRequestedIfNeeded(?string $oldStatus, Article $article): void
+    {
+        if ($oldStatus === 'review' || $article->content?->status !== 'review') {
+            return;
+        }
+
+        app(AdminNotificationService::class)->notifyAdminsWithPermission(
+            'articles.publish',
+            'content',
+            'มีบทความรอตรวจสอบ',
+            'บทความ "'.($article->content?->title ?? '#'.$article->id).'" รอผู้มีสิทธิ์เผยแพร่อนุมัติ'
+        );
     }
 
     public function bulkAssignCategory(Request $request): RedirectResponse
@@ -554,8 +596,7 @@ class ArticleController extends Controller
 
     private function generateUniqueSlug(string $value, ?int $ignoreContentId = null): string
     {
-        $baseSlug = Str::slug($value);
-        $baseSlug = $baseSlug !== '' ? $baseSlug : 'article';
+        $baseSlug = SlugGenerator::make($value, 'article');
         $slug = $baseSlug;
         $counter = 1;
 
@@ -712,9 +753,11 @@ class ArticleController extends Controller
 
     private function perPage(Request $request, int $default): int
     {
+        $allowed = AdminPreferenceService::PER_PAGE_OPTIONS;
+        $default = app(AdminPreferenceService::class)->preferredPerPage($request->user('admin'), $allowed, $default);
         $perPage = (int) $request->input('per_page', $default);
 
-        return in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : $default;
+        return in_array($perPage, $allowed, true) ? $perPage : $default;
     }
 
     private function articleAuditData(Article $article): array

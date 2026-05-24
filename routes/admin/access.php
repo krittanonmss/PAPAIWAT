@@ -11,6 +11,8 @@ Route::patch('/users/{admin}/status', [UserManagementController::class, 'updateS
     ->name('users.status.update');
 
 Route::prefix('users')->name('users.')->group(function () {
+    Route::patch('/bulk-role', [UserManagementController::class, 'bulkUpdateRole'])->middleware('admin.permission:users.update')->name('bulk-role');
+    Route::patch('/bulk-status', [UserManagementController::class, 'bulkUpdateStatus'])->middleware('admin.permission:users.update')->name('bulk-status');
     Route::get('/', [UserManagementController::class, 'index'])->middleware('admin.permission:users.view')->name('index');
     Route::get('/create', [UserManagementController::class, 'create'])->middleware('admin.permission:users.create')->name('create');
     Route::post('/', [UserManagementController::class, 'store'])->middleware('admin.permission:users.create')->name('store');

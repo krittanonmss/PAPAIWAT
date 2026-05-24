@@ -18,7 +18,7 @@
 
         $galleryUsages = $content?->mediaUsages?->where('role_key', 'gallery') ?? collect();
 
-        $temple = function (?string $value) {
+        $renderTempleText = function (?string $value) {
             if (! $value) {
                 return '-';
             }
@@ -194,14 +194,14 @@
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">รายละเอียด</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $temple($content?->description) !!}
+                                {!! $renderTempleText($content?->description) !!}
                             </div>
                         </div>
 
                         <div>
                             <p class="mb-1 text-xs font-medium text-slate-400">ประวัติ</p>
                             <div class="text-sm leading-6 text-slate-300">
-                                {!! $temple($temple->history) !!}
+                                {!! $renderTempleText($temple->history) !!}
                             </div>
                         </div>
                     </div>
@@ -299,7 +299,7 @@
                                     <p class="text-xs text-slate-500">Order: {{ $highlight->sort_order ?? 0 }}</p>
                                     <p class="mt-1 text-sm font-medium text-white">{{ $highlight->title }}</p>
                                     <div class="mt-1 text-sm leading-6 text-slate-400">
-                                        {!! $temple($highlight->description) !!}
+                                        {!! $renderTempleText($highlight->description) !!}
                                     </div>
                                 </div>
                             @endforeach
@@ -322,7 +322,7 @@
                                     <span class="mt-0.5 shrink-0 text-blue-300">•</span>
                                     <div>
                                         <div class="text-sm text-slate-300">
-                                            {!! $temple($rule->rule_text) !!}
+                                            {!! $renderTempleText($rule->rule_text) !!}
                                         </div>
                                         <p class="mt-1 text-xs text-slate-500">Order: {{ $rule->sort_order ?? 0 }}</p>
                                     </div>

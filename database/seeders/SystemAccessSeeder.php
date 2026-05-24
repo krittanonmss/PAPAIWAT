@@ -105,7 +105,14 @@ class SystemAccessSeeder extends Seeder
             ],
             'interactions' => [
                 'interactions.view' => 'ดูรีวิวและความคิดเห็น',
-                'interactions.manage' => 'อนุมัติหรือจัดการรีวิวและความคิดเห็น',
+                'interactions.moderate' => 'อนุมัติ ปฏิเสธ หรือทำเครื่องหมายสแปม',
+                'interactions.delete' => 'ลบรีวิว ความคิดเห็น หรือรายงาน',
+                'interactions.ban' => 'บล็อกหรือปลดบล็อกผู้เยี่ยมชม',
+            ],
+            'settings' => [
+                'settings.view' => 'ดูการตั้งค่าเว็บไซต์',
+                'settings.update' => 'แก้ไขการตั้งค่าเว็บไซต์',
+                'settings.maintenance' => 'เรียกใช้งาน maintenance ของเว็บไซต์',
             ],
         ];
 
@@ -123,6 +130,10 @@ class SystemAccessSeeder extends Seeder
                 );
             }
         }
+
+        $this->deleteObsoleteSystemPermissions([
+            'interactions.manage',
+        ]);
 
         return $permissions;
     }
@@ -204,6 +215,7 @@ class SystemAccessSeeder extends Seeder
             'sections.*',
             'preview.view',
             'interactions.*',
+            'settings.*',
         ]));
 
         $roles['editor']->permissions()->sync($this->permissionIds($permissions, [
@@ -231,7 +243,7 @@ class SystemAccessSeeder extends Seeder
             'templates.view',
             'preview.view',
             'interactions.view',
-            'interactions.manage',
+            'interactions.moderate',
         ]));
 
         $roles['viewer']->permissions()->sync($this->permissionIds($permissions, [
@@ -257,6 +269,17 @@ class SystemAccessSeeder extends Seeder
             ->all();
     }
 
+    private function deleteObsoleteSystemPermissions(array $keys): void
+    {
+        Permission::query()
+            ->whereIn('key', $keys)
+            ->get()
+            ->each(function (Permission $permission) {
+                $permission->roles()->detach();
+                $permission->delete();
+            });
+    }
+
     private function seedDefaultAdmin(Role $role): void
     {
         $password = env('ADMIN_PASSWORD');
@@ -266,7 +289,7 @@ class SystemAccessSeeder extends Seeder
         }
 
         Admin::updateOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@example.com')],
+            ['email' => env('ADMIN_EMAIL', 'krittanon.mss@gmail.com')],
             [
                 'username' => env('ADMIN_USERNAME', 'superadmin'),
                 'password_hash' => Hash::make($password ?: 'ChangeMe12345'),

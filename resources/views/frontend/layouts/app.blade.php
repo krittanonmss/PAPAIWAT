@@ -1,10 +1,31 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    @php
+        $pageOgImage = ($page ?? null)?->ogImage ?? null;
+        $resolvedOgImage = $pageOgImage ?: ($frontendOgImage ?? null);
+        $resolvedOgImageUrl = $resolvedOgImage?->path
+            ? (filter_var($resolvedOgImage->path, FILTER_VALIDATE_URL)
+                ? $resolvedOgImage->path
+                : url(\Illuminate\Support\Facades\Storage::url($resolvedOgImage->path)))
+            : null;
+        $resolvedCanonicalUrl = ($page ?? null)?->canonical_url
+            ?: (($frontendSiteSettings['seo']['canonical_base_url'] ?? null)
+                ? rtrim($frontendSiteSettings['seo']['canonical_base_url'], '/') . request()->getPathInfo()
+                : null);
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', $title ?? 'PAPAIWAT')</title>
-    <meta name="description" content="@yield('meta_description', $metaDescription ?? 'PAPAIWAT Platform')">
+    <title>@yield('title', $title ?? ($frontendSiteSettings['seo']['default_title'] ?? 'PAPAIWAT'))</title>
+    <meta name="description" content="@yield('meta_description', $metaDescription ?? ($frontendSiteSettings['seo']['default_description'] ?? 'PAPAIWAT Platform'))">
+    <meta name="robots" content="{{ ($frontendSiteSettings['seo']['indexing_enabled'] ?? true) ? 'index,follow' : 'noindex,nofollow' }}">
+    @if ($resolvedCanonicalUrl)
+        <link rel="canonical" href="{{ $resolvedCanonicalUrl }}">
+    @endif
+    @if ($resolvedOgImageUrl)
+        <meta property="og:image" content="{{ $resolvedOgImageUrl }}">
+        <meta name="twitter:image" content="{{ $resolvedOgImageUrl }}">
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -52,11 +73,31 @@
 <body class="min-h-screen bg-slate-950 text-white">
     @include('frontend.partials.header')
 
+    @if (($frontendSiteSettings['maintenance']['announcement_enabled'] ?? false) && ($frontendSiteSettings['maintenance']['announcement_text'] ?? null))
+        @php
+            $announcementClass = match ($frontendSiteSettings['maintenance']['announcement_level'] ?? 'info') {
+                'critical' => 'bg-red-700 text-white',
+                'warning' => 'bg-amber-500 text-slate-950',
+                default => 'bg-blue-700 text-white',
+            };
+        @endphp
+        <div class="{{ $announcementClass }} px-5 py-3 text-center text-sm font-medium">{{ $frontendSiteSettings['maintenance']['announcement_text'] }}</div>
+    @endif
+
     <main class="min-h-screen">
         @yield('content')
     </main>
 
     @include('frontend.partials.footer')
+    @if ($frontendSiteSettings['integrations']['analytics_measurement_id'] ?? null)
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $frontendSiteSettings['integrations']['analytics_measurement_id'] }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', @js($frontendSiteSettings['integrations']['analytics_measurement_id']));
+        </script>
+    @endif
     <script>
         (() => {
             if (window.papaiwatSectionFiltersReady) {
@@ -71,10 +112,22 @@
             const getRoot = (element) => element?.closest(rootSelector);
 
             const buildFormUrl = (form) => {
-                const url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+                const actionUrl = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+                const url = new URL(window.location.href);
                 const formData = new FormData(form);
 
-                url.search = '';
+                url.pathname = actionUrl.pathname;
+                url.hash = actionUrl.hash;
+
+                Array.from(form.elements).forEach((field) => {
+                    if (field.name) {
+                        url.searchParams.delete(field.name);
+                    }
+                });
+
+                if (form.dataset.sectionPageKey) {
+                    url.searchParams.delete(form.dataset.sectionPageKey);
+                }
 
                 formData.forEach((value, key) => {
                     const normalized = String(value).trim();

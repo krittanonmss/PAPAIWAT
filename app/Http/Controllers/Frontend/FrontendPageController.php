@@ -25,6 +25,7 @@ class FrontendPageController extends Controller
     {
         $page = Page::query()
             ->with([
+                'ogImage',
                 'template',
                 'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
@@ -39,6 +40,7 @@ class FrontendPageController extends Controller
     {
         $page = Page::query()
             ->with([
+                'ogImage',
                 'template',
                 'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
@@ -131,9 +133,13 @@ class FrontendPageController extends Controller
             $isArticleList = str_contains($viewPath, 'article');
 
             if ($isTempleList) {
-                $items = $this->getTempleListData(['source' => 'all'], true);
+                $items = $this->getTempleListData(['source' => 'all'], true, request()->only([
+                    'search', 'province', 'temple_type', 'category', 'collection', 'sort',
+                ]));
             } elseif ($isArticleList) {
-                $items = $this->getArticleListData(['source' => 'all'], true);
+                $items = $this->getArticleListData(['source' => 'all'], true, request()->only([
+                    'search', 'category', 'tag', 'author', 'collection', 'sort',
+                ]));
             }
 
             if ($isTempleList) {
@@ -165,14 +171,17 @@ class FrontendPageController extends Controller
 
                 $section->content_data = $contentData;
                 $section->settings_data = $section->settings ?? [];
+                $section->filter_key = $this->sectionFilterKey($section);
+                $section->active_filters = $this->sectionFilters($section);
+                $section->pagination_key = 'section_page_' . ($section->id ?: 'preview');
                 $section->image_data = $this->resolveSectionImageData($section->content_data, $section->component_key);
                 $section->image_url = $section->image_data['url'] ?? null;
                 $section->gallery_items = $section->component_key === 'gallery'
                     ? $this->resolveSectionGalleryItems($section->content_data)
                     : collect();
-                $section->all_button_url = $this->resolveSectionPageUrl($section->content_data);
+                $section->all_button_url = $this->resolveAllButtonUrl($section);
                 $section->bento_items = $section->component_key === 'travel_discovery_bento'
-                    ? $this->getBentoContentItems($section->content_data, $section->settings_data)
+                    ? $this->getBentoContentItems($section->content_data, $section->settings_data, $section->active_filters)
                     : collect();
                 $section->summary_stats = in_array($section->component_key, ['hero', 'banner'], true)
                     ? $this->getSummaryStats()
@@ -180,8 +189,8 @@ class FrontendPageController extends Controller
                 $section->items = match ($section->component_key) {
                     'article_grid' => $this->getArticleListData($section->settings_data),
                     'temple_grid' => $this->getTempleListData($section->settings_data),
-                    'article_list_full' => $this->getArticleListData(array_merge(['source' => 'all'], $section->settings_data), true),
-                    'temple_list_full' => $this->getTempleListData(array_merge(['source' => 'all'], $section->settings_data), true),
+                    'article_list_full' => $this->getArticleListData(array_merge(['source' => 'all'], $section->settings_data), true, $section->active_filters, $section->pagination_key),
+                    'temple_list_full' => $this->getTempleListData(array_merge(['source' => 'all'], $section->settings_data), true, $section->active_filters, $section->pagination_key),
                     default => collect(),
                 };
                 $section->filters = match ($section->component_key) {
@@ -271,6 +280,31 @@ class FrontendPageController extends Controller
         return $content[$urlKey] ?? null;
     }
 
+    private function resolveAllButtonUrl(PageSection $section): ?string
+    {
+        $url = $this->resolveSectionPageUrl($section->content_data);
+
+        if (! in_array($section->component_key, ['article_grid', 'temple_grid'], true)) {
+            return $url;
+        }
+
+        $fallbackPath = $section->component_key === 'temple_grid' ? '/temple-list' : '/article-list';
+        $url = trim((string) $url) !== '' ? $url : url($fallbackPath);
+        $source = $section->settings_data['source'] ?? 'all';
+
+        if (! in_array($source, ['featured', 'popular'], true)) {
+            return $url;
+        }
+
+        [$urlWithoutFragment, $fragment] = array_pad(explode('#', $url, 2), 2, null);
+        [$path, $queryString] = array_pad(explode('?', $urlWithoutFragment, 2), 2, '');
+        parse_str($queryString, $query);
+        $query['collection'] = $source;
+        $filteredUrl = $path . '?' . http_build_query($query);
+
+        return $fragment === null ? $filteredUrl : $filteredUrl . '#' . $fragment;
+    }
+
     private function resolveSectionGalleryItems(array $content): Collection
     {
         $ids = collect($content['gallery_media_ids'] ?? [])
@@ -307,10 +341,10 @@ class FrontendPageController extends Controller
             ->values();
     }
 
-    private function getBentoContentItems(array $content, array $settings): Collection
+    private function getBentoContentItems(array $content, array $settings, array $filters = []): Collection
     {
         if (($settings['bento_variant'] ?? 'travel') === 'article_filter') {
-            return $this->getFilteredBentoItems($settings);
+            return $this->getFilteredBentoItems($settings, $filters);
         }
 
         $slots = collect($content['bento_slots'] ?? [])
@@ -391,7 +425,7 @@ class FrontendPageController extends Controller
             ->values();
     }
 
-    private function getFilteredBentoItems(array $settings): Collection
+    private function getFilteredBentoItems(array $settings, array $filters = []): Collection
     {
         $limit = max(1, min((int) ($settings['limit'] ?? 6), 12));
         $layoutSizes = $this->bentoLayoutSizes($settings['bento_layout'] ?? 'editorial_6');
@@ -404,8 +438,8 @@ class FrontendPageController extends Controller
         ]);
 
         $items = $contentType === 'temple'
-            ? $this->getTempleListData($querySettings)
-            : $this->getArticleListData($querySettings);
+            ? $this->getTempleListData($querySettings, false, $filters)
+            : $this->getArticleListData($querySettings, false, $filters);
 
         return collect($items)
             ->values()
@@ -524,7 +558,7 @@ class FrontendPageController extends Controller
         ];
     }
 
-    private function getTempleListData(array $settings, bool $paginate = false)
+    private function getTempleListData(array $settings, bool $paginate = false, array $filters = [], string $pageName = 'page')
     {
         $limit = min((int) ($settings['limit'] ?? 12), 48);
         $perPage = $this->fullListPerPage($settings);
@@ -562,7 +596,15 @@ class FrontendPageController extends Controller
 
             });
 
-        if ($search = request('search')) {
+        if (($filters['collection'] ?? null) === 'featured') {
+            $query->whereHas('content', fn ($query) => $query->where('is_featured', true));
+        }
+
+        if (($filters['collection'] ?? null) === 'popular') {
+            $query->whereHas('content', fn ($query) => $query->where('is_popular', true));
+        }
+
+        if ($search = trim((string) ($filters['search'] ?? ''))) {
             $query->where(function ($query) use ($search) {
                 $query->whereHas('content', function ($query) use ($search) {
                     $query->where('title', 'like', '%' . $search . '%')
@@ -586,17 +628,17 @@ class FrontendPageController extends Controller
             });
         }
 
-        if ($province = request('province', $settings['province'] ?? null)) {
+        if ($province = ($filters['province'] ?? ($settings['province'] ?? null))) {
             $query->whereHas('address', function ($query) use ($province) {
                 $query->where('province', $province);
             });
         }
 
-        if ($templeType = request('temple_type', $settings['temple_type'] ?? null)) {
+        if ($templeType = ($filters['temple_type'] ?? ($settings['temple_type'] ?? null))) {
             $query->where('temple_type', $templeType);
         }
 
-        if ($category = request('category', $settings['category'] ?? null)) {
+        if ($category = ($filters['category'] ?? ($settings['category'] ?? null))) {
             $query->whereHas('content.categories', function ($query) use ($category) {
                 $query->where('categories.slug', $category)
                     ->when(is_numeric($category), function ($query) use ($category) {
@@ -605,7 +647,7 @@ class FrontendPageController extends Controller
             });
         }
 
-        $sort = request('sort', $settings['sort'] ?? 'popular');
+        $sort = $filters['sort'] ?? ($settings['sort'] ?? 'popular');
 
         match ($sort) {
             'random' => $query->inRandomOrder(),
@@ -632,7 +674,7 @@ class FrontendPageController extends Controller
 
         if ($paginate) {
             return $query
-                ->paginate($perPage)
+                ->paginate($perPage, ['*'], $pageName)
                 ->withQueryString();
         }
 
@@ -673,7 +715,7 @@ class FrontendPageController extends Controller
         return compact('templeTypes', 'provinces', 'categories');
     }
 
-    private function getArticleListData(array $settings, bool $paginate = false)
+    private function getArticleListData(array $settings, bool $paginate = false, array $filters = [], string $pageName = 'page')
     {
         $limit = min((int) ($settings['limit'] ?? 12), 48);
         $perPage = $this->fullListPerPage($settings);
@@ -697,7 +739,15 @@ class FrontendPageController extends Controller
             $query->where('is_popular', true);
         }
 
-        if ($search = request('search')) {
+        if (($filters['collection'] ?? null) === 'featured') {
+            $query->where('is_featured', true);
+        }
+
+        if (($filters['collection'] ?? null) === 'popular') {
+            $query->where('is_popular', true);
+        }
+
+        if ($search = trim((string) ($filters['search'] ?? ''))) {
             $query->where(function ($query) use ($search) {
                 $query->where('title', 'like', '%' . $search . '%')
                     ->orWhere('excerpt', 'like', '%' . $search . '%')
@@ -716,7 +766,7 @@ class FrontendPageController extends Controller
             });
         }
 
-        if ($category = request('category', $settings['category'] ?? null)) {
+        if ($category = ($filters['category'] ?? ($settings['category'] ?? null))) {
             $query->whereHas('categories', function ($query) use ($category) {
                 $query->where('categories.slug', $category)
                     ->when(is_numeric($category), function ($query) use ($category) {
@@ -725,7 +775,7 @@ class FrontendPageController extends Controller
             });
         }
 
-        if ($tag = request('tag', $settings['tag'] ?? null)) {
+        if ($tag = ($filters['tag'] ?? ($settings['tag'] ?? null))) {
             $query->whereHas('article.tags', function ($query) use ($tag) {
                 $query->where('article_tags.slug', $tag)
                     ->when(is_numeric($tag), function ($query) use ($tag) {
@@ -734,13 +784,13 @@ class FrontendPageController extends Controller
             });
         }
 
-        if ($author = request('author', $settings['author'] ?? null)) {
+        if ($author = ($filters['author'] ?? ($settings['author'] ?? null))) {
             $query->whereHas('article', function ($query) use ($author) {
                 $query->where('author_name', $author);
             });
         }
 
-        $sort = request('sort', $settings['sort'] ?? 'latest');
+        $sort = $filters['sort'] ?? ($settings['sort'] ?? 'latest');
 
         match ($sort) {
             'random' => $query->inRandomOrder(),
@@ -784,7 +834,7 @@ class FrontendPageController extends Controller
 
         if ($paginate) {
             return $query
-                ->paginate($perPage)
+                ->paginate($perPage, ['*'], $pageName)
                 ->withQueryString();
         }
 
@@ -797,6 +847,39 @@ class FrontendPageController extends Controller
         $columns = max(1, min((int) ($settings['list_columns'] ?? 4), 6));
 
         return $rows * $columns;
+    }
+
+    private function sectionFilterKey(PageSection $section): string
+    {
+        return 'section_' . ($section->id ?: 'preview');
+    }
+
+    private function sectionFilters(PageSection $section): array
+    {
+        $filters = request()->input('section_filters.' . $this->sectionFilterKey($section), []);
+
+        if (! is_array($filters)) {
+            return [];
+        }
+
+        if (in_array($section->component_key, ['article_list_full', 'temple_list_full'], true) && ! array_key_exists('collection', $filters)) {
+            $collection = request()->query('collection');
+
+            if (in_array($collection, ['featured', 'popular'], true)) {
+                $filters['collection'] = $collection;
+            }
+        }
+
+        return array_intersect_key($filters, array_flip([
+            'search',
+            'province',
+            'temple_type',
+            'category',
+            'tag',
+            'author',
+            'collection',
+            'sort',
+        ]));
     }
 
     private function getArticleFilterData(): array

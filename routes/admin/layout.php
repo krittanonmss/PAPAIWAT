@@ -15,6 +15,7 @@ Route::prefix('content/menus')->name('content.menus.')->group(function () {
     Route::get('/{menu}', [MenuController::class, 'show'])->middleware('admin.permission:menus.view')->name('show');
     Route::get('/{menu}/edit', [MenuController::class, 'edit'])->middleware('admin.permission:menus.update')->name('edit');
     Route::put('/{menu}', [MenuController::class, 'update'])->middleware('admin.permission:menus.update')->name('update');
+    Route::patch('/{menu}/structure', [MenuController::class, 'updateStructure'])->middleware('admin.permission:menu-items.update')->name('structure.update');
     Route::delete('/{menu}', [MenuController::class, 'destroy'])->middleware('admin.permission:menus.delete')->name('destroy');
 
 });
@@ -27,11 +28,28 @@ Route::put('content/footer', [FooterSettingsController::class, 'update'])
     ->middleware('admin.permission:menus.update')
     ->name('content.footer.update');
 
+Route::post('content/footer/menu', [FooterSettingsController::class, 'storeMenu'])
+    ->middleware('admin.permission:menus.create')
+    ->name('content.footer.menu.store');
+
+Route::patch('content/footer/menu/{menu}/default', [FooterSettingsController::class, 'setDefaultMenu'])
+    ->middleware('admin.permission:menus.update')
+    ->name('content.footer.menu.default');
+
+Route::post('content/footer/menu/{menu}/columns', [FooterSettingsController::class, 'storeColumn'])
+    ->middleware('admin.permission:menu-items.create')
+    ->name('content.footer.columns.store');
+
+Route::post('content/footer/menu/{menu}/links', [FooterSettingsController::class, 'storeLink'])
+    ->middleware('admin.permission:menu-items.create')
+    ->name('content.footer.links.store');
+
 Route::prefix('content/pages')->name('content.pages.')->group(function () {
     Route::get('/', [PageController::class, 'index'])->middleware('admin.permission:pages.view')->name('index');
     Route::get('/create', [PageController::class, 'create'])->middleware('admin.permission:pages.create')->name('create');
     Route::post('/preview', [PageController::class, 'previewCreate'])->middleware(['admin.permission:pages.create', 'admin.permission:preview.view'])->name('preview-create');
     Route::post('/', [PageController::class, 'store'])->middleware('admin.permission:pages.create')->name('store');
+    Route::get('/media-picker/og-image', [PageController::class, 'ogImageMediaPicker'])->middleware('admin.permission:pages.view')->name('media-picker.og-image');
     Route::get('/sections/media-picker/images', [PageSectionController::class, 'mediaPicker'])->middleware('admin.permission:pages.view')->name('sections.media-picker');
     Route::post('/{page}/preview', [PageController::class, 'preview'])->middleware(['admin.permission:pages.update', 'admin.permission:preview.view'])->name('preview');
     Route::get('/{page}', [PageController::class, 'show'])->middleware('admin.permission:pages.view')->name('show');

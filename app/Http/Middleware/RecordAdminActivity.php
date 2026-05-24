@@ -38,6 +38,7 @@ class RecordAdminActivity
             ->where('admin_id', $admin->id)
             ->where('session_token_hash', $sessionTokenHash)
             ->update([
+                'ip_address' => $request->ip() ?? '',
                 'last_seen_at' => now(),
                 'expires_at' => now()->addMinutes((int) config('session.lifetime')),
             ]);

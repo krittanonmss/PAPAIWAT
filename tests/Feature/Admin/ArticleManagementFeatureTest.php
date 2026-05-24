@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminPreference;
+use App\Models\Admin\Role;
 use App\Models\Content\ContentVersion;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Article\ArticleTag;
@@ -12,6 +14,8 @@ use App\Models\Content\Content;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use Database\Seeders\SystemAccessSeeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\Concerns\MigratesAppDatabase;
 use Tests\TestCase;
 
@@ -29,7 +33,7 @@ class ArticleManagementFeatureTest extends TestCase
         $this->seed(SystemAccessSeeder::class);
         $this->withoutMiddleware(AdminAuthenticate::class);
 
-        $this->admin = Admin::query()->where('email', 'admin@example.com')->firstOrFail();
+        $this->admin = Admin::query()->where('status', 'active')->firstOrFail();
         $this->actingAs($this->admin, 'admin');
     }
 
@@ -187,6 +191,16 @@ class ArticleManagementFeatureTest extends TestCase
 
         $article = Article::query()->with('content')->firstOrFail();
 
+        $this->get(route('admin.content.articles.show', $article))
+            ->assertOk()
+            ->assertSee(route('admin.content.articles.destroy', $article), false)
+            ->assertSee('ลบ');
+
+        $this->get(route('admin.content.articles.edit', $article))
+            ->assertOk()
+            ->assertSee('delete-article-form')
+            ->assertSee('ลบบทความ');
+
         $this->delete(route('admin.content.articles.destroy', $article))
             ->assertRedirect(route('admin.content.articles.index'));
 
@@ -195,6 +209,13 @@ class ArticleManagementFeatureTest extends TestCase
 
     public function test_admin_can_publish_and_unpublish_article_through_publish_permission_flow(): void
     {
+        Mail::fake();
+        AdminPreference::query()->create([
+            'admin_id' => $this->admin->id,
+            'key' => 'notifications.email',
+            'value' => ['value' => true],
+        ]);
+
         $category = $this->createCategory('article', 'เผยแพร่');
 
         $this->post(route('admin.content.articles.store'), [
@@ -226,28 +247,98 @@ class ArticleManagementFeatureTest extends TestCase
             'content_type' => 'article',
             'version_name' => 'published',
         ]);
+        $this->assertDatabaseHas('admin_notifications', [
+            'admin_id' => $this->admin->id,
+            'type' => 'content',
+            'title' => 'เผยแพร่บทความแล้ว',
+        ]);
 
         $this->patch(route('admin.content.articles.unpublish', $article))
             ->assertRedirect(route('admin.content.articles.edit', $article));
 
         $this->assertSame('review', $article->fresh()->content->status);
+        $this->assertDatabaseHas('admin_notifications', [
+            'admin_id' => $this->admin->id,
+            'type' => 'content',
+            'title' => 'ยกเลิกเผยแพร่บทความแล้ว',
+        ]);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'article.unpublished',
             'table_name' => 'articles',
             'record_id' => $article->id,
         ]);
+
+        $this->patch(route('admin.content.articles.unpublish', $article))
+            ->assertSessionHasErrors('status');
+
+        Mail::assertQueuedCount(3);
     }
 
-    public function test_article_save_blocks_publish_status_without_publish_action(): void
+    public function test_direct_article_publish_requires_ready_content_and_records_publication(): void
     {
+        $category = $this->createCategory('article', 'เผยแพร่ตรง');
+        $editor = Admin::query()->create([
+            'username' => 'article-editor',
+            'email' => 'article-editor@example.com',
+            'password_hash' => Hash::make('EditorPassword12345'),
+            'role_id' => Role::query()->where('role_key', 'editor')->firstOrFail()->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($editor, 'admin');
+        $this->post(route('admin.content.articles.store'), [
+            'title' => 'บทความไม่มีสิทธิ์เผยแพร่',
+            'slug' => 'cannot-direct-publish',
+            'status' => 'published',
+            'body' => 'เนื้อหาพร้อม',
+            'body_format' => 'markdown',
+            'category_ids' => [$category->id],
+        ])->assertSessionHasErrors('status');
+
+        $this->actingAs($this->admin, 'admin');
         $this->post(route('admin.content.articles.store'), [
             'title' => 'บทความเผยแพร่ตรง',
             'slug' => 'direct-published-article',
             'status' => 'published',
             'body_format' => 'markdown',
-        ])->assertSessionHasErrors('status');
+        ])->assertSessionHasErrors(['body', 'category_ids']);
 
         $this->assertSame(0, Article::query()->count());
+
+        $this->post(route('admin.content.articles.store'), [
+            'title' => 'บทความเผยแพร่ตรง',
+            'slug' => 'direct-published-article',
+            'status' => 'published',
+            'body' => 'เนื้อหาพร้อมเผยแพร่',
+            'body_format' => 'markdown',
+            'category_ids' => [$category->id],
+        ])->assertRedirect(route('admin.content.articles.index'));
+
+        $article = Article::query()->with('content')->firstOrFail();
+
+        $this->assertSame('published', $article->content->status);
+        $this->assertNotNull($article->content->published_at);
+        $this->assertDatabaseHas('content_versions', [
+            'content_id' => $article->content_id,
+            'version_name' => 'published',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'article.published',
+            'table_name' => 'articles',
+            'record_id' => $article->id,
+        ]);
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'content',
+            'title' => 'เผยแพร่บทความแล้ว',
+        ]);
+
+        $this->patch(route('admin.content.articles.publish', $article))
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(1, ContentVersion::query()
+            ->where('content_id', $article->content_id)
+            ->where('version_name', 'published')
+            ->count());
     }
 
     public function test_article_date_validation_blocks_invalid_schedule_publish_and_expiry_dates(): void
@@ -314,6 +405,37 @@ class ArticleManagementFeatureTest extends TestCase
             });
     }
 
+    public function test_article_index_uses_preferred_default_per_page_when_filter_is_not_set(): void
+    {
+        AdminPreference::query()->create([
+            'admin_id' => $this->admin->id,
+            'key' => 'tables.default_per_page',
+            'value' => ['value' => 15],
+        ]);
+
+        foreach (range(1, 16) as $index) {
+            $content = Content::query()->create([
+                'content_type' => 'article',
+                'title' => 'บทความ preference '.$index,
+                'slug' => 'article-preference-'.$index,
+                'status' => 'published',
+            ]);
+
+            Article::query()->create([
+                'content_id' => $content->id,
+                'body_format' => 'markdown',
+            ]);
+        }
+
+        $this->get(route('admin.content.articles.index'))
+            ->assertOk()
+            ->assertViewHas('articles', function ($articles) {
+                return $articles->perPage() === 15
+                    && $articles->count() === 15
+                    && $articles->lastPage() === 2;
+            });
+    }
+
     public function test_admin_can_bulk_assign_selected_articles_to_category_without_replacing_existing_categories(): void
     {
         $oldCategory = $this->createCategory('article', 'หมวดเดิม');
@@ -336,6 +458,13 @@ class ArticleManagementFeatureTest extends TestCase
         ])->assertRedirect(route('admin.content.articles.index'));
 
         $articles = Article::query()->with('content')->orderBy('id')->get();
+
+        $this->get(route('admin.content.articles.index'))
+            ->assertOk()
+            ->assertSee('bulk_article_category_id', false)
+            ->assertSee('type=article', false)
+            ->assertSee('status=active', false)
+            ->assertSee('ค้นหาหมวดหมู่บทความ');
 
         $this->patch(route('admin.content.articles.bulk-category'), [
             'article_ids' => $articles->pluck('id')->all(),

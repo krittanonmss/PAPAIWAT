@@ -11,12 +11,6 @@
                     </p>
                 </div>
 
-                <a
-                    href="{{ route('admin.content.templates.create') }}"
-                    class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
-                >
-                    + สร้างเทมเพลต
-                </a>
             </div>
         </div>
 
@@ -117,7 +111,7 @@
                                             ยังไม่มี เทมเพลต
                                         </div>
                                         <p class="mt-2 text-sm text-slate-400">
-                                            เริ่มสร้าง เทมเพลต สำหรับหน้าเว็บไซต์ได้เลย
+                                            ให้ dev เพิ่มเทมเพลตผ่านระบบ seed/config ก่อนใช้งานหน้านี้
                                         </p>
                                     </div>
                                 </td>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Auth\AdminLoginRequest;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Admin\Auth\AdminAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,14 +23,19 @@ class AdminLoginController extends Controller
 
     public function store(AdminLoginRequest $request): RedirectResponse
     {
-        $this->adminAuthService->login(
+        $admin = $this->adminAuthService->login(
             email: $request->string('email')->toString(),
             password: $request->string('password')->toString(),
             remember: $request->boolean('remember'),
             request: $request,
         );
 
-        return redirect()->route('admin.dashboard');
+        $theme = app(AdminPreferenceService::class)->forAdmin($admin)['display.theme'] ?? 'dark';
+        $theme = in_array($theme, ['dark', 'light', 'system'], true) ? $theme : 'dark';
+
+        return redirect()
+            ->route('admin.dashboard')
+            ->cookie('papaiwat_admin_theme', $theme, 60 * 24 * 365, null, null, false, false, false, 'lax');
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -1,4 +1,16 @@
 <x-layouts.admin title="แก้ไขผู้ใช้งาน">
+    @php
+        $roleOptions = $roles->map(fn ($role) => [
+            'value' => (string) $role->id,
+            'label' => $role->name,
+            'meta' => $role->description ?? '',
+        ])->all();
+        $statusOptions = [
+            ['value' => 'active', 'label' => 'ใช้งาน'],
+            ['value' => 'inactive', 'label' => 'ไม่ใช้งาน'],
+        ];
+    @endphp
+
     <div class="space-y-5 text-white">
 
         {{-- Header --}}
@@ -26,7 +38,7 @@
             @method('PUT')
 
             {{-- Account Info --}}
-            <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
+            <div class="relative rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur" data-dropdown-layer>
                 <h2 class="text-base font-semibold text-white">ข้อมูลบัญชี</h2>
                 <p class="mt-1 text-sm text-slate-400">แก้ไขข้อมูลพื้นฐานของผู้ใช้</p>
 
@@ -59,17 +71,15 @@
 
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-400">บทบาท</label>
-                        <select
-                            name="role_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option class="bg-slate-900" value="">เลือกบทบาท</option>
-                            @foreach ($roles as $role)
-                                <option class="bg-slate-900" value="{{ $role->id }}" @selected(old('role_id', $admin->role_id) == $role->id)>
-                                    {{ $role->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'name' => 'role_id',
+                            'selected' => old('role_id', $admin->role_id),
+                            'options' => $roleOptions,
+                            'emptyLabel' => 'เลือกบทบาท',
+                            'placeholder' => 'ค้นหาบทบาท',
+                            'searchPlaceholder' => 'พิมพ์ชื่อบทบาท...',
+                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                        ])
                         @error('role_id')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                         @enderror
@@ -92,23 +102,21 @@
 
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 {{-- สถานะ --}}
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
+                <div class="relative rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur" data-dropdown-layer>
                     <h2 class="text-base font-semibold text-white">สถานะบัญชี</h2>
                     <p class="mt-1 text-sm text-slate-400">กำหนดสถานะการเข้าใช้งานของบัญชีนี้</p>
 
                     <div class="mt-5">
                         <label class="mb-1.5 block text-sm font-medium text-slate-400">สถานะ</label>
-                        <select
-                            name="status"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option class="bg-slate-900" value="active" @selected(old('status', $admin->status) === 'active')>
-                                ใช้งาน
-                            </option>
-                            <option class="bg-slate-900" value="inactive" @selected(old('status', $admin->status) === 'inactive')>
-                                ไม่ใช้งาน
-                            </option>
-                        </select>
+                        @include('admin.content.partials._searchable_select', [
+                            'name' => 'status',
+                            'selected' => old('status', $admin->status),
+                            'options' => $statusOptions,
+                            'emptyLabel' => 'เลือกสถานะ',
+                            'placeholder' => 'ค้นหาสถานะ',
+                            'searchPlaceholder' => 'พิมพ์สถานะ...',
+                            'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                        ])
 
                         @error('status')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>

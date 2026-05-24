@@ -32,4 +32,14 @@ class AnonymousVisitor extends Model
     {
         return $this->hasMany(PublicComment::class);
     }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(InteractionReport::class);
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->status === 'banned';
+    }
 }

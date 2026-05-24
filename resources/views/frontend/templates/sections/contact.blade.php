@@ -10,7 +10,7 @@
     $cardPosition = ($settings['contact_card_position'] ?? 'right') === 'left' ? 'left' : 'right';
 @endphp
 <section class="px-4 py-16" style="@include('frontend.templates.sections._background')">
-    <div class="mx-auto grid max-w-7xl gap-8 {{ $cardPosition === 'left' ? 'lg:grid-cols-[420px_1fr]' : 'lg:grid-cols-[1fr_420px]' }}">
+    <div data-section-items class="mx-auto grid max-w-7xl gap-8 {{ $cardPosition === 'left' ? 'lg:grid-cols-[420px_1fr]' : 'lg:grid-cols-[1fr_420px]' }}">
         <div class="{{ $cardPosition === 'left' ? 'lg:order-2' : 'lg:order-1' }}">
             @if(!empty($content['eyebrow']))
                 <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
@@ -21,7 +21,7 @@
             @endif
         </div>
 
-        <div class="{{ $cardPosition === 'left' ? 'lg:order-1' : 'lg:order-2' }} rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+        <div data-section-card data-section-card-padding class="{{ $cardPosition === 'left' ? 'lg:order-1' : 'lg:order-2' }} rounded-3xl border border-white/10 bg-white/[0.04] p-6">
             <div class="space-y-4 text-sm text-slate-300">
                 @if($showPhone && !empty($content['phone']))
                     <p><span class="text-slate-500">{{ $phoneLabel }}</span> <a href="tel:{{ $content['phone'] }}" class="hover:text-white">{{ $content['phone'] }}</a></p>
@@ -30,7 +30,7 @@
                     <p><span class="text-slate-500">{{ $emailLabel }}</span> <a href="mailto:{{ $content['email'] }}" class="hover:text-white">{{ $content['email'] }}</a></p>
                 @endif
                 @if($showMapButton && !empty($content['map_url']))
-                    <a href="{{ $content['map_url'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $mapButtonLabel }}</a>
+                    <a href="{{ $content['map_url'] }}" data-section-button target="_blank" rel="noopener noreferrer" class="inline-flex rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $mapButtonLabel }}</a>
                 @endif
             </div>
         </div>

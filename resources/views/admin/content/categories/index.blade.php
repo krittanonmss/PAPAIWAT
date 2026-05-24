@@ -38,7 +38,7 @@
         @endif
 
         {{-- Filter --}}
-        <div class="relative z-40 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-[90] rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             @php
                 $filterKeys = ['search', 'type_key', 'parent_id', 'status', 'deleted', 'per_page'];
                 $activeFilterCount = collect(request()->only($filterKeys))->filter(fn ($value) => filled($value))->count();
@@ -161,12 +161,12 @@
                     @include('admin.content.partials._searchable_select', [
                         'id' => 'per_page',
                         'name' => 'per_page',
-                        'selected' => (string) request('per_page', 15),
+                        'selected' => (string) $categories->perPage(),
                         'allowEmpty' => false,
                         'placeholder' => 'เลือกจำนวนต่อหน้า',
                         'searchPlaceholder' => 'ค้นหาจำนวน...',
                         'inputClass' => $filterSelectClass,
-                        'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                        'options' => collect(\App\Services\Admin\AdminPreferenceService::PER_PAGE_OPTIONS)->map(fn ($pageSize) => [
                             'value' => (string) $pageSize,
                             'label' => $pageSize . ' รายการ',
                             'search' => $pageSize . ' รายการ',
@@ -195,7 +195,7 @@
         </div>
 
         {{-- Bulk Actions --}}
-        <div class="relative z-50 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-[70] rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">ย้ายหลายหมวดหมู่พร้อมกัน</h2>
@@ -204,6 +204,7 @@
             </div>
 
             <form
+                id="category-bulk-move-form"
                 method="POST"
                 action="{{ route('admin.categories.bulk-move') }}"
                 class="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-slate-950/30 p-3 md:grid-cols-[1fr_auto]"
@@ -212,20 +213,14 @@
                 @csrf
                 @method('PATCH')
 
-                @include('admin.content.partials._searchable_select', [
+                @include('admin.content.partials._async_select', [
                     'id' => 'bulk_move_parent_id',
                     'name' => 'parent_id',
                     'selected' => '',
-                    'allowEmpty' => false,
+                    'searchUrl' => route('admin.lookups.categories'),
                     'placeholder' => 'เลือกหมวดหมู่ปลายทาง',
-                    'searchPlaceholder' => 'พิมพ์ชื่อ / ประเภท / ID เพื่อค้นหา...',
-                    'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
-                    'options' => $parentOptions->map(fn ($parentOption) => [
-                        'value' => $parentOption->id,
-                        'label' => '[' . ucfirst($parentOption->type_key) . '] ' . str_repeat('— ', $parentOption->level) . $parentOption->name,
-                        'meta' => 'Level ' . $parentOption->level . ' | #' . $parentOption->id,
-                        'search' => $parentOption->name . ' ' . $parentOption->type_key . ' level ' . $parentOption->level . ' #' . $parentOption->id,
-                    ]),
+                    'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                    'emptyLabel' => 'ยังไม่เลือกปลายทาง',
                 ])
 
                 <button
@@ -278,7 +273,9 @@
                                     @if (! $category->trashed())
                                         <input
                                             type="checkbox"
+                                            name="category_ids[]"
                                             value="{{ $category->id }}"
+                                            form="category-bulk-move-form"
                                             data-category-checkbox
                                             class="rounded border-white/20 bg-slate-950/40 text-blue-600 focus:ring-blue-500"
                                             aria-label="เลือกหมวดหมู่ {{ $category->name }}"
@@ -431,8 +428,6 @@
             });
 
             bulkForm?.addEventListener('submit', (event) => {
-                bulkForm.querySelectorAll('[data-injected-category-id]').forEach((input) => input.remove());
-
                 const selectedIds = categoryCheckboxes()
                     .filter((checkbox) => checkbox.checked)
                     .map((checkbox) => checkbox.value);
@@ -445,19 +440,7 @@
 
                 if (! confirm('ยืนยันการย้ายหมวดหมู่ที่เลือกไปยังหมวดหมู่ปลายทางนี้?')) {
                     event.preventDefault();
-                    return;
                 }
-
-                selectedIds.forEach((id) => {
-                    const input = document.createElement('input');
-
-                    input.type = 'hidden';
-                    input.name = 'category_ids[]';
-                    input.value = id;
-                    input.setAttribute('data-injected-category-id', 'true');
-
-                    bulkForm.appendChild(input);
-                });
             });
         });
     </script>

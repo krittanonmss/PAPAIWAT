@@ -29,7 +29,7 @@ class ArticleValidationService
 
         $errors = [];
 
-        if (! in_array($article->content?->status, ['draft', 'review', 'published'], true)) {
+        if (! in_array($article->content?->status, ['draft', 'review'], true)) {
             $errors['status'] = 'เผยแพร่ได้เฉพาะบทความที่อยู่ในสถานะ draft หรือ review';
         }
 
@@ -58,12 +58,47 @@ class ArticleValidationService
         }
     }
 
+    public function validateForUnpublish(Article $article): void
+    {
+        if ($article->content?->status !== 'published') {
+            throw ValidationException::withMessages([
+                'status' => 'ยกเลิกเผยแพร่ได้เฉพาะบทความที่เผยแพร่แล้ว',
+            ]);
+        }
+    }
+
     private function validateStatus(array $validated, ?Article $article): array
     {
         $status = $validated['status'] ?? 'draft';
 
         if ($status === 'published') {
-            return ['status' => 'กรุณาใช้คำสั่งเผยแพร่เพื่อเปลี่ยนสถานะเป็น published'];
+            if ($article?->content?->status === 'published') {
+                return [];
+            }
+
+            if (! auth('admin')->user()?->hasPermission('articles.publish')) {
+                return ['status' => 'ต้องมีสิทธิ์เผยแพร่จึงจะตั้งสถานะเป็นเผยแพร่ได้'];
+            }
+
+            $errors = [];
+
+            if (empty($validated['body'])) {
+                $errors['body'] = 'ต้องมีเนื้อหาบทความก่อนเผยแพร่';
+            }
+
+            if (empty($validated['category_ids'])) {
+                $errors['category_ids'] = 'ต้องเลือกหมวดหมู่อย่างน้อย 1 รายการก่อนเผยแพร่';
+            }
+
+            if (! empty($validated['scheduled_at']) && new \DateTimeImmutable($validated['scheduled_at']) > new \DateTimeImmutable('now')) {
+                $errors['scheduled_at'] = 'ยังไม่สามารถเผยแพร่ก่อนเวลาที่ตั้งเผยแพร่ได้';
+            }
+
+            if (! empty($validated['expired_at']) && new \DateTimeImmutable($validated['expired_at']) <= new \DateTimeImmutable('now')) {
+                $errors['expired_at'] = 'ไม่สามารถเผยแพร่บทความที่หมดอายุแล้ว';
+            }
+
+            return $errors;
         }
 
         if (! $article?->content || $article->content->status !== 'published') {

@@ -296,9 +296,27 @@
 
                         <div>
                             <p class="text-xs font-medium text-slate-500">OG Image</p>
-                            <p class="mt-0.5 text-sm text-slate-300">
-                                {{ $page->ogImage?->title ?: ($page->ogImage?->original_filename ?? '-') }}
-                            </p>
+                            @if ($page->ogImage?->path)
+                                @php
+                                    $pageOgImageUrl = filter_var($page->ogImage->path, FILTER_VALIDATE_URL)
+                                        ? $page->ogImage->path
+                                        : \Illuminate\Support\Facades\Storage::url($page->ogImage->path);
+                                @endphp
+
+                                <div class="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40">
+                                    <img
+                                        src="{{ $pageOgImageUrl }}"
+                                        alt="{{ $page->ogImage->title ?: $page->ogImage->original_filename }}"
+                                        class="aspect-video w-full object-cover"
+                                        loading="lazy"
+                                    >
+                                    <p class="truncate border-t border-white/10 px-3 py-2 text-sm text-slate-300">
+                                        {{ $page->ogImage->title ?: ($page->ogImage->original_filename ?? '-') }}
+                                    </p>
+                                </div>
+                            @else
+                                <p class="mt-0.5 text-sm text-slate-300">-</p>
+                            @endif
                         </div>
                     </div>
                 </section>

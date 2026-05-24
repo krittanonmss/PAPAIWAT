@@ -124,7 +124,7 @@
                             'placeholder' => 'เลือกจำนวนต่อหน้า',
                             'searchPlaceholder' => 'ค้นหาจำนวน...',
                             'inputClass' => $filterSelectClass,
-                            'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                            'options' => collect(\App\Services\Admin\AdminPreferenceService::PER_PAGE_OPTIONS)->map(fn ($pageSize) => [
                                 'value' => (string) $pageSize,
                                 'label' => $pageSize . ' รายการ',
                                 'search' => $pageSize . ' รายการ',
@@ -181,8 +181,12 @@
                             <tr class="transition hover:bg-white/[0.06]">
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-indigo-950/30">
-                                            {{ strtoupper(substr($menu->name, 0, 1)) }}
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-800 text-slate-500 shadow-lg shadow-slate-950/30">
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <path d="M5 7h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                <path d="M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                                <path d="M5 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                            </svg>
                                         </div>
 
                                         <div class="min-w-0">

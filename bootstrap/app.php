@@ -3,6 +3,7 @@
 use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\AdminGuestRedirect;
 use App\Http\Middleware\EnsureAdminIsActive;
+use App\Http\Middleware\RememberAdminFilters;
 use App\Http\Middleware\RecordAdminActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.guest' => AdminGuestRedirect::class,
             'admin.active' => EnsureAdminIsActive::class,
             'admin.activity' => RecordAdminActivity::class,
+            'admin.remember_filters' => RememberAdminFilters::class,
             'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
         ]);
     })

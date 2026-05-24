@@ -24,16 +24,17 @@
                 @endif
             </div>
             @if($showAllButton)
-                <a href="{{ $allButtonUrl }}" class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">{{ $allButtonLabel }}</a>
+                <a href="{{ $allButtonUrl }}" data-section-button class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">{{ $allButtonLabel }}</a>
             @endif
         </div>
 
         @if($items->isEmpty())
-            <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">{{ $emptyListText }}</div>
+            <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">{{ $emptyListText }}</div>
         @elseif($useSlider)
             <div class="relative" data-section-slider>
                 <div
                     class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    data-section-items
                     data-section-slider-track
                 >
                     @foreach($items as $temple)
@@ -46,16 +47,16 @@
                             $imageUrl = $path ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : \Illuminate\Support\Facades\Storage::url($path)) : null;
                             $address = $temple->relationLoaded('address') ? $temple->address : null;
                         @endphp
-                        <article class="group flex-[0_0_min(82vw,22rem)] snap-start overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40 sm:flex-[0_0_20rem] lg:flex-[0_0_calc((100%-3rem)/3)] xl:flex-[0_0_calc((100%-4.5rem)/4)]">
+                        <article data-section-card data-section-slider-card class="group flex-[0_0_min(82vw,22rem)] snap-start overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40 sm:flex-[0_0_20rem] lg:flex-[0_0_calc((100%-3rem)/3)] xl:flex-[0_0_calc((100%-4.5rem)/4)]">
                             <a href="{{ route('temples.show', $temple) }}" class="flex h-full w-full flex-col">
-                                <div class="h-52 bg-slate-900 sm:h-56">
+                                <div data-section-image class="aspect-[4/3] overflow-hidden bg-slate-900">
                                     @if($imageUrl)
                                         <img src="{{ $imageUrl }}" alt="{{ $templeContent?->title ?? 'Temple image' }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
                                     @else
                                         <div class="flex h-full items-center justify-center text-sm text-slate-500">{{ $emptyImageText }}</div>
                                     @endif
                                 </div>
-                                <div class="p-5">
+                                <div data-section-card-padding class="p-5">
                                     <p class="text-xs text-blue-300">{{ $address?->province ?? $provinceFallback }}</p>
                                     <h3 class="mt-2 line-clamp-2 text-xl font-semibold text-white">{{ $templeContent?->title ?? '-' }}</h3>
                                     <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $templeContent?->excerpt ?? $emptyExcerpt }}</p>
@@ -95,7 +96,7 @@
                 </div>
             </div>
         @else
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div data-section-items class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                 @foreach($items as $temple)
                 @php
                     $templeContent = $temple->relationLoaded('content') ? $temple->content : null;
@@ -106,16 +107,16 @@
                     $imageUrl = $path ? (filter_var($path, FILTER_VALIDATE_URL) ? $path : \Illuminate\Support\Facades\Storage::url($path)) : null;
                     $address = $temple->relationLoaded('address') ? $temple->address : null;
                 @endphp
-                <article class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
+                <article data-section-card class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-xl shadow-slate-950/30 transition hover:-translate-y-1 hover:border-blue-300/40">
                     <a href="{{ route('temples.show', $temple) }}">
-                        <div class="h-56 bg-slate-900">
+                        <div data-section-image class="aspect-[4/3] overflow-hidden bg-slate-900">
                             @if($imageUrl)
                                 <img src="{{ $imageUrl }}" alt="{{ $templeContent?->title ?? 'Temple image' }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
                             @else
                                 <div class="flex h-full items-center justify-center text-sm text-slate-500">{{ $emptyImageText }}</div>
                             @endif
                         </div>
-                        <div class="p-5">
+                        <div data-section-card-padding class="p-5">
                             <p class="text-xs text-blue-300">{{ $address?->province ?? $provinceFallback }}</p>
                             <h3 class="mt-2 line-clamp-2 text-xl font-semibold text-white">{{ $templeContent?->title ?? '-' }}</h3>
                             <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $templeContent?->excerpt ?? $emptyExcerpt }}</p>

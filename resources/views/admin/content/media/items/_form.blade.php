@@ -1,5 +1,9 @@
+@php
+    $defaultVisibility = 'public';
+@endphp
+
 <div class="space-y-6" x-data="mediaCreatePreview()">
-    <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+    <section class="overflow-visible rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
         <div class="border-b border-white/10 px-6 py-4">
             <h2 class="text-base font-semibold text-white">ไฟล์สื่อ</h2>
             <p class="mt-1 text-xs text-slate-400">เลือกไฟล์และตรวจ preview ก่อนอัปโหลด</p>
@@ -24,7 +28,7 @@
                     >
 
                     <p class="mt-2 text-xs leading-5 text-slate-500">
-                        เลือกได้หลายไฟล์ รองรับรูปภาพและไฟล์ทั่วไป ขนาดไม่เกิน 5 MB ต่อไฟล์
+                        เลือกได้หลายไฟล์ รองรับรูปภาพและ PDF ขนาดไม่เกิน 5 MB ต่อไฟล์
                     </p>
 
                     @error('file')
@@ -142,8 +146,8 @@
                     name="visibility"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
                 >
-                    <option value="public" class="bg-slate-900" @selected(old('visibility', 'public') === 'public')>สาธารณะ</option>
-                    <option value="private" class="bg-slate-900" @selected(old('visibility') === 'private')>ส่วนตัว</option>
+                    <option value="public" class="bg-slate-900" @selected(old('visibility', $defaultVisibility) === 'public')>สาธารณะ</option>
+                    <option value="private" class="bg-slate-900" @selected(old('visibility', $defaultVisibility) === 'private')>ส่วนตัว</option>
                 </select>
 
                 @error('visibility')

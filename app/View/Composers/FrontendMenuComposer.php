@@ -4,6 +4,8 @@ namespace App\View\Composers;
 
 use App\Support\MenuUrl;
 use App\Support\FooterSettings;
+use App\Support\SiteSettings;
+use App\Models\Content\Media\Media;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,10 +15,18 @@ class FrontendMenuComposer
 {
     public function compose(View $view): void
     {
+        $siteSettings = SiteSettings::all();
+        $ogImageId = $siteSettings['seo']['og_image_media_id'] ?? null;
+        $ogImage = $ogImageId && Schema::hasTable('media')
+            ? Media::query()->where('visibility', 'public')->find($ogImageId)
+            : null;
+
         $view->with([
             'frontendMenuItems' => $this->getMenuItems('header', true),
             'frontendFooterMenuItems' => $this->getMenuItems('footer'),
             'frontendFooterSettings' => FooterSettings::get(),
+            'frontendSiteSettings' => $siteSettings,
+            'frontendOgImage' => $ogImage,
         ]);
     }
 
@@ -71,6 +81,10 @@ class FrontendMenuComposer
 
     private function findMenu(?string $locationKey = null): ?object
     {
+        $configuredMenuId = $locationKey
+            ? SiteSettings::get('navigation', $locationKey.'_menu_id')
+            : null;
+
         $menu = DB::table('menus')
             ->when(Schema::hasColumn('menus', 'deleted_at'), function ($query) {
                 $query->whereNull('deleted_at');
@@ -81,10 +95,13 @@ class FrontendMenuComposer
             ->when($locationKey && Schema::hasColumn('menus', 'location_key'), function ($query) use ($locationKey) {
                 $query->where('location_key', $locationKey);
             })
+            ->when($configuredMenuId, function ($query) use ($configuredMenuId) {
+                $query->orderByRaw('case when id = ? then 0 else 1 end', [(int) $configuredMenuId]);
+            })
             ->when(!$locationKey && Schema::hasColumn('menus', 'location_key'), function ($query) {
                 $query->orderByRaw("case when location_key = 'header' then 0 else 1 end");
             })
-            ->when(Schema::hasColumn('menus', 'is_default'), function ($query) {
+            ->when(Schema::hasColumn('menus', 'is_default') && ! $configuredMenuId, function ($query) {
                 $query->orderByDesc('is_default');
             })
             ->when(Schema::hasColumn('menus', 'sort_order'), function ($query) {

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Temple\Temple;
+use App\Services\Admin\AdminNotificationService;
 use App\Services\Interaction\AnonymousVisitorService;
 use App\Services\Interaction\PublicInteractionService;
+use App\Support\SiteSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -19,6 +21,7 @@ class PublicCommentController extends Controller
         PublicInteractionService $interactionService
     ): RedirectResponse {
         abort_unless($temple->content?->status === 'published', 404);
+        abort_unless((bool) SiteSettings::get('moderation', 'comments_enabled', true), 403);
 
         return $this->store($request, $temple, $visitorService, $interactionService);
     }
@@ -31,6 +34,7 @@ class PublicCommentController extends Controller
     ): RedirectResponse {
         abort_unless($article->content?->status === 'published', 404);
         abort_unless($article->allow_comments, 403);
+        abort_unless((bool) SiteSettings::get('moderation', 'comments_enabled', true), 403);
 
         return $this->store($request, $article, $visitorService, $interactionService);
     }
@@ -48,13 +52,21 @@ class PublicCommentController extends Controller
         ]);
 
         $visitor = $visitorService->resolve($request);
+        abort_if($visitor->isBanned(), 403);
 
-        $interactionService->submitComment(
+        $comment = $interactionService->submitComment(
             $commentable,
             $visitor,
             $validated,
             $visitorService->hashNullable($request->ip()),
             $visitorService->hashNullable($request->userAgent())
+        );
+
+        app(AdminNotificationService::class)->notifyAdminsWithPermission(
+            'interactions.moderate',
+            'moderation',
+            'มีความคิดเห็นรอตรวจสอบ',
+            'ความคิดเห็น #'.$comment->id.' จากหน้าเว็บกำลังรอการตรวจสอบ'
         );
 
         return back()->with('success', 'ความคิดเห็นของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');

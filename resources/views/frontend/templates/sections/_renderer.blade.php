@@ -35,41 +35,56 @@
         .cms-section-root :is(h1, h2, h3, h4, h5, h6, [class~="text-white"], [class*="text-white/"]) {
             color: var(--section-heading-color, var(--section-text-color, inherit)) !important;
         }
+        .cms-section-root [data-section-heading] {
+            color: var(--section-heading-color, var(--section-text-color, inherit)) !important;
+        }
         .cms-section-root :is([class*="text-slate-"], [class*="text-gray-"], [class*="text-zinc-"], [class*="text-neutral-"], [class*="text-stone-"]) {
             color: var(--section-muted-color, var(--section-text-color, inherit)) !important;
         }
         .cms-section-root :is([class*="text-blue-"], [class*="text-sky-"], [class*="text-cyan-"], [class*="text-teal-"], [class*="text-emerald-"], [class*="text-green-"], [class*="text-yellow-"], [class*="text-amber-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-pink-"], [class*="text-purple-"], [class*="text-violet-"], [class*="text-indigo-"]) {
             color: var(--section-accent-color, var(--section-heading-color, inherit)) !important;
         }
-        .cms-section-root :is(article, details, figure, [class*="bg-white/"], [class*="bg-white["]) {
+        .cms-section-root [data-section-card] {
             background-color: var(--section-card-bg, initial);
             border-color: var(--section-card-border, currentColor);
             border-radius: var(--section-card-radius, inherit);
         }
-        .cms-section-root :is(article, details, figure, [data-favorites-empty]) :is(h1, h2, h3, h4, h5, h6, [class~="text-white"], [class*="text-white/"]) {
+        .cms-section-root [data-section-card] :is(h1, h2, h3, h4, h5, h6, [class~="text-white"], [data-section-card-title]) {
             color: var(--section-card-heading-color, var(--section-heading-color, inherit)) !important;
         }
-        .cms-section-root :is(article, details, figure, [data-favorites-empty]) :is(p, span, figcaption, [class*="text-slate-"], [class*="text-gray-"], [class*="text-zinc-"], [class*="text-neutral-"], [class*="text-stone-"]) {
+        .cms-section-root [data-section-card] [data-section-heading] {
+            color: var(--section-heading-color, var(--section-text-color, inherit)) !important;
+        }
+        .cms-section-root :is([data-section-card][data-section-card-copy], [data-section-card][class*="text-slate-"], [data-section-card][class*="text-gray-"], [data-section-card][class*="text-zinc-"], [data-section-card][class*="text-neutral-"], [data-section-card][class*="text-stone-"]),
+        .cms-section-root [data-section-card] :is([data-section-card-copy], figcaption, [class*="text-slate-"], [class*="text-gray-"], [class*="text-zinc-"], [class*="text-neutral-"], [class*="text-stone-"]) {
             color: var(--section-card-text-color, var(--section-muted-color, inherit)) !important;
         }
-        .cms-section-root :is(article > a > div:last-child, article > div:last-child, details, figure > figcaption, [data-favorites-empty]) {
+        .cms-section-root [data-section-card-padding] {
             padding: var(--section-card-padding, inherit);
         }
-        .cms-section-root :is(.grid, .flex[class*="gap-"]) {
+        .cms-section-root [data-section-items] {
             gap: var(--section-gap, inherit);
         }
-        .cms-section-root img[class*="aspect-"],
-        .cms-section-root :is(article, figure) > a > div:first-child,
-        .cms-section-root figure > img {
+        .cms-section-root [data-section-surface] {
+            background-color: var(--section-card-bg, transparent);
+            border-color: var(--section-card-border, currentColor);
+        }
+        .cms-section-root [data-section-image] {
             aspect-ratio: var(--section-image-aspect, auto);
             border-radius: var(--section-image-radius, inherit);
+            overflow: hidden;
         }
-        .cms-section-root :is(form[data-section-filter-form], [data-section-filter-pagination]) {
+        .cms-section-root [data-section-accent] {
+            color: var(--section-accent-color, var(--section-heading-color, inherit)) !important;
+        }
+        .cms-section-root [data-section-muted] {
+            color: var(--section-muted-color, var(--section-text-color, inherit)) !important;
+        }
+        .cms-section-root :is(form[data-section-filter-form], form[data-section-search-form], [data-section-filter-pagination]) {
             background-color: var(--section-filter-bg, initial);
             border-color: var(--section-filter-border, currentColor);
         }
-        .cms-section-root a[class*="rounded-"],
-        .cms-section-root button[class*="rounded-"] {
+        .cms-section-root [data-section-button] {
             background: var(--section-button-bg, initial);
             border-color: var(--section-button-border, currentColor);
             border-radius: var(--section-button-radius, inherit);
@@ -77,13 +92,6 @@
         }
         .cms-section-root section > .mx-auto[class*="max-w-"] {
             max-width: var(--section-layout-width, inherit);
-        }
-        .cms-section-component-cta section > .mx-auto.rounded-3xl,
-        .cms-section-component-favorites-list section > .mx-auto > .rounded-3xl:first-of-type {
-            padding: var(--section-card-padding, inherit);
-            background-color: var(--section-card-bg, initial);
-            border-color: var(--section-card-border, currentColor);
-            border-radius: var(--section-card-radius, inherit);
         }
         @media (min-width: 1024px) {
             .cms-section-component-stats section .grid {
@@ -96,9 +104,16 @@
         @media (min-width: 1280px) {
             .cms-section-component-article-grid section > .mx-auto > .grid,
             .cms-section-component-temple-grid section > .mx-auto > .grid,
+            .cms-section-component-favorites-list [data-favorites-list] {
+                grid-template-columns: repeat(var(--section-grid-columns, 4), minmax(0, 1fr));
+            }
             .cms-section-component-article-list-full section > .mx-auto > .grid,
             .cms-section-component-temple-list-full section > .mx-auto > .grid {
-                grid-template-columns: repeat(var(--section-grid-columns, 4), minmax(0, 1fr));
+                grid-template-columns: repeat(var(--section-list-columns, 4), minmax(0, 1fr));
+            }
+            .cms-section-component-article-grid [data-section-slider-card],
+            .cms-section-component-temple-grid [data-section-slider-card] {
+                flex-basis: calc((100% - (var(--section-grid-columns, 4) - 1) * var(--section-gap, 1.5rem)) / var(--section-grid-columns, 4));
             }
         }
         @media (prefers-reduced-motion: no-preference) {

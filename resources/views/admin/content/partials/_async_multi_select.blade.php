@@ -49,6 +49,7 @@
     <template x-for="id in selectedIds" :key="id">
         <input type="hidden" name="{{ $fieldName }}[]" :value="id">
     </template>
+    <input type="hidden" data-async-multi-field="{{ $fieldName }}" :value="selectedIds.length">
 
     <div class="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3">
         <p class="text-xs text-slate-400">
@@ -229,16 +230,25 @@
                         this.remove(id);
                     } else {
                         this.selectedIds.push(id);
+                        this.notifyChange();
                     }
                 },
 
                 remove(id) {
                     id = String(id);
                     this.selectedIds = this.selectedIds.filter((item) => item !== id);
+                    this.notifyChange();
                 },
 
                 clear() {
                     this.selectedIds = [];
+                    this.notifyChange();
+                },
+
+                notifyChange() {
+                    this.$nextTick(() => {
+                        this.$root.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
                 },
             };
         }

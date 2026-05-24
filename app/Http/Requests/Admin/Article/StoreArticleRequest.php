@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Article;
 
+use App\Support\SiteSettings;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,21 @@ class StoreArticleRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
+        $defaults = [];
+
+        if (! $this->exists('status')) {
+            $defaults['status'] = SiteSettings::get('content', 'default_status', 'draft');
+        }
+
+        if (! $this->exists('template_id') && SiteSettings::get('content', 'article_default_template_id')) {
+            $defaults['template_id'] = SiteSettings::get('content', 'article_default_template_id');
+        }
+
+        if (! $this->exists('allow_comments')) {
+            $defaults['allow_comments'] = SiteSettings::get('content', 'article_allow_comments_default', true);
+        }
+
+        $this->merge($defaults + [
             'cover_media_id' => $this->integerOrNull($this->input('cover_media_id')),
         ]);
     }
@@ -46,7 +61,7 @@ class StoreArticleRequest extends FormRequest
             ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'in:draft,review,archived'],
+            'status' => ['required', Rule::in($this->allowedStatuses())],
             'is_featured' => ['nullable', 'boolean'],
             'is_popular' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
@@ -76,5 +91,16 @@ class StoreArticleRequest extends FormRequest
 
             'cover_media_id' => ['nullable', 'integer', 'exists:media,id'],
         ];
+    }
+
+    private function allowedStatuses(): array
+    {
+        $statuses = ['draft', 'review', 'archived'];
+
+        if ($this->user('admin')?->hasPermission('articles.publish')) {
+            $statuses[] = 'published';
+        }
+
+        return $statuses;
     }
 }

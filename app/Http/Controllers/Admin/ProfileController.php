@@ -16,8 +16,21 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
+        $admin = $request->user('admin')->loadMissing('role');
+        $currentSessionHash = hash('sha256', $request->session()->getId());
+        $activeSessions = $admin->sessions()
+            ->where('expires_at', '>', now())
+            ->orderByDesc('last_seen_at')
+            ->limit(4)
+            ->get();
+
         return view('admin.profile.edit', [
-            'admin' => $request->user('admin'),
+            'admin' => $admin,
+            'activeSessions' => $activeSessions,
+            'activeSessionsCount' => $admin->sessions()
+                ->where('expires_at', '>', now())
+                ->count(),
+            'currentSessionHash' => $currentSessionHash,
         ]);
     }
 
@@ -25,7 +38,7 @@ class ProfileController extends Controller
     {
         $admin = $request->user('admin');
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('profile', [
             'username' => [
                 'required',
                 'string',
@@ -52,7 +65,7 @@ class ProfileController extends Controller
     {
         $admin = $request->user('admin');
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('password', [
             'current_password' => ['required', 'string'],
             'password' => [
                 'required',
@@ -64,7 +77,7 @@ class ProfileController extends Controller
 
         if (! Hash::check($validated['current_password'], $admin->password_hash)) {
             return back()
-                ->withErrors(['current_password' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง'])
+                ->withErrors(['current_password' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง'], 'password')
                 ->onlyInput();
         }
 
@@ -84,4 +97,5 @@ class ProfileController extends Controller
             ->route('admin.profile.edit')
             ->with('success', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว ระบบได้ยกเลิก session อื่นของบัญชีนี้แล้ว');
     }
+
 }

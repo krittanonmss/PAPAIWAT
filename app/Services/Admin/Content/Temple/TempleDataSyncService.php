@@ -7,6 +7,7 @@ use App\Models\Content\ContentVersion;
 use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use Illuminate\Support\Facades\DB;
+use App\Support\SlugGenerator;
 use Illuminate\Support\Str;
 
 class TempleDataSyncService
@@ -20,7 +21,7 @@ class TempleDataSyncService
             $content = Content::query()->create([
                 'content_type' => 'temple',
                 'title' => $validated['title'],
-                'slug' => Str::slug($validated['slug']),
+                'slug' => $validated['slug'],
                 'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $this->sanitizeRichText($validated['description'] ?? null),
@@ -29,7 +30,7 @@ class TempleDataSyncService
                 'is_popular' => (bool) ($validated['is_popular'] ?? false),
                 'meta_title' => $validated['meta_title'] ?? null,
                 'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? null,
+                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? now() : null),
                 'created_by_admin_id' => auth('admin')->id(),
                 'updated_by_admin_id' => auth('admin')->id(),
             ]);
@@ -60,7 +61,7 @@ class TempleDataSyncService
         DB::transaction(function () use ($temple, $validated) {
             $temple->content->update([
                 'title' => $validated['title'],
-                'slug' => Str::slug($validated['slug']),
+                'slug' => $validated['slug'],
                 'template_id' => $validated['template_id'] ?? null,
                 'excerpt' => $validated['excerpt'] ?? null,
                 'description' => $this->sanitizeRichText($validated['description'] ?? null),
@@ -69,7 +70,7 @@ class TempleDataSyncService
                 'is_popular' => (bool) ($validated['is_popular'] ?? false),
                 'meta_title' => $validated['meta_title'] ?? null,
                 'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? null,
+                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? ($temple->content->published_at ?? now()) : null),
                 'updated_by_admin_id' => auth('admin')->id(),
             ]);
 
@@ -544,7 +545,7 @@ class TempleDataSyncService
 
     private function uniqueFacilitySlug(string $name): string
     {
-        $baseSlug = Str::slug($name) ?: 'facility-'.Str::lower(Str::random(8));
+        $baseSlug = SlugGenerator::make($name, 'facility-'.Str::lower(Str::random(8)));
         $slug = $baseSlug;
         $counter = 2;
 

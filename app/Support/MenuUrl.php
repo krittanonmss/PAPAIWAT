@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 class MenuUrl
 {
@@ -41,7 +42,11 @@ class MenuUrl
             }
         }
 
-        return route($routeName, $params);
+        try {
+            return route($routeName, $params);
+        } catch (Throwable) {
+            return '#';
+        }
     }
 
     private static function pageUrl(object $item): string

@@ -97,7 +97,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 16.5a2 2 0 0 1-2-2v-7A3.5 3.5 0 0 1 7.5 4h7a2 2 0 0 1 2 2" />
                                     </svg>
                                 </span>
-                                <span class="mt-2 block text-xs font-medium leading-tight text-slate-200" data-share-copy-status>Copy link / ฝัง</span>
+                                <span class="mt-2 block text-xs font-medium leading-tight text-slate-200" data-share-copy-status>Copy link</span>
                             </button>
                             <button type="button" data-share-target="facebook" class="w-20 shrink-0 text-center">
                                 <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#1877f2] text-white shadow-lg shadow-slate-950/20 transition hover:scale-105">
@@ -188,7 +188,7 @@
             const dialog = document.getElementById('share-choice-dialog');
             const copyStatus = dialog.querySelector('[data-share-copy-status]');
             if (copyStatus) {
-                copyStatus.textContent = 'Copy link / ฝัง';
+                copyStatus.textContent = 'Copy link';
             }
 
             dialog.classList.remove('hidden');

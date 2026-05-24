@@ -3,9 +3,11 @@
 namespace App\Models\Interaction;
 
 use App\Models\Content\Temple\Temple;
+use App\Models\Admin\Admin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TempleReview extends Model
@@ -20,6 +22,10 @@ class TempleReview extends Model
         'comment',
         'status',
         'report_count',
+        'moderation_reason',
+        'moderation_note',
+        'moderated_by_admin_id',
+        'moderated_at',
         'ip_hash',
         'user_agent_hash',
         'approved_at',
@@ -30,6 +36,8 @@ class TempleReview extends Model
         'anonymous_visitor_id' => 'integer',
         'rating' => 'integer',
         'report_count' => 'integer',
+        'moderated_by_admin_id' => 'integer',
+        'moderated_at' => 'datetime',
         'approved_at' => 'datetime',
     ];
 
@@ -41,6 +49,17 @@ class TempleReview extends Model
     public function visitor(): BelongsTo
     {
         return $this->belongsTo(AnonymousVisitor::class, 'anonymous_visitor_id');
+    }
+
+    public function moderator(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'moderated_by_admin_id');
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(InteractionReport::class, 'reportable_id')
+            ->where('reportable_type', self::class);
     }
 
     public function scopeApproved(Builder $query): Builder

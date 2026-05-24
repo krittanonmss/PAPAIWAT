@@ -9,6 +9,7 @@
         $activeProvince = request('province');
         $activeCategory = request('category');
         $activeTempleType = request('temple_type');
+        $activeCollection = request('collection');
         $activeSort = request('sort');
         $categories = collect($filters['categories'] ?? [])
             ->whenEmpty(fn () => $items
@@ -67,7 +68,7 @@
                 </div>
 
                 <div class="mt-5 flex flex-wrap gap-2">
-                    <a href="{{ url()->current() }}" class="rounded-full {{ !$activeCategory && !$activeTempleType && !$activeProvince && !$activeSearch ? 'bg-white text-slate-950' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white' }} px-4 py-2 text-xs font-semibold transition">
+                    <a href="{{ url()->current() }}" class="rounded-full {{ !$activeCategory && !$activeTempleType && !$activeProvince && !$activeCollection && !$activeSearch ? 'bg-white text-slate-950' : 'bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white' }} px-4 py-2 text-xs font-semibold transition">
                         ทั้งหมด
                     </a>
 
@@ -84,7 +85,7 @@
                 </div>
 
                 <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="grid w-full gap-3 sm:grid-cols-3">
+                    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <select
                             name="province"
                             class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm font-medium text-slate-200 outline-none transition focus:border-blue-400/50 focus:ring-4 focus:ring-blue-500/10"
@@ -109,6 +110,15 @@
                                     {{ $category->name }}
                                 </option>
                             @endforeach
+                        </select>
+
+                        <select
+                            name="collection"
+                            class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm font-medium text-slate-200 outline-none transition focus:border-blue-400/50 focus:ring-4 focus:ring-blue-500/10"
+                        >
+                            <option value="">ประเภทรายการทั้งหมด</option>
+                            <option value="featured" @selected($activeCollection === 'featured')>รายการแนะนำ</option>
+                            <option value="popular" @selected($activeCollection === 'popular')>ยอดนิยม</option>
                         </select>
 
                         <select
@@ -144,14 +154,14 @@
                             <span class="text-slate-500"> · หน้า {{ number_format($items->currentPage()) }} / {{ number_format($items->lastPage()) }}</span>
                         @endif
                     </p>
-                    @if ($activeSearch || $activeProvince || $activeCategory || $activeTempleType)
+                    @if ($activeSearch || $activeProvince || $activeCategory || $activeTempleType || $activeCollection)
                         <p class="mt-1 text-xs text-slate-500">
                             กำลังกรองข้อมูลจากฐานข้อมูลตามเงื่อนไขที่เลือก
                         </p>
                     @endif
                 </div>
 
-                @if ($activeSearch || $activeProvince || $activeCategory || $activeTempleType || $activeSort)
+                @if ($activeSearch || $activeProvince || $activeCategory || $activeTempleType || $activeCollection || $activeSort)
                     <a href="{{ url()->current() }}" class="text-sm font-medium text-blue-300 transition hover:text-blue-200">
                         ล้างตัวกรอง
                     </a>

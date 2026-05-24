@@ -19,16 +19,16 @@
             <p class="mt-3 text-sm leading-6 text-slate-400">{{ $content['subtitle'] }}</p>
         @endif
 
-        <div class="mt-8 space-y-3">
+        <div data-section-items class="mt-8 flex flex-col gap-3">
             @forelse($items as $item)
-                <details class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                <details data-section-card data-section-card-padding class="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                     <summary class="cursor-pointer text-base font-semibold text-white">{{ $item['question'] }}</summary>
                     @if($item['answer'])
                         <p class="mt-3 text-sm leading-7 text-slate-400">{{ $item['answer'] }}</p>
                     @endif
                 </details>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">{{ $emptyText }}</div>
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400">{{ $emptyText }}</div>
             @endforelse
         </div>
         </div>

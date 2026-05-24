@@ -144,7 +144,7 @@
                             'placeholder' => 'เลือกจำนวนต่อหน้า',
                             'searchPlaceholder' => 'ค้นหาจำนวน...',
                             'inputClass' => $filterSelectClass,
-                            'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                            'options' => collect(\App\Services\Admin\AdminPreferenceService::PER_PAGE_OPTIONS)->map(fn ($pageSize) => [
                                 'value' => (string) $pageSize,
                                 'label' => $pageSize . ' รายการ',
                                 'search' => $pageSize . ' รายการ',
@@ -200,10 +200,31 @@
                         @forelse($pages as $page)
                             <tr class="transition hover:bg-white/[0.06]">
                                 <td class="px-4 py-3">
+                                    @php
+                                        $pageCoverUrl = $page->ogImage?->path
+                                            ? (filter_var($page->ogImage->path, FILTER_VALIDATE_URL)
+                                                ? $page->ogImage->path
+                                                : \Illuminate\Support\Facades\Storage::url($page->ogImage->path))
+                                            : null;
+                                    @endphp
+
                                     <div class="flex items-center gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-indigo-950/30">
-                                            {{ strtoupper(substr($page->title, 0, 1)) }}
-                                        </div>
+                                        @if ($pageCoverUrl)
+                                            <img
+                                                src="{{ $pageCoverUrl }}"
+                                                alt="{{ $page->title }}"
+                                                class="h-12 w-16 shrink-0 rounded-2xl object-cover shadow-lg shadow-slate-950/30"
+                                                loading="lazy"
+                                            >
+                                        @else
+                                            <div class="flex h-12 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-800 text-slate-500 shadow-lg shadow-slate-950/30">
+                                                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                    <path d="M4.75 6.75a2 2 0 0 1 2-2h10.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2V6.75Z" stroke="currentColor" stroke-width="1.7"/>
+                                                    <path d="m7.5 16 3.1-3.1a1.2 1.2 0 0 1 1.7 0l1.1 1.1.85-.85a1.2 1.2 0 0 1 1.7 0L18 15.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M8.75 8.75h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                                                </svg>
+                                            </div>
+                                        @endif
 
                                         <div class="min-w-0">
                                             <p class="truncate font-semibold text-white">

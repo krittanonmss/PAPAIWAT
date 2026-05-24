@@ -1,4 +1,26 @@
-<div class="space-y-6">
+<div
+    x-data="{
+        status: @js(old('status', $page->status ?? 'draft')),
+        publishedAt: @js(old('published_at', isset($page) && $page->published_at ? $page->published_at->format('Y-m-d\TH:i') : '')),
+        formatNow() {
+            const now = new Date();
+            now.setSeconds(0, 0);
+            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+
+            return local.toISOString().slice(0, 16);
+        },
+        useCurrentTime() {
+            this.publishedAt = this.formatNow();
+        },
+        syncPublishTime() {
+            if (this.status === 'published' && !this.publishedAt) {
+                this.useCurrentTime();
+            }
+        },
+    }"
+    x-init="syncPublishTime()"
+    class="space-y-6"
+>
     {{-- Page Information --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
@@ -26,7 +48,7 @@
                 @enderror
             </div>
 
-            <div class="hidden">
+            <div>
                 <label for="slug" class="mb-1.5 block text-sm font-medium text-slate-300">
                     URL ของหน้า
                 </label>
@@ -38,7 +60,7 @@
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                     placeholder="เช่น about"
                 >
-                <p class="mt-1.5 text-xs text-slate-500">เว้นว่างได้ ระบบจะสร้างจากชื่อหน้าให้อัตโนมัติ</p>
+                <p class="mt-1.5 text-xs text-slate-500">กรอกเองได้ หรือเว้นว่างไว้เพื่อให้ระบบสร้างจากชื่อหน้า ถ้าชื่อเป็นภาษาไทยระบบจะแปลงเป็นตัวอักษรอังกฤษให้</p>
                 @error('slug')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
                 @enderror
@@ -93,6 +115,8 @@
                 <select
                     id="status"
                     name="status"
+                    x-model="status"
+                    @change="syncPublishTime()"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                     required
                 >
@@ -258,89 +282,89 @@
                     $selectedOgImageId = (string) old('og_image_media_id', $page->og_image_media_id ?? '');
                 @endphp
 
-                <label class="mb-2 block text-sm font-medium text-slate-300">รูปภาพสำหรับแชร์</label>
+                <label class="mb-2 block text-sm font-medium text-slate-300">Cover / OG Image</label>
+                <p class="mb-3 text-xs text-slate-500">ใช้เป็นรูปหน้าปกในรายการหน้าเว็บไซต์ และเป็นรูปตอนแชร์หน้านี้บนโซเชียล</p>
 
-                @if ($media->isEmpty())
-                    <div class="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-4 text-sm text-slate-400">
-                        ยังไม่มีไฟล์รูปภาพ
-                    </div>
-                @else
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <label class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]">
-                            <input
-                                type="radio"
-                                name="og_image_media_id"
-                                value=""
-                                class="peer sr-only"
-                                @checked($selectedOgImageId === '')
-                            >
+                <div
+                    x-data="{
+                        ogImageSearch: '',
+                        selectedOgImage: @js($selectedOgImageId),
+                        pickerUrl: @js(route('admin.content.pages.media-picker.og-image')),
+                        pickerHtml: @js(view('admin.content.layout.pages.partials._og_image_media_grid', [
+                            'mediaItems' => $ogImageMediaItems,
+                        ])->render()),
+                        searchTimer: null,
 
-                            <div class="flex aspect-video items-center justify-center bg-slate-950/70 text-xs text-slate-500">
-                                ไม่ใช้ OG Image
-                            </div>
+                        requestUrl(url = this.pickerUrl) {
+                            const nextUrl = new URL(url, window.location.origin);
 
-                            <div class="border-t border-white/10 p-3">
-                                <p class="text-sm font-medium text-slate-200">ไม่ระบุรูป</p>
-                                <p class="mt-0.5 text-xs text-slate-500">ใช้เริ่มต้นของระบบ</p>
-                            </div>
+                            if (this.ogImageSearch.trim()) {
+                                nextUrl.searchParams.set('q', this.ogImageSearch.trim());
+                            } else {
+                                nextUrl.searchParams.delete('q');
+                            }
 
-                            <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 bg-blue-500/10 ring-4 ring-blue-400/30 peer-checked:block"></div>
-                            <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 peer-checked:block">
-                                เลือกแล้ว
-                            </div>
+                            if (this.selectedOgImage) {
+                                nextUrl.searchParams.set('selected', this.selectedOgImage);
+                            }
+
+                            return nextUrl.toString();
+                        },
+
+                        scheduleSearch() {
+                            window.clearTimeout(this.searchTimer);
+                            this.searchTimer = window.setTimeout(() => this.loadPicker(), 300);
+                        },
+
+                        async loadPicker(url = this.pickerUrl) {
+                            const response = await fetch(this.requestUrl(url), {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            });
+
+                            if (response.ok) {
+                                this.pickerHtml = await response.text();
+                                this.$nextTick(() => window.Alpine.initTree(this.$refs.ogImagePicker));
+                            }
+                        },
+
+                        async loadPage(event) {
+                            const link = event.target.closest('a');
+
+                            if (!link) {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            await this.loadPicker(link.href);
+                        },
+                    }"
+                    class="space-y-4"
+                >
+                    <div class="max-w-md">
+                        <label for="page_og_image_search" class="mb-1.5 block text-sm font-medium text-slate-300">
+                            ค้นหารูป
                         </label>
-
-                        @foreach($media as $image)
-                            @php
-                                $imageUrl = $image->path
-                                    ? (filter_var($image->path, FILTER_VALIDATE_URL)
-                                        ? $image->path
-                                        : \Illuminate\Support\Facades\Storage::url($image->path))
-                                    : null;
-                                $imageหัวข้อ = $image->title ?: $image->original_filename;
-                            @endphp
-
-                            <label class="relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-slate-950/40 transition hover:border-blue-400/40 hover:bg-white/[0.06]">
-                                <input
-                                    type="radio"
-                                    name="og_image_media_id"
-                                    value="{{ $image->id }}"
-                                    class="peer sr-only"
-                                    @checked($selectedOgImageId === (string) $image->id)
-                                >
-
-                                <div class="aspect-video overflow-hidden bg-slate-950">
-                                    @if ($imageUrl)
-                                        <img
-                                            src="{{ $imageUrl }}"
-                                            alt="{{ $imageหัวข้อ }}"
-                                            class="h-full w-full object-cover"
-                                            loading="lazy"
-                                        >
-                                    @else
-                                        <div class="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                            ไม่มีตัวอย่างรูป
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="border-t border-white/10 p-3">
-                                    <p class="truncate text-sm font-medium text-slate-200">
-                                        {{ $imageหัวข้อ }}
-                                    </p>
-                                    <p class="mt-0.5 text-xs text-slate-500">
-                                        #{{ $image->id }} · {{ $image->media_type }}
-                                    </p>
-                                </div>
-
-                                <div class="pointer-events-none absolute inset-0 hidden rounded-2xl border-4 border-blue-300 bg-blue-500/10 ring-4 ring-blue-400/30 peer-checked:block"></div>
-                                <div class="pointer-events-none absolute right-3 top-3 hidden rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-blue-950/40 peer-checked:block">
-                                    เลือกแล้ว
-                                </div>
-                            </label>
-                        @endforeach
+                        <input
+                            id="page_og_image_search"
+                            type="text"
+                            x-model="ogImageSearch"
+                            @input="scheduleSearch()"
+                            placeholder="พิมพ์ชื่อรูป, title, ชื่อไฟล์ หรือ ID..."
+                            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        >
+                        <p class="mt-1 text-xs text-slate-500">ค้นหาจากคลังสื่อทั้งหมด และแสดงผลครั้งละไม่เกิน 7 รูป</p>
                     </div>
-                @endif
+
+                    <input type="hidden" name="og_image_media_id" :value="selectedOgImage">
+
+                    <div
+                        x-ref="ogImagePicker"
+                        x-html="pickerHtml"
+                        @click="loadPage($event)"
+                    ></div>
+                </div>
 
                 @error('og_image_media_id')
                     <p class="mt-1.5 text-sm text-rose-300">{{ $message }}</p>
@@ -379,19 +403,28 @@
     {{-- Publishing Schedule --}}
     <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-lg shadow-slate-950/20 backdrop-blur">
         <div class="mb-6 border-b border-white/10 pb-4">
-            <p class="text-sm font-medium text-blue-300">Publication</p>
-            <h2 class="mt-1 text-lg font-semibold text-white">Publishing Schedule</h2>
+            <p class="text-sm font-medium text-blue-300">การเผยแพร่</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">กำหนดเวลาเผยแพร่</h2>
             <p class="mt-1 text-sm text-slate-400">กำหนดช่วงเวลาที่หน้าเผยแพร่</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-2">
             <div>
-                <label for="published_at" class="mb-1.5 block text-sm font-medium text-slate-300">Published At</label>
+                <div class="mb-1.5 flex items-center justify-between gap-3">
+                    <label for="published_at" class="block text-sm font-medium text-slate-300">เผยแพร่เมื่อ</label>
+                    <button
+                        type="button"
+                        @click="useCurrentTime()"
+                        class="text-xs font-medium text-blue-300 hover:text-blue-200"
+                    >
+                        ใช้เวลาปัจจุบัน
+                    </button>
+                </div>
                 <input
                     id="published_at"
                     type="datetime-local"
                     name="published_at"
-                    value="{{ old('published_at', isset($page) && $page->published_at ? $page->published_at->format('Y-m-d\TH:i') : '') }}"
+                    x-model="publishedAt"
                     class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
                 >
                 @error('published_at')
@@ -400,7 +433,7 @@
             </div>
 
             <div>
-                <label for="unpublished_at" class="mb-1.5 block text-sm font-medium text-slate-300">Unpublished At</label>
+                <label for="unpublished_at" class="mb-1.5 block text-sm font-medium text-slate-300">สิ้นสุดการเผยแพร่</label>
                 <input
                     id="unpublished_at"
                     type="datetime-local"

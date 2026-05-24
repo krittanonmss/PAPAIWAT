@@ -49,7 +49,6 @@ class AdminAuthenticate
 
     private function requestMatchesTrackedSession(AdminSession $session, Request $request): bool
     {
-        return hash_equals($session->ip_address, $request->ip() ?? '')
-            && hash_equals((string) $session->user_agent, (string) $request->userAgent());
+        return hash_equals((string) $session->user_agent, (string) $request->userAgent());
     }
 }

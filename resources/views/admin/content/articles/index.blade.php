@@ -38,7 +38,7 @@
         @endif
 
         {{-- Filter --}}
-        <div class="relative z-40 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-[90] rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             @php
                 $filterKeys = [
                     'search', 'status', 'body_format', 'author_name', 'category_id',
@@ -248,12 +248,12 @@
                         @include('admin.content.partials._searchable_select', [
                             'id' => 'per_page',
                             'name' => 'per_page',
-                            'selected' => (string) request('per_page', 5),
+                            'selected' => (string) $articles->perPage(),
                             'allowEmpty' => false,
                             'placeholder' => 'เลือกจำนวนต่อหน้า',
                             'searchPlaceholder' => 'ค้นหาจำนวน...',
                             'inputClass' => $filterSelectClass,
-                            'options' => collect([5, 10, 15, 25, 50])->map(fn ($pageSize) => [
+                            'options' => collect(\App\Services\Admin\AdminPreferenceService::PER_PAGE_OPTIONS)->map(fn ($pageSize) => [
                                 'value' => (string) $pageSize,
                                 'label' => $pageSize . ' รายการ',
                                 'search' => $pageSize . ' รายการ',
@@ -283,7 +283,7 @@
         </div>
 
         {{-- Bulk Actions --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-[70] rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">จัดหมวดหมู่หลายบทความพร้อมกัน</h2>
@@ -300,18 +300,15 @@
                 @csrf
                 @method('PATCH')
 
-                <select
-                    name="category_id"
-                    class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    required
-                >
-                    <option value="" class="bg-slate-900">เลือกหมวดหมู่</option>
-                    @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" class="bg-slate-900">
-                            {{ $category->name }}
-                        </option>
-                    @endforeach
-                </select>
+                @include('admin.content.partials._async_select', [
+                    'id' => 'bulk_article_category_id',
+                    'name' => 'category_id',
+                    'selected' => '',
+                    'searchUrl' => route('admin.lookups.categories', ['type' => 'article', 'status' => 'active']),
+                    'placeholder' => 'ค้นหาหมวดหมู่บทความ',
+                    'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
+                    'emptyLabel' => 'ยังไม่เลือกหมวดหมู่',
+                ])
 
                 <button
                     type="submit"
@@ -388,8 +385,12 @@
                                                     class="h-full w-full object-cover"
                                                 >
                                             @else
-                                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-bold text-white">
-                                                    {{ strtoupper(substr($content?->title ?? '-', 0, 1)) }}
+                                                <div class="flex h-full w-full items-center justify-center bg-slate-800 text-slate-500">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <path d="M4.75 6.75a2 2 0 0 1 2-2h10.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2V6.75Z" stroke="currentColor" stroke-width="1.7"/>
+                                                        <path d="m7.5 16 3.1-3.1a1.2 1.2 0 0 1 1.7 0l1.1 1.1.85-.85a1.2 1.2 0 0 1 1.7 0L18 15.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                                        <path d="M8.75 8.75h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+                                                    </svg>
                                                 </div>
                                             @endif
                                         </div>

@@ -261,6 +261,12 @@ class CategoryManagementFeatureTest extends TestCase
             'level' => 2,
         ]);
 
+        $this->get(route('admin.categories.index'))
+            ->assertOk()
+            ->assertSee('id="category-bulk-move-form"', false)
+            ->assertSee('form="category-bulk-move-form"', false)
+            ->assertSee('name="category_ids[]"', false);
+
         $this->patch(route('admin.categories.bulk-move'), [
             'category_ids' => [$first->id, $second->id],
             'parent_id' => $newParent->id,

@@ -1,6 +1,20 @@
 <x-layouts.admin title="จัดการผู้ใช้งาน">
     @php
         $currentAdminId = auth('admin')->id();
+        $roleOptions = $roles->map(fn ($role) => [
+            'value' => (string) $role->id,
+            'label' => $role->name,
+            'meta' => $role->description ?? '',
+        ])->all();
+        $statusOptions = [
+            ['value' => 'active', 'label' => 'ใช้งานอยู่'],
+            ['value' => 'inactive', 'label' => 'ไม่ใช้งาน'],
+            ['value' => 'deleted', 'label' => 'ถูกลบแล้ว'],
+        ];
+        $bulkStatusOptions = [
+            ['value' => 'active', 'label' => 'เปิดใช้งาน'],
+            ['value' => 'inactive', 'label' => 'ปิดใช้งาน'],
+        ];
     @endphp
 
     <div class="space-y-5 text-white">
@@ -82,7 +96,7 @@
         @endif
 
         {{-- Filter --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur" data-dropdown-layer>
             <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-4">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาผู้ใช้</label>
@@ -97,30 +111,28 @@
 
                 <div class="lg:col-span-3">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">บทบาท</label>
-                    <select
-                        name="role_id"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทั้งหมด</option>
-                        @foreach ($roles as $role)
-                            <option value="{{ $role->id }}" class="bg-slate-900" @selected((string) request('role_id') === (string) $role->id)>
-                                {{ $role->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'name' => 'role_id',
+                        'selected' => request('role_id'),
+                        'options' => $roleOptions,
+                        'emptyLabel' => 'ทั้งหมด',
+                        'placeholder' => 'ค้นหาบทบาท',
+                        'searchPlaceholder' => 'พิมพ์ชื่อบทบาท...',
+                        'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                    ])
                 </div>
 
                 <div class="lg:col-span-3">
                     <label class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
-                    <select
-                        name="status"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทั้งหมด</option>
-                        <option value="active" class="bg-slate-900" @selected(request('status') === 'active')>ใช้งานอยู่</option>
-                        <option value="inactive" class="bg-slate-900" @selected(request('status') === 'inactive')>ไม่ใช้งาน</option>
-                        <option value="deleted" class="bg-slate-900" @selected(request('status') === 'deleted')>ถูกลบแล้ว</option>
-                    </select>
+                    @include('admin.content.partials._searchable_select', [
+                        'name' => 'status',
+                        'selected' => request('status'),
+                        'options' => $statusOptions,
+                        'emptyLabel' => 'ทั้งหมด',
+                        'placeholder' => 'ค้นหาสถานะ',
+                        'searchPlaceholder' => 'พิมพ์สถานะ...',
+                        'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                    ])
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
@@ -142,7 +154,7 @@
         </div>
 
         {{-- Bulk การจัดการs --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur" data-dropdown-layer>
             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">จัดการหลายผู้ใช้พร้อมกัน</h2>
@@ -155,7 +167,8 @@
                     method="POST"
                     action="{{ route('admin.users.bulk-role') }}"
                     id="bulk-role-form"
-                    class="rounded-2xl border border-white/10 bg-slate-950/30 p-3"
+                    class="relative rounded-2xl border border-white/10 bg-slate-950/30 p-3"
+                    data-dropdown-layer
                     data-bulk-form
                     data-confirm-message="ยืนยันการเปลี่ยนบทบาทผู้ใช้งานที่เลือก?"
                 >
@@ -163,18 +176,17 @@
                     @method('PATCH')
 
                     <div class="flex flex-col gap-2 sm:flex-row">
-                        <select
-                            name="role_id"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            required
-                        >
-                            <option value="" class="bg-slate-900">เลือกบทบาท</option>
-                            @foreach ($roles as $role)
-                                <option value="{{ $role->id }}" class="bg-slate-900">
-                                    {{ $role->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="w-full">
+                            @include('admin.content.partials._searchable_select', [
+                                'name' => 'role_id',
+                                'selected' => '',
+                                'options' => $roleOptions,
+                                'emptyLabel' => 'เลือกบทบาท',
+                                'placeholder' => 'ค้นหาบทบาท',
+                                'searchPlaceholder' => 'พิมพ์ชื่อบทบาท...',
+                                'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            ])
+                        </div>
 
                         <button
                             type="submit"
@@ -198,7 +210,8 @@
                     method="POST"
                     action="{{ route('admin.users.bulk-status') }}"
                     id="bulk-status-form"
-                    class="rounded-2xl border border-white/10 bg-slate-950/30 p-3"
+                    class="relative rounded-2xl border border-white/10 bg-slate-950/30 p-3"
+                    data-dropdown-layer
                     data-bulk-form
                     data-confirm-message="ยืนยันการเปลี่ยนสถานะผู้ใช้งานที่เลือก?"
                 >
@@ -206,19 +219,21 @@
                     @method('PATCH')
 
                     <div class="flex flex-col gap-2 sm:flex-row">
-                        <select
-                            name="status"
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                            required
-                        >
-                            <option value="" class="bg-slate-900">เลือกสถานะ</option>
-                            <option value="active" class="bg-slate-900">เปิดใช้งาน</option>
-                            <option value="inactive" class="bg-slate-900">ปิดใช้งาน</option>
-                        </select>
+                        <div class="w-full">
+                            @include('admin.content.partials._searchable_select', [
+                                'name' => 'status',
+                                'selected' => '',
+                                'options' => $bulkStatusOptions,
+                                'emptyLabel' => 'เลือกสถานะ',
+                                'placeholder' => 'ค้นหาสถานะ',
+                                'searchPlaceholder' => 'พิมพ์สถานะ...',
+                                'inputClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                            ])
+                        </div>
 
                         <button
                             type="submit"
-                            class="whitespace-nowrap rounded-2xl bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
+                            class="whitespace-nowrap rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
                         >
                             เปลี่ยนสถานะ
                         </button>

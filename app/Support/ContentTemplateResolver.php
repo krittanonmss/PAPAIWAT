@@ -17,6 +17,12 @@ class ContentTemplateResolver
         $templates = collect([
             $this->selectedTemplate($templateId, $content->content_type),
             $useContentTemplate ? $this->selectedTemplate($content->template_id, $content->content_type) : null,
+            $this->selectedTemplate(
+                ($defaultTemplateId = SiteSettings::get('content', $content->content_type.'_default_template_id'))
+                    ? (int) $defaultTemplateId
+                    : null,
+                $content->content_type
+            ),
             $this->defaultTemplateFor($content->content_type),
             $this->globalDefaultTemplate($content->content_type),
         ])->filter();

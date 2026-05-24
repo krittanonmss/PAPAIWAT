@@ -7,14 +7,15 @@ use App\Http\Controllers\Frontend\FrontendPageController;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Admin\Content\Layout\LayoutVersionService;
+use App\Support\SlugGenerator;
 use App\Support\TemplateRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Illuminate\Support\Str;
 
 class PageController extends Controller
 {
@@ -26,20 +27,22 @@ class PageController extends Controller
 
     public function index(Request $request): View
     {
+        $perPageOptions = AdminPreferenceService::PER_PAGE_OPTIONS;
+        $defaultPerPage = app(AdminPreferenceService::class)->preferredPerPage($request->user('admin'), $perPageOptions, 15);
         $filters = [
             'search' => trim((string) $request->query('search', '')),
             'status' => (string) $request->query('status', ''),
             'page_type' => (string) $request->query('page_type', ''),
             'template_id' => (string) $request->query('template_id', ''),
             'is_homepage' => (string) $request->query('is_homepage', ''),
-            'per_page' => (int) $request->query('per_page', 15),
+            'per_page' => (int) $request->query('per_page', $defaultPerPage),
         ];
-        $filters['per_page'] = in_array($filters['per_page'], [5, 10, 15, 25, 50], true)
+        $filters['per_page'] = in_array($filters['per_page'], $perPageOptions, true)
             ? $filters['per_page']
-            : 15;
+            : $defaultPerPage;
 
         $pagesQuery = Page::query()
-            ->with('template')
+            ->with(['template', 'ogImage'])
             ->when($filters['search'] !== '', function ($query) use ($filters) {
                 $like = '%' . $filters['search'] . '%';
 
@@ -76,7 +79,7 @@ class PageController extends Controller
         return view('admin.content.layout.pages.index', compact('pages', 'filters', 'pageTypes', 'templates'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $templates = Template::query()
             ->active()
@@ -85,13 +88,11 @@ class PageController extends Controller
             ->orderBy('name')
             ->get();
 
-        $media = Media::query()
-            ->where('media_type', 'image')
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get();
+        $ogImageMediaItems = $this->ogImageMediaItems([
+            $request->old('og_image_media_id'),
+        ]);
 
-        return view('admin.content.layout.pages.create', compact('templates', 'media'));
+        return view('admin.content.layout.pages.create', compact('templates', 'ogImageMediaItems'));
     }
 
     public function previewCreate(Request $request): JsonResponse
@@ -104,7 +105,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'template_id' => ['nullable', 'integer', 'exists:templates,id'],
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:pages,slug'],
+            'slug' => ['nullable', 'string', 'max:255'],
             'page_type' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
             'is_homepage' => ['nullable', 'boolean'],
@@ -122,9 +123,10 @@ class PageController extends Controller
             'unpublished_at' => ['nullable', 'date', 'after_or_equal:published_at'],
         ]);
 
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['title']);
+        $validated['slug'] = $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['title']);
         $validated['is_homepage'] = $request->boolean('is_homepage');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['published_at'] = $validated['published_at'] ?? ($validated['status'] === 'published' ? now() : null);
         $validated['created_by_admin_id'] = auth('admin')->id();
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
@@ -160,7 +162,7 @@ class PageController extends Controller
         return view('admin.content.layout.pages.show', compact('page'));
     }
 
-    public function edit(Page $page): View
+    public function edit(Request $request, Page $page): View
     {
         $templates = Template::query()
             ->active()
@@ -169,13 +171,21 @@ class PageController extends Controller
             ->orderBy('name')
             ->get();
 
-        $media = Media::query()
-            ->where('media_type', 'image')
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get();
+        $ogImageMediaItems = $this->ogImageMediaItems([
+            $request->old('og_image_media_id', $page->og_image_media_id),
+        ]);
 
-        return view('admin.content.layout.pages.edit', compact('page', 'templates', 'media'));
+        return view('admin.content.layout.pages.edit', compact('page', 'templates', 'ogImageMediaItems'));
+    }
+
+    public function ogImageMediaPicker(Request $request): View
+    {
+        return view('admin.content.layout.pages.partials._og_image_media_grid', [
+            'mediaItems' => $this->ogImageMediaItems(
+                selectedMediaIds: [$request->input('selected')],
+                search: $request->string('q')->toString()
+            ),
+        ]);
     }
 
     public function preview(Request $request, Page $page): JsonResponse
@@ -188,7 +198,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'template_id' => ['nullable', 'integer', 'exists:templates,id'],
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:pages,slug,' . $page->id],
+            'slug' => ['nullable', 'string', 'max:255'],
             'page_type' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:draft,published,archived'],
             'is_homepage' => ['nullable', 'boolean'],
@@ -206,9 +216,10 @@ class PageController extends Controller
             'unpublished_at' => ['nullable', 'date', 'after_or_equal:published_at'],
         ]);
 
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['title']);
+        $validated['slug'] = $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['title'], $page);
         $validated['is_homepage'] = $request->boolean('is_homepage');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
+        $validated['published_at'] = $validated['published_at'] ?? ($validated['status'] === 'published' ? ($page->published_at ?? now()) : null);
         $validated['updated_by_admin_id'] = auth('admin')->id();
 
         if (($validated['template_id'] ?? null) && ! $this->templateIsAllowedForPage((int) $validated['template_id'])) {
@@ -288,12 +299,70 @@ class PageController extends Controller
         ]);
     }
 
+    private function ogImageMediaItems(array $selectedMediaIds = [], string $search = '')
+    {
+        $mediaItems = Media::query()
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('original_filename', 'like', '%' . $search . '%')
+                        ->orWhere('filename', 'like', '%' . $search . '%')
+                        ->orWhere('id', $search);
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate(
+                perPage: 7,
+                columns: ['id', 'title', 'original_filename', 'media_type', 'path'],
+                pageName: 'page_og_image_media_page'
+            )
+            ->withPath(route('admin.content.pages.media-picker.og-image'))
+            ->appends(array_filter(['q' => $search]));
+
+        $selectedMediaIds = collect($selectedMediaIds)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($selectedMediaIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $visibleIds = $mediaItems->getCollection()->pluck('id')->map(fn ($id) => (int) $id);
+        $missingSelectedIds = $selectedMediaIds->diff($visibleIds)->values();
+
+        if ($missingSelectedIds->isEmpty()) {
+            return $mediaItems;
+        }
+
+        $selectedItems = Media::query()
+            ->whereIn('id', $missingSelectedIds)
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
+            ->get(['id', 'title', 'original_filename', 'media_type', 'path'])
+            ->sortBy(fn (Media $media) => $selectedMediaIds->search((int) $media->id))
+            ->values();
+
+        $mediaItems->setCollection(
+            $selectedItems
+                ->concat($mediaItems->getCollection())
+                ->unique('id')
+                ->take(7)
+                ->values()
+        );
+
+        return $mediaItems;
+    }
+
     private function previewPage(Request $request, ?Page $existingPage = null): Page
     {
         $page = new Page([
             'template_id' => $request->integer('template_id') ?: null,
             'title' => $request->input('title') ?: $existingPage?->title ?: 'Untitled page',
-            'slug' => $request->input('slug') ?: $existingPage?->slug ?: 'preview',
+            'slug' => SlugGenerator::make($request->input('slug') ?: $existingPage?->slug ?: $request->input('title'), 'preview'),
             'page_type' => $request->input('page_type') ?: $existingPage?->page_type ?: 'custom',
             'status' => $request->input('status') ?: $existingPage?->status ?: 'draft',
             'is_homepage' => $request->boolean('is_homepage'),
@@ -371,6 +440,25 @@ class PageController extends Controller
                 }
             })
             ->exists();
+    }
+
+    private function makeUniqueSlug(string $value, ?Page $ignorePage = null): string
+    {
+        $baseSlug = SlugGenerator::make($value, 'page');
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while (
+            Page::withTrashed()
+                ->where('slug', $slug)
+                ->when($ignorePage, fn ($query) => $query->whereKeyNot($ignorePage->id))
+                ->exists()
+        ) {
+            $slug = $baseSlug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     private function templateIsAllowedForPage(int $templateId): bool

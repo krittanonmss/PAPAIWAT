@@ -8,7 +8,9 @@ use App\Http\Requests\Admin\Content\Media\UpdateMediaRequest;
 use App\Jobs\Content\Media\GenerateMediaVariants;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Media\MediaFolder;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Content\Media\MediaVariantService;
+use App\Support\SiteSettings;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,9 +58,18 @@ class MediaController extends Controller
             }
         }
 
-        $perPageOptions = [12, 24, 48, 96];
-        $perPage = $request->integer('per_page', 24);
-        $perPage = in_array($perPage, $perPageOptions, true) ? $perPage : 24;
+        $preferenceService = app(AdminPreferenceService::class);
+        $adminPreferences = $preferenceService->forAdmin($request->user('admin'));
+
+        $perPageOptions = AdminPreferenceService::PER_PAGE_OPTIONS;
+        $defaultPerPage = $preferenceService->preferredPerPage($request->user('admin'), $perPageOptions, 24);
+        $perPage = $request->integer('per_page', $defaultPerPage);
+        $perPage = in_array($perPage, $perPageOptions, true) ? $perPage : $defaultPerPage;
+
+        $defaultViewMode = $adminPreferences['media.default_view_mode'] ?? 'grid';
+        $defaultViewMode = in_array($defaultViewMode, ['grid', 'list'], true) ? $defaultViewMode : 'grid';
+        $viewMode = $request->string('view_mode')->toString() ?: $defaultViewMode;
+        $viewMode = in_array($viewMode, ['grid', 'list'], true) ? $viewMode : $defaultViewMode;
 
         $mediaItems = $query->paginate($perPage)->withQueryString();
 
@@ -98,6 +109,7 @@ class MediaController extends Controller
             'visibility' => $request->string('visibility')->toString(),
             'media_folder_id' => $selectedFolderId,
             'per_page' => $perPage,
+            'view_mode' => $viewMode,
         ];
 
         $mediaTypes = ['image', 'video', 'audio', 'document', 'other'];
@@ -130,7 +142,7 @@ class MediaController extends Controller
         foreach ($uploadedFiles as $uploadedFile) {
             $fileHash = $this->fileHash($uploadedFile);
 
-            if ($this->duplicateExists($fileHash)) {
+            if ($this->rejectDuplicates() && $this->duplicateExists($fileHash)) {
                 return back()
                     ->withErrors(['files' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ'])
                     ->withInput();
@@ -142,7 +154,7 @@ class MediaController extends Controller
                 'alt_text' => count($uploadedFiles) === 1 ? ($validated['alt_text'] ?? null) : null,
                 'caption' => count($uploadedFiles) === 1 ? ($validated['caption'] ?? null) : null,
                 'description' => count($uploadedFiles) === 1 ? ($validated['description'] ?? null) : null,
-                'visibility' => $validated['visibility'] ?? 'public',
+                'visibility' => $validated['visibility'] ?? SiteSettings::get('media', 'default_visibility', 'public'),
                 'file_hash' => $fileHash,
             ]);
 
@@ -160,10 +172,11 @@ class MediaController extends Controller
 
     public function quickUpload(Request $request): RedirectResponse
     {
+        $maxKilobytes = max(1024, (int) SiteSettings::get('media', 'max_upload_mb', 5) * 1024);
         $validated = $request->validate([
-            'file' => ['nullable', 'image', 'max:5120'],
+            'file' => ['nullable', 'image', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:'.$maxKilobytes],
             'files' => ['nullable', 'array'],
-            'files.*' => ['image', 'max:5120'],
+            'files.*' => ['image', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:'.$maxKilobytes],
         ]);
 
         $uploadedFiles = $this->uploadedFiles($request);
@@ -175,13 +188,13 @@ class MediaController extends Controller
         foreach ($uploadedFiles as $uploadedFile) {
             $fileHash = $this->fileHash($uploadedFile);
 
-            if ($this->duplicateExists($fileHash)) {
+            if ($this->rejectDuplicates() && $this->duplicateExists($fileHash)) {
                 return back()->withErrors(['file' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ']);
             }
 
             $media = $this->storeUploadedMedia($uploadedFile, [
                 'title' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
-                'visibility' => 'public',
+                'visibility' => SiteSettings::get('media', 'default_visibility', 'public'),
                 'file_hash' => $fileHash,
             ]);
 
@@ -220,7 +233,7 @@ class MediaController extends Controller
             $uploadedFile = $request->file('file');
             $fileHash = $this->fileHash($uploadedFile);
 
-            if ($this->duplicateExists($fileHash, $media)) {
+            if ($this->rejectDuplicates() && $this->duplicateExists($fileHash, $media)) {
                 return back()
                     ->withErrors(['file' => 'พบไฟล์ซ้ำในระบบแล้ว กรุณาใช้ไฟล์เดิมจากคลังสื่อ'])
                     ->withInput();
@@ -305,6 +318,41 @@ class MediaController extends Controller
         return redirect()
             ->route('admin.media.index')
             ->with('success', 'ลบไฟล์สำเร็จ');
+    }
+
+    public function bulkUpdateFolder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'media_ids' => ['required', 'array', 'min:1'],
+            'media_ids.*' => ['integer', 'exists:media,id'],
+            'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+        ], [
+            'media_ids.required' => 'กรุณาเลือกไฟล์ที่ต้องการจัดการ',
+            'media_ids.min' => 'กรุณาเลือกไฟล์ที่ต้องการจัดการ',
+            'media_folder_id.exists' => 'ไม่พบโฟลเดอร์ที่เลือก',
+        ]);
+
+        $mediaIds = collect($validated['media_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $folderId = $validated['media_folder_id'] ?? null;
+
+        $updated = Media::query()
+            ->whereIn('id', $mediaIds)
+            ->update(['media_folder_id' => $folderId]);
+
+        $folderLabel = $folderId
+            ? MediaFolder::query()->whereKey($folderId)->value('name')
+            : 'ไม่มีโฟลเดอร์';
+
+        return back()->with('success', "ย้ายไฟล์ {$updated} รายการไปยัง {$folderLabel} แล้ว");
+    }
+
+    private function rejectDuplicates(): bool
+    {
+        return SiteSettings::get('media', 'duplicate_policy', 'reject') === 'reject';
     }
 
     public function regenerateVariants(Media $media, MediaVariantService $mediaVariantService): RedirectResponse

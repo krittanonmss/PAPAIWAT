@@ -46,7 +46,7 @@ class UpdateArticleRequest extends FormRequest
             ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'in:draft,review,archived'],
+            'status' => ['required', Rule::in($this->allowedStatuses())],
             'is_featured' => ['nullable', 'boolean'],
             'is_popular' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
@@ -76,5 +76,19 @@ class UpdateArticleRequest extends FormRequest
 
             'cover_media_id' => ['nullable', 'integer', 'exists:media,id'],
         ];
+    }
+
+    private function allowedStatuses(): array
+    {
+        $statuses = ['draft', 'review', 'archived'];
+
+        if (
+            $this->user('admin')?->hasPermission('articles.publish')
+            || $this->route('article')?->content?->status === 'published'
+        ) {
+            $statuses[] = 'published';
+        }
+
+        return $statuses;
     }
 }

@@ -22,16 +22,16 @@
             </div>
         @endif
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div data-section-items class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @forelse($items as $item)
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
                     <p class="text-4xl font-bold text-white">{{ $item['value'] }}</p>
                     @if($item['label'])
                         <p class="mt-2 text-sm leading-6 text-slate-400">{{ $item['label'] }}</p>
                     @endif
                 </div>
             @empty
-                <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-4">{{ $emptyText }}</div>
+                <div data-section-card data-section-card-padding class="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center text-slate-400 sm:col-span-2 lg:col-span-4">{{ $emptyText }}</div>
             @endforelse
         </div>
     </div>

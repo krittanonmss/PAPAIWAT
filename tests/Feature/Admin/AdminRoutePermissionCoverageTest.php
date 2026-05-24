@@ -2,11 +2,16 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Admin\Permission;
+use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Support\Facades\Route;
+use Tests\Concerns\MigratesAppDatabase;
 use Tests\TestCase;
 
 class AdminRoutePermissionCoverageTest extends TestCase
 {
+    use MigratesAppDatabase;
+
     public function test_protected_admin_routes_require_admin_authentication(): void
     {
         $missingAuth = collect(Route::getRoutes())
@@ -34,6 +39,19 @@ class AdminRoutePermissionCoverageTest extends TestCase
             'admin.content.articles.unpublish' => 'articles.publish',
             'admin.categories.restore' => 'categories.update',
             'admin.media.file' => 'media.view',
+            'admin.media.quick-upload' => 'media.create',
+            'admin.media.bulk-folder' => 'media.update',
+            'admin.media.regenerate-variants' => 'media.update',
+            'admin.temples.media-picker.cover' => 'temples.view',
+            'admin.temples.media-picker.gallery' => 'temples.view',
+            'admin.users.bulk-role' => 'users.update',
+            'admin.users.bulk-status' => 'users.update',
+            'admin.content.footer.edit' => 'menus.view',
+            'admin.content.footer.update' => 'menus.update',
+            'admin.settings.edit' => 'settings.view',
+            'admin.settings.update' => 'settings.update',
+            'admin.settings.maintenance.cache' => 'settings.maintenance',
+            'admin.settings.maintenance.sitemap' => 'settings.maintenance',
             'admin.content.menu-items.create' => 'menu-items.create',
             'admin.content.menu-items.store' => 'menu-items.create',
             'admin.content.menu-items.lookups.pages' => 'menu-items.view',
@@ -72,6 +90,36 @@ class AdminRoutePermissionCoverageTest extends TestCase
             ->all();
 
         $this->assertSame([], $missingPermission);
+    }
+
+    public function test_seeded_permissions_cover_all_route_permission_middleware(): void
+    {
+        $this->migrateAdminTables();
+
+        Permission::query()->create([
+            'key' => 'interactions.manage',
+            'name' => 'Legacy interaction management',
+            'group_key' => 'interactions',
+            'description' => 'Legacy permission no longer used by routes.',
+        ]);
+
+        $this->seed(SystemAccessSeeder::class);
+
+        $routePermissions = collect(Route::getRoutes())
+            ->flatMap(fn ($route) => $route->gatherMiddleware())
+            ->filter(fn ($middleware) => str_starts_with($middleware, 'admin.permission:'))
+            ->map(fn ($middleware) => substr($middleware, strlen('admin.permission:')))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $seededPermissions = Permission::query()
+            ->pluck('key')
+            ->sort()
+            ->values();
+
+        $this->assertSame([], $routePermissions->diff($seededPermissions)->values()->all());
+        $this->assertFalse(Permission::query()->where('key', 'interactions.manage')->exists());
     }
 
     private function hasMiddleware(array $middleware, string $expected): bool

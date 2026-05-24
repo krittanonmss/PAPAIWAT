@@ -7,6 +7,7 @@ use App\Models\Content\Content;
 use App\Models\Content\Layout\Menu;
 use App\Models\Content\Layout\MenuItem;
 use App\Models\Content\Layout\Page;
+use App\Support\SlugGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,29 +15,36 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Illuminate\Support\Str;
 
 class MenuItemController extends Controller
 {
+    private const MAX_EDITOR_DEPTH = 2;
+
     public function create(Menu $menu): View
     {
         $parentItems = $this->parentItems($menu);
         $pages = $this->selectedPages(old('page_id'));
         $contents = $this->selectedContents(old('content_id'));
+        $routeChoices = $this->routeChoices();
+        $routesWithoutParams = $this->routesWithoutParams();
 
         return view('admin.content.layout.menu-items.create', compact(
             'menu',
             'parentItems',
             'pages',
-            'contents'
+            'contents',
+            'routeChoices',
+            'routesWithoutParams'
         ));
     }
 
     public function store(Request $request, Menu $menu): RedirectResponse
     {
+        $this->normalizeUnusedRouteParams($request);
         $validated = $request->validate($this->rules($menu));
 
         $this->validateTypeData($validated);
+        $this->validateEditorDepth($menu, empty($validated['parent_id']) ? null : (int) $validated['parent_id']);
 
         $validated = $this->prepareMenuItemData($validated, $request, $menu);
         $validated['created_by_admin_id'] = auth('admin')->id();
@@ -156,13 +164,17 @@ class MenuItemController extends Controller
         $parentItems = $this->parentItems($menu, $menuItem);
         $pages = $this->selectedPages(old('page_id', $menuItem->page_id));
         $contents = $this->selectedContents(old('content_id', $menuItem->content_id));
+        $routeChoices = $this->routeChoices();
+        $routesWithoutParams = $this->routesWithoutParams();
 
         return view('admin.content.layout.menu-items.edit', compact(
             'menu',
             'menuItem',
             'parentItems',
             'pages',
-            'contents'
+            'contents',
+            'routeChoices',
+            'routesWithoutParams'
         ));
     }
 
@@ -170,6 +182,7 @@ class MenuItemController extends Controller
     {
         abort_if($menuItem->menu_id !== $menu->id, 404);
 
+        $this->normalizeUnusedRouteParams($request);
         $validated = $request->validate($this->rules($menu));
 
         if ((int) ($validated['parent_id'] ?? 0) === $menuItem->id) {
@@ -185,6 +198,7 @@ class MenuItemController extends Controller
         }
 
         $this->validateTypeData($validated);
+        $this->validateEditorDepth($menu, empty($validated['parent_id']) ? null : (int) $validated['parent_id']);
 
         $validated = $this->prepareMenuItemData($validated, $request, $menu);
 
@@ -264,7 +278,7 @@ class MenuItemController extends Controller
         }
 
         $validated['menu_id'] = $menu->id;
-        $generatedSlug = Str::slug($validated['label']);
+        $generatedSlug = SlugGenerator::make($validated['label'], 'menu-item');
         $validated['slug'] = ($validated['slug'] ?? null) ?: ($generatedSlug !== '' ? $generatedSlug : 'menu-item');
         $validated['route_params'] = $this->decodeJson($validated['route_params'] ?? null);
         $validated['is_enabled'] = $request->boolean('is_enabled');
@@ -335,7 +349,13 @@ class MenuItemController extends Controller
             $query->whereKeyNot($exclude->id);
         }
 
-        return $query->get();
+        $items = $query->get();
+        $excludeId = $exclude?->id;
+        $childrenByParent = $items
+            ->reject(fn (MenuItem $item) => $excludeId && (int) $item->id === (int) $excludeId)
+            ->groupBy('parent_id');
+
+        return $this->flattenParentOptions($childrenByParent);
     }
 
     private function selectedPages(mixed $selectedId)
@@ -384,5 +404,74 @@ class MenuItemController extends Controller
         }
 
         return false;
+    }
+
+    private function validateEditorDepth(Menu $menu, ?int $parentId): void
+    {
+        if ($parentId === null) {
+            return;
+        }
+
+        $items = $menu->items()->get(['id', 'parent_id']);
+        $depth = 1;
+        $currentParentId = $parentId;
+
+        while ($currentParentId !== null) {
+            $parent = $items->firstWhere('id', $currentParentId);
+
+            if (! $parent) {
+                break;
+            }
+
+            $currentParentId = $parent->parent_id;
+
+            if ($currentParentId !== null) {
+                $depth++;
+            }
+        }
+
+        if ($depth > self::MAX_EDITOR_DEPTH) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'เมนูรองรับไม่เกิน 3 ชั้นเพื่อให้ editor จัดการและแสดงผลบนมือถือได้ดี',
+            ]);
+        }
+    }
+
+    private function flattenParentOptions($childrenByParent, ?int $parentId = null, int $depth = 0)
+    {
+        return $childrenByParent
+            ->get($parentId ?? '', collect())
+            ->flatMap(function (MenuItem $item) use ($childrenByParent, $depth) {
+                $item->setAttribute('depth', $depth);
+
+                return collect([$item])
+                    ->merge($this->flattenParentOptions($childrenByParent, $item->id, $depth + 1));
+            })
+            ->values();
+    }
+
+    private function routeChoices(): array
+    {
+        return [
+            'home' => 'หน้าแรก',
+            'search' => 'ค้นหา',
+            'favorites.index' => 'รายการโปรด',
+        ];
+    }
+
+    private function routesWithoutParams(): array
+    {
+        return ['home', 'favorites.index'];
+    }
+
+    private function normalizeUnusedRouteParams(Request $request): void
+    {
+        $type = (string) $request->input('menu_item_type', '');
+        $routeName = (string) $request->input('route_name', '');
+        $routeParams = trim((string) $request->input('route_params', ''));
+
+        if ($type !== 'route' || in_array($routeName, $this->routesWithoutParams(), true) || $routeParams === '') {
+            $request->merge(['route_params' => null]);
+        }
     }
 }

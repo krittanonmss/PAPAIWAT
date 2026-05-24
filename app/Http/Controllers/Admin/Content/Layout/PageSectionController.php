@@ -10,12 +10,12 @@ use App\Models\Content\Layout\PageSection;
 use App\Http\Controllers\Frontend\FrontendPageController;
 use App\Services\Admin\Content\Layout\LayoutVersionService;
 use App\Services\Admin\Content\Layout\SectionSchemaValidator;
+use App\Support\SlugGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PageSectionController extends Controller
@@ -102,7 +102,7 @@ class PageSectionController extends Controller
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $this->sectionSchemaValidator->validate($validated['component_key'], $validated['content'] ?? [], $validated['settings']);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
-        $generatedKey = Str::slug($validated['name'] . '-' . now()->format('His'));
+        $generatedKey = SlugGenerator::make($validated['name'] . '-' . now()->format('His'), 'section');
         $validated['section_key'] = $validated['section_key'] ?: ($generatedKey ?: $validated['component_key'] . '-' . now()->format('His'));
         $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
@@ -148,7 +148,7 @@ class PageSectionController extends Controller
         $validated['content'] = $this->prepareSectionContent($validated['content'] ?? null);
         $this->sectionSchemaValidator->validate($validated['component_key'], $validated['content'] ?? [], $validated['settings']);
         $validated['name'] = $validated['name'] ?: $this->defaultSectionName($validated['component_key']);
-        $generatedKey = Str::slug($validated['name'] . '-' . $section->id);
+        $generatedKey = SlugGenerator::make($validated['name'] . '-' . $section->id, 'section');
         $validated['section_key'] = $validated['section_key'] ?: ($section->section_key ?: ($generatedKey ?: $validated['component_key'] . '-' . $section->id));
         $validated['is_visible'] = $request->boolean('is_visible');
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
@@ -331,6 +331,8 @@ class PageSectionController extends Controller
         $safe['image_radius'] = $this->allowedValue($settings['image_radius'] ?? null, ['none', 'xl', '2xl', '3xl'], 'none');
         $safe['image_aspect_ratio'] = $this->allowedValue($settings['image_aspect_ratio'] ?? null, ['square', 'photo', 'video', 'wide', 'portrait'], 'photo');
         $safe['filter_panel_style'] = $this->allowedValue($settings['filter_panel_style'] ?? null, ['solid', 'soft', 'outline', 'plain'], 'solid');
+        $safe['filter_panel_spacing'] = $this->allowedValue($settings['filter_panel_spacing'] ?? null, ['compact', 'comfortable', 'spacious'], 'comfortable');
+        $safe['filter_columns'] = max(2, min((int) ($settings['filter_columns'] ?? 3), 4));
         $safe['hero_content_position'] = $this->allowedValue($settings['hero_content_position'] ?? null, ['left', 'center', 'right'], 'center');
         $safe['hero_vertical_align'] = $this->allowedValue($settings['hero_vertical_align'] ?? null, ['top', 'center', 'bottom'], 'center');
         $safe['contact_card_position'] = $this->allowedValue($settings['contact_card_position'] ?? null, ['left', 'right'], 'right');

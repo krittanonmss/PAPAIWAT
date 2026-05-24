@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Content\Temple;
 
+use App\Support\SlugGenerator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,12 +10,13 @@ class UpdateTempleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth('admin')->check();
     }
 
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'slug' => SlugGenerator::make($this->input('slug') ?: $this->input('title'), 'temple'),
             'is_featured' => $this->boolean('is_featured'),
             'is_popular' => $this->boolean('is_popular'),
             'cover_media_id' => $this->integerOrNull($this->input('cover_media_id')),
@@ -65,7 +67,7 @@ class UpdateTempleRequest extends FormRequest
             ],
             'excerpt' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(['draft', 'review', 'archived'])],
+            'status' => ['required', 'string', Rule::in($this->allowedStatuses())],
             'is_featured' => ['nullable', 'boolean'],
             'is_popular' => ['nullable', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
@@ -165,5 +167,19 @@ class UpdateTempleRequest extends FormRequest
             'nearby_places.*.score' => ['nullable', 'numeric', 'min:0'],
             'nearby_places.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    private function allowedStatuses(): array
+    {
+        $statuses = ['draft', 'review', 'archived'];
+
+        if (
+            $this->user('admin')?->hasPermission('temples.publish')
+            || $this->route('temple')?->content?->status === 'published'
+        ) {
+            $statuses[] = 'published';
+        }
+
+        return $statuses;
     }
 }

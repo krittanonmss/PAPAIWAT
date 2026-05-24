@@ -7,6 +7,14 @@ use Illuminate\Validation\Rule;
 
 class UpdateMediaRequest extends FormRequest
 {
+    private const ALLOWED_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'application/pdf',
+    ];
+
     public function authorize(): bool
     {
         return auth('admin')->check();
@@ -15,7 +23,7 @@ class UpdateMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['nullable', 'file', 'max:10240'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:'.implode(',', self::ALLOWED_MIME_TYPES)],
             'title' => ['nullable', 'string', 'max:255'],
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],

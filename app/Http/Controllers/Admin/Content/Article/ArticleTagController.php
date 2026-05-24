@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Article\StoreArticleTagRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleTagRequest;
 use App\Models\Content\Article\ArticleTag;
+use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ArticleTagController extends Controller
@@ -92,8 +92,8 @@ class ArticleTagController extends Controller
 
     private function generateUniqueSlug(string $value, ?int $ignoreId = null): string
     {
-        $baseSlug = Str::slug($value);
-        $slug = $baseSlug !== '' ? $baseSlug : 'tag';
+        $baseSlug = SlugGenerator::make($value, 'tag');
+        $slug = $baseSlug;
         $counter = 1;
 
         while (

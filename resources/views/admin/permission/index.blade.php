@@ -14,13 +14,6 @@
                     </p>
                 </div>
 
-                <a
-                    href="{{ route('admin.permissions.create') }}"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:opacity-90"
-                >
-                    <span class="text-lg leading-none">+</span>
-                    เพิ่ม สิทธิ์
-                </a>
             </div>
         </div>
 
@@ -85,14 +78,14 @@
         </div>
 
         {{-- สิทธิ์ Groups --}}
-        @if ($groupedสิทธิ์s->isEmpty())
+        @if ($groupedPermissions->isEmpty())
             <div class="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-10 text-center shadow-lg shadow-slate-950/20 backdrop-blur">
                 <p class="text-base font-medium text-slate-300">ไม่พบข้อมูล สิทธิ์</p>
-                <p class="mt-1 text-sm text-slate-500">ลองเปลี่ยนเงื่อนไขการค้นหา หรือเพิ่ม สิทธิ์ ใหม่</p>
+                <p class="mt-1 text-sm text-slate-500">ลองเปลี่ยนเงื่อนไขการค้นหา หรือให้ dev เพิ่ม permission ผ่านระบบ seed/config</p>
             </div>
         @else
             <div class="space-y-4">
-                @foreach ($groupedสิทธิ์s as $group)
+                @foreach ($groupedPermissions as $group)
                     <details
                         class="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur"
                         @if($selectedGroupKey === $group['group_key']) open @endif
@@ -171,22 +164,6 @@
                                             >
                                                 แก้ไข
                                             </a>
-
-                                            <form
-                                                method="POST"
-                                                action="{{ route('admin.permissions.destroy', $permission) }}"
-                                                onsubmit="return confirm('ยืนยันการลบ permission นี้หรือไม่?');"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-
-                                                <button
-                                                    type="submit"
-                                                    class="rounded-xl border border-red-400/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
-                                                >
-                                                    ลบ
-                                                </button>
-                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -198,7 +175,7 @@
         @endif
 
         <div class="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-3 shadow-lg shadow-slate-950/20 backdrop-blur">
-            {{ $groupedสิทธิ์s->links() }}
+            {{ $groupedPermissions->links() }}
         </div>
 
     </div>

@@ -31,7 +31,7 @@ class TempleValidationService
 
         $errors = [];
 
-        if (! in_array($temple->content?->status, ['draft', 'review', 'published'], true)) {
+        if (! in_array($temple->content?->status, ['draft', 'review'], true)) {
             $errors['status'] = 'เผยแพร่ได้เฉพาะเนื้อหาที่อยู่ในสถานะ draft หรือ review';
         }
 
@@ -57,7 +57,25 @@ class TempleValidationService
         $status = $validated['status'] ?? 'draft';
 
         if ($status === 'published') {
-            return ['status' => 'กรุณาใช้คำสั่งเผยแพร่เพื่อเปลี่ยนสถานะเป็น published'];
+            if ($temple?->content?->status === 'published') {
+                return [];
+            }
+
+            if (! auth('admin')->user()?->hasPermission('temples.publish')) {
+                return ['status' => 'ต้องมีสิทธิ์เผยแพร่จึงจะตั้งสถานะเป็นเผยแพร่ได้'];
+            }
+
+            $errors = [];
+
+            if (empty($validated['category_ids'])) {
+                $errors['category_ids'] = 'ต้องเลือกหมวดหมู่อย่างน้อย 1 รายการก่อนเผยแพร่';
+            }
+
+            if (empty($validated['opening_hours'])) {
+                $errors['opening_hours'] = 'ต้องมีเวลาเปิดทำการก่อนเผยแพร่';
+            }
+
+            return $errors;
         }
 
         if (! $temple?->content || $temple->content->status !== 'published') {

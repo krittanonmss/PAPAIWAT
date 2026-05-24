@@ -179,7 +179,22 @@
             <div class="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
                 <p>{{ $footerCopyright }}</p>
 
-                @if($frontendFooterSettings['show_menu'] && $footerStandaloneItems->isNotEmpty())
+                @php
+                    $socialLinks = collect([
+                        'Facebook' => $frontendSiteSettings['navigation']['facebook_url'] ?? null,
+                        'Instagram' => $frontendSiteSettings['navigation']['instagram_url'] ?? null,
+                        'YouTube' => $frontendSiteSettings['navigation']['youtube_url'] ?? null,
+                        'LINE' => $frontendSiteSettings['navigation']['line_url'] ?? null,
+                    ])->filter();
+                @endphp
+
+                @if($socialLinks->isNotEmpty())
+                    <div class="flex flex-wrap gap-x-4 gap-y-2">
+                        @foreach($socialLinks as $label => $url)
+                            <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="transition hover:text-slate-300">{{ $label }}</a>
+                        @endforeach
+                    </div>
+                @elseif($frontendFooterSettings['show_menu'] && $footerStandaloneItems->isNotEmpty())
                     <div class="flex flex-wrap gap-x-4 gap-y-2">
                         @foreach($footerStandaloneItems->take(4) as $item)
                             @continue(($item->menu_item_type ?? null) === 'heading')

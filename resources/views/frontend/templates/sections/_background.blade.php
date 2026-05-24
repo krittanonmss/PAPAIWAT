@@ -33,8 +33,6 @@
     $cardBorderColor = $normalizeColor($sectionSettings['card_border_color'] ?? null, '#ffffff');
     $cardHeadingColor = $normalizeColor($sectionSettings['card_heading_color'] ?? null, $headingColor);
     $cardTextColor = $normalizeColor($sectionSettings['card_text_color'] ?? null, $mutedTextColor);
-    $fontSizeMap = ['sm' => '0.875rem', 'base' => '1rem', 'lg' => '1.125rem', 'xl' => '1.25rem'];
-    $fontWeightMap = ['normal' => '400', 'medium' => '500', 'semibold' => '600', 'bold' => '700'];
     $paddingMap = ['none' => '0', 'compact' => '2rem 1rem', 'default' => '', 'spacious' => '6rem 1rem'];
     $marginMap = ['none' => '0', 'sm' => '1rem 0', 'md' => '2rem 0', 'lg' => '4rem 0'];
     $radiusMap = ['none' => '0', 'xl' => '1rem', '2xl' => '1.5rem', '3xl' => '1.75rem'];
@@ -51,8 +49,6 @@
     $align = in_array($rawAlign, ['inherit', 'left', 'center', 'right'], true)
         ? $rawAlign
         : 'inherit';
-    $fontSize = $fontSizeMap[$sectionSettings['font_size'] ?? 'base'] ?? $fontSizeMap['base'];
-    $fontWeight = $fontWeightMap[$sectionSettings['font_weight'] ?? 'normal'] ?? $fontWeightMap['normal'];
     $padding = $paddingMap[$sectionSettings['spacing_padding'] ?? 'default'] ?? '';
     $margin = $marginMap[$sectionSettings['spacing_margin'] ?? 'none'] ?? '0';
     $radius = $radiusMap[$sectionSettings['border_radius'] ?? 'none'] ?? '0';
@@ -64,6 +60,7 @@
     $heroOverlayOpacity = max(0, min((int) ($sectionSettings['hero_overlay_opacity'] ?? 0), 90)) / 100;
     $heroOverlayColor = $normalizeColor($sectionSettings['hero_overlay_color'] ?? null, '#020617');
     $gridColumns = max(1, min((int) ($sectionSettings['grid_columns'] ?? ($sectionSettings['list_columns'] ?? 4)), 6));
+    $listColumns = max(1, min((int) ($sectionSettings['list_columns'] ?? 4), 6));
     $statsColumns = max(1, min((int) ($sectionSettings['stats_columns'] ?? 4), 4));
     $galleryColumns = max(1, min((int) ($sectionSettings['gallery_columns'] ?? 3), 4));
     $filterBg = match ($filterStyle) {
@@ -92,7 +89,7 @@
         ? "background: linear-gradient({$direction}, {$startColor}, {$endColor});"
         : "background-color: {$startColor};";
 
-    echo " color: {$textColor}; font-size: {$fontSize}; font-weight: {$fontWeight}; margin: {$margin}; border-radius: {$radius}; --section-text-color: {$textColor}; --section-heading-color: {$headingColor}; --section-muted-color: {$mutedTextColor}; --section-accent-color: {$accentColor}; --section-gap: {$gap}; --section-card-bg: color-mix(in srgb, {$cardBackgroundColor} 7%, transparent); --section-card-border: color-mix(in srgb, {$cardBorderColor} 22%, transparent); --section-card-heading-color: {$cardHeadingColor}; --section-card-text-color: {$cardTextColor}; --section-card-padding: {$cardPadding}; --section-card-radius: {$cardRadius}; --section-image-radius: {$imageRadius}; --section-image-aspect: {$imageAspect}; --section-filter-bg: {$filterBg}; --section-filter-border: {$filterBorder}; --section-hero-overlay-color: {$heroOverlayColor}; --section-hero-overlay-opacity: {$heroOverlayOpacity}; --section-grid-columns: {$gridColumns}; --section-stats-columns: {$statsColumns}; --section-gallery-columns: {$galleryColumns}; --section-button-radius: {$buttonRadius}; --section-layout-width: {$layoutWidth}; {$buttonVars}";
+    echo " color: {$textColor}; margin: {$margin}; border-radius: {$radius}; --section-text-color: {$textColor}; --section-heading-color: {$headingColor}; --section-muted-color: {$mutedTextColor}; --section-accent-color: {$accentColor}; --section-gap: {$gap}; --section-card-bg: color-mix(in srgb, {$cardBackgroundColor} 7%, transparent); --section-card-border: color-mix(in srgb, {$cardBorderColor} 22%, transparent); --section-card-heading-color: {$cardHeadingColor}; --section-card-text-color: {$cardTextColor}; --section-card-padding: {$cardPadding}; --section-card-radius: {$cardRadius}; --section-image-radius: {$imageRadius}; --section-image-aspect: {$imageAspect}; --section-filter-bg: {$filterBg}; --section-filter-border: {$filterBorder}; --section-hero-overlay-color: {$heroOverlayColor}; --section-hero-overlay-opacity: {$heroOverlayOpacity}; --section-grid-columns: {$gridColumns}; --section-list-columns: {$listColumns}; --section-stats-columns: {$statsColumns}; --section-gallery-columns: {$galleryColumns}; --section-button-radius: {$buttonRadius}; --section-layout-width: {$layoutWidth}; {$buttonVars}";
 
     if ($align !== 'inherit') {
         echo " text-align: {$align};";

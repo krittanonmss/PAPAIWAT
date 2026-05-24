@@ -18,7 +18,7 @@
     $initialVisible = (bool) old('is_visible', $section->is_visible ?? true);
     $sectionชื่อ = old('name', $section->name ?? '');
     $sectionKey = old('section_key', $section->section_key ?? '');
-    $linkหน้า = $linkหน้า ?? collect();
+    $linkPages = $linkPages ?? collect();
     $bentoContents = $bentoContents ?? collect();
     $bentoLayoutPresets = [
         'feature_3' => ['label' => '3 กล่อง: Hero + 2 กล่องรอง', 'sizes' => ['large', 'wide', 'wide']],
@@ -73,29 +73,125 @@
         ->all();
 
     $blocks = [
-        'hero' => ['label' => 'ฮีโร่', 'description' => 'หัวหน้าใหญ่พร้อมปุ่ม'],
-        'banner' => ['label' => 'แบนเนอร์', 'description' => 'แบนเนอร์กว้าง สัดส่วน 1920 x 540 ใช้การตั้งเหมือนฮีโร่'],
-        'rich_text' => ['label' => 'ข้อความ', 'description' => 'หัวข้อและเนื้อหายาว'],
-        'image_text' => ['label' => 'รูป + ข้อความ', 'description' => 'วางภาพคู่กับรายละเอียด'],
-        'cta' => ['label' => 'ปุ่มเชิญชวน', 'description' => 'ข้อความสั้นพร้อมปุ่ม'],
-        'article_grid' => ['label' => 'รายการ', 'description' => 'ดึงมาแสดงอัตโนมัติ'],
-        'temple_grid' => ['label' => 'รายการ', 'description' => 'ดึงมาแสดงอัตโนมัติ'],
-        'travel_discovery_bento' => ['label' => 'แนะนำทริปแบบ Bento', 'description' => 'เซกชันแนะนำหมวดท่องเที่ยวแบบ bento grid'],
-        'favorites_list' => ['label' => 'รายการโปรด', 'description' => 'แสดงรายการโปรด แยกและ'],
-        'article_list_full' => ['label' => 'หน้ารวม', 'description' => 'list เต็มพร้อมค้นหาและแบ่งหน้า'],
-        'temple_list_full' => ['label' => 'หน้ารวม', 'description' => 'list เต็มพร้อมตัวกรองและแบ่งหน้า'],
-        'gallery' => ['label' => 'แกลเลอรี', 'description' => 'รวมรูปหลายรูปจากคลังสื่อหรือ URL'],
-        'faq' => ['label' => 'คำถามที่พบบ่อย', 'description' => 'คำถามคำตอบที่พบบ่อย'],
-        'stats' => ['label' => 'ตัวเลขสำคัญ', 'description' => 'สถิติหรือจุดเด่นแบบสั้น'],
-        'contact' => ['label' => 'ข้อมูลติดต่อ', 'description' => 'ที่อยู่ เบอร์โทร และอีเมล'],
+        'hero' => [
+            'label' => 'Hero หลัก',
+            'description' => 'ส่วนเปิดหน้าแบบเด่น ใช้หัวข้อใหญ่ คำโปรย รูปพื้นหลัง และปุ่มหลัก/ปุ่มรอง',
+        ],
+        'banner' => [
+            'label' => 'Banner กว้าง',
+            'description' => 'แบนเนอร์แนวนอนสำหรับโปรโมตหรือคั่นหน้า เหมาะกับภาพสัดส่วนกว้าง 1920 x 540',
+        ],
+        'rich_text' => [
+            'label' => 'ข้อความยาว',
+            'description' => 'บล็อกเนื้อหาแบบอ่านยาว มีหัวข้อ คำโปรย และข้อความรายละเอียด',
+        ],
+        'image_text' => [
+            'label' => 'รูปคู่ข้อความ',
+            'description' => 'วางรูปภาพหนึ่งรูปคู่กับข้อความ เหมาะกับแนะนำเรื่องราวหรือจุดเด่น',
+        ],
+        'cta' => [
+            'label' => 'Call to Action',
+            'description' => 'ข้อความสั้นพร้อมปุ่ม เพื่อชวนให้ผู้ใช้กดไปยังหน้าหรือ action สำคัญ',
+        ],
+        'article_grid' => [
+            'label' => 'บทความแบบ Grid',
+            'description' => 'ดึงบทความมาแสดงเป็นการ์ดในหน้า เช่น บทความแนะนำ ยอดนิยม หรือล่าสุด',
+        ],
+        'temple_grid' => [
+            'label' => 'วัดแบบ Grid',
+            'description' => 'ดึงข้อมูลวัดมาแสดงเป็นการ์ดในหน้า เช่น วัดแนะนำ ยอดนิยม หรือล่าสุด',
+        ],
+        'travel_discovery_bento' => [
+            'label' => 'Bento แนะนำคอนเทนต์',
+            'description' => 'แสดงบทความหรือวัดเป็นกล่องหลายขนาด ใช้ทำโซนแนะนำหรือ discovery',
+        ],
+        'favorites_list' => [
+            'label' => 'รายการโปรดของผู้ใช้',
+            'description' => 'แสดงวัดและบทความที่ผู้ใช้บันทึกไว้ในเบราว์เซอร์ เหมาะกับหน้า Favorites',
+        ],
+        'article_list_full' => [
+            'label' => 'หน้ารวมบทความ',
+            'description' => 'รายการบทความเต็มหน้า มีค้นหา ตัวกรอง เรียงลำดับ และแบ่งหน้า',
+        ],
+        'temple_list_full' => [
+            'label' => 'หน้ารวมวัด',
+            'description' => 'รายการวัดเต็มหน้า มีค้นหา ตัวกรองจังหวัด/หมวดหมู่ เรียงลำดับ และแบ่งหน้า',
+        ],
+        'gallery' => [
+            'label' => 'แกลเลอรีรูปภาพ',
+            'description' => 'แสดงรูปหลายรูปจากคลังสื่อหรือ URL เหมาะกับภาพบรรยากาศหรือผลงาน',
+        ],
+        'faq' => [
+            'label' => 'FAQ คำถามที่พบบ่อย',
+            'description' => 'แสดงชุดคำถามและคำตอบแบบเป็นรายการ เหมาะกับข้อมูลช่วยเหลือ',
+        ],
+        'stats' => [
+            'label' => 'สถิติตัวเลข',
+            'description' => 'แสดงตัวเลขสำคัญหรือจุดเด่น เช่น จำนวนวัด บทความ ยอดเข้าชม',
+        ],
+        'contact' => [
+            'label' => 'ข้อมูลติดต่อ',
+            'description' => 'แสดงเบอร์โทร อีเมล ที่อยู่ และปุ่มเปิดแผนที่',
+        ],
     ];
+    $blockCategoryLabels = [
+        'all' => 'ทั้งหมด',
+        'hero' => 'เปิดหน้า',
+        'content' => 'เนื้อหา',
+        'lists' => 'รายการ',
+        'interactive' => 'โต้ตอบ',
+        'media' => 'สื่อ',
+        'utility' => 'ข้อมูล',
+    ];
+    $blockMeta = [
+        'hero' => ['category' => 'hero', 'badge' => 'Hero', 'icon' => 'H', 'keywords' => 'hero cover landing เปิดหน้า'],
+        'banner' => ['category' => 'hero', 'badge' => 'Banner', 'icon' => 'B', 'keywords' => 'banner promo แบนเนอร์'],
+        'rich_text' => ['category' => 'content', 'badge' => 'Text', 'icon' => 'T', 'keywords' => 'text content body ข้อความ เนื้อหา'],
+        'image_text' => ['category' => 'content', 'badge' => 'Image + Text', 'icon' => 'I', 'keywords' => 'image text รูป ข้อความ'],
+        'cta' => ['category' => 'content', 'badge' => 'CTA', 'icon' => 'C', 'keywords' => 'cta action button ปุ่ม'],
+        'article_grid' => ['category' => 'lists', 'badge' => 'Article', 'icon' => 'A', 'keywords' => 'article grid บทความ การ์ด'],
+        'temple_grid' => ['category' => 'lists', 'badge' => 'Temple', 'icon' => 'W', 'keywords' => 'temple grid วัด การ์ด'],
+        'article_list_full' => ['category' => 'lists', 'badge' => 'Article List', 'icon' => 'AL', 'keywords' => 'article list filter บทความ รวม ค้นหา'],
+        'temple_list_full' => ['category' => 'lists', 'badge' => 'Temple List', 'icon' => 'WL', 'keywords' => 'temple list filter วัด รวม จังหวัด'],
+        'travel_discovery_bento' => ['category' => 'interactive', 'badge' => 'Bento', 'icon' => 'D', 'keywords' => 'bento discovery แนะนำ ทริป'],
+        'favorites_list' => ['category' => 'interactive', 'badge' => 'Favorites', 'icon' => 'F', 'keywords' => 'favorites saved รายการโปรด'],
+        'gallery' => ['category' => 'media', 'badge' => 'Gallery', 'icon' => 'G', 'keywords' => 'gallery image media รูป แกลเลอรี'],
+        'faq' => ['category' => 'utility', 'badge' => 'FAQ', 'icon' => '?', 'keywords' => 'faq question answer คำถาม'],
+        'stats' => ['category' => 'utility', 'badge' => 'Stats', 'icon' => '#', 'keywords' => 'stats number ตัวเลข สถิติ'],
+        'contact' => ['category' => 'utility', 'badge' => 'Contact', 'icon' => '@', 'keywords' => 'contact phone email map ติดต่อ'],
+    ];
+    $blockOptions = collect($blocks)->map(function ($block, $key) use ($blockMeta) {
+        $meta = $blockMeta[$key] ?? ['category' => 'content', 'badge' => 'Section', 'icon' => 'S', 'keywords' => ''];
+
+        return [
+            'value' => $key,
+            'label' => $block['label'],
+            'description' => $block['description'],
+            'category' => $meta['category'],
+            'badge' => $meta['badge'],
+            'icon' => $meta['icon'],
+            'search' => mb_strtolower($key.' '.$block['label'].' '.$block['description'].' '.$meta['badge'].' '.$meta['keywords']),
+        ];
+    })->values();
 @endphp
 
 <div
+    data-section-editor
     class="space-y-6"
     x-data="{
         activeTab: 'content',
         component: @js($initialComponent),
+        status: @js($initialสถานะ),
+        previewDevice: 'desktop',
+        previewDevices: {
+            desktop: { label: 'คอม', width: '100%' },
+            tablet: { label: 'แท็บเล็ต', width: '768px' },
+            mobile: { label: 'มือถือ', width: '390px' },
+        },
+        blockPickerSearch: '',
+        blockPickerCategory: 'all',
+        blockCategories: @js($blockCategoryLabels),
+        blockOptions: @js($blockOptions),
         content: {
             eyebrow: @js($initialContent['eyebrow'] ?? ''),
             title: @js($initialContent['title'] ?? ''),
@@ -127,7 +223,7 @@
             address: @js($initialContent['address'] ?? ''),
             map_url: @js($initialContent['map_url'] ?? ''),
             empty_title: @js($initialContent['empty_title'] ?? 'ยังไม่มีรายการโปรด'),
-            empty_subtitle: @js($initialContent['empty_subtitle'] ?? 'กดปุ่มหัวใจในหน้าหรือเพื่อเพิ่มรายการโปรด'),
+            empty_subtitle: @js($initialContent['empty_subtitle'] ?? 'กดปุ่มหัวใจในหน้าวัดหรือบทความเพื่อเพิ่มรายการโปรด'),
             temple_eyebrow: @js($initialContent['temple_eyebrow'] ?? 'Temples'),
             temple_title: @js($initialContent['temple_title'] ?? 'ที่บันทึกไว้'),
             temple_card_label: @js($initialContent['temple_card_label'] ?? ''),
@@ -147,20 +243,26 @@
             empty_excerpt: @js($initialContent['empty_excerpt'] ?? 'ยังไม่มีคำโปรย'),
             empty_image_text: @js($initialContent['empty_image_text'] ?? ''),
             article_meta_fallback: @js($initialContent['article_meta_fallback'] ?? 'เผยแพร่แล้ว'),
-            province_fallback: @js($initialContent['province_fallback'] ?? 'ไม่ระบุจังห'),
+            province_fallback: @js($initialContent['province_fallback'] ?? 'ไม่ระบุจังหวัด'),
             total_label: @js($initialContent['total_label'] ?? 'ทั้งหมด'),
             total_suffix: @js($initialContent['total_suffix'] ?? ''),
             all_option_label: @js($initialContent['all_option_label'] ?? 'ทั้งหมด'),
             category_filter_label: @js($initialContent['category_filter_label'] ?? 'หมวดหมู่'),
             tag_filter_label: @js($initialContent['tag_filter_label'] ?? 'แท็ก'),
             author_filter_label: @js($initialContent['author_filter_label'] ?? 'ผู้เขียน'),
+            collection_filter_label: @js($initialContent['collection_filter_label'] ?? 'ประเภทรายการ'),
             sort_filter_label: @js($initialContent['sort_filter_label'] ?? 'เรียงตาม'),
+            province_filter_label: @js($initialContent['province_filter_label'] ?? 'จังหวัด'),
+            temple_type_filter_label: @js($initialContent['temple_type_filter_label'] ?? 'ประเภทวัด'),
             latest_option_label: @js($initialContent['latest_option_label'] ?? 'ล่าสุด'),
             popular_option_label: @js($initialContent['popular_option_label'] ?? ''),
+            featured_option_label: @js($initialContent['featured_option_label'] ?? 'รายการแนะนำ'),
+            popular_filter_option_label: @js($initialContent['popular_filter_option_label'] ?? 'ยอดนิยม'),
             likes_option_label: @js($initialContent['likes_option_label'] ?? 'ถูกใจมากสุด'),
             oldest_option_label: @js($initialContent['oldest_option_label'] ?? 'เก่าสุด'),
             rating_option_label: @js($initialContent['rating_option_label'] ?? 'รีวิวดีที่สุด'),
-            province_all_label: @js($initialContent['province_all_label'] ?? 'ทุกจังห'),
+            province_all_label: @js($initialContent['province_all_label'] ?? 'ทุกจังหวัด'),
+            temple_type_all_label: @js($initialContent['temple_type_all_label'] ?? 'ทุกประเภท'),
             category_all_label: @js($initialContent['category_all_label'] ?? 'ทุกหมวดหมู่'),
             sort_default_label: @js($initialContent['sort_default_label'] ?? 'เรียงตามระบบ'),
             phone_label: @js($initialContent['phone_label'] ?? 'โทร:'),
@@ -187,7 +289,7 @@
             list_columns: @js((int) ($initialSettings['list_columns'] ?? 4)),
             banner_height: @js((int) ($initialSettings['banner_height'] ?? 540)),
             bento_variant: @js($initialBentoVariant),
-            bento_content_type: @js(($initialSettings['bento_content_type'] ?? '') === '' ? '' : ''),
+            bento_content_type: @js($initialSettings['bento_content_type'] ?? 'temple'),
             bento_layout: @js($initialSettings['bento_layout'] ?? 'mosaic_5'),
             bento_content_align: @js($initialBentoContentAlign),
             image_opacity: @js((int) ($initialSettings['image_opacity'] ?? 100)),
@@ -212,6 +314,8 @@
             image_radius: @js($initialSettings['image_radius'] ?? 'none'),
             image_aspect_ratio: @js($initialSettings['image_aspect_ratio'] ?? 'photo'),
             filter_panel_style: @js($initialSettings['filter_panel_style'] ?? 'solid'),
+            filter_panel_spacing: @js($initialSettings['filter_panel_spacing'] ?? 'comfortable'),
+            filter_columns: @js((int) ($initialSettings['filter_columns'] ?? 3)),
             hero_overlay_color: @js($initialSettings['hero_overlay_color'] ?? '#020617'),
             hero_overlay_opacity: @js((int) ($initialSettings['hero_overlay_opacity'] ?? 0)),
             hero_content_position: @js($initialSettings['hero_content_position'] ?? 'center'),
@@ -240,11 +344,11 @@
         bentoContentOptions: @js($bentoContents->mapWithKeys(fn ($content) => [
             (string) $content->id => [
                 'title' => $content->title,
-                'type' => $content->content_type === '' ? '' : '',
+                'type' => $content->content_type,
                 'excerpt' => $content->excerpt,
             ],
         ])),
-        linkPageOptions: @js($linkหน้า->map(fn ($page) => [
+        linkPageOptions: @js($linkPages->map(fn ($page) => [
             'id' => (string) $page->id,
             'title' => $page->title,
             'label' => $page->title . ($page->is_homepage ? ' (หน้าแรก)' : ($page->slug ? ' (/' . $page->slug . ')' : '')) . ($page->status !== 'published' ? ' - ' . $page->status : ''),
@@ -268,6 +372,79 @@
         galleryMediaSearch: '',
         isUploading: false,
         uploadError: '',
+        designControlGroups: {
+            textAlign: ['rich_text', 'image_text', 'article_grid', 'temple_grid', 'favorites_list', 'gallery', 'faq', 'stats', 'contact'],
+            button: ['hero', 'banner', 'image_text', 'cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'contact'],
+            card: ['image_text', 'cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'],
+            cardHeading: ['cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'faq', 'stats', 'contact'],
+            cardText: ['cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'],
+            gap: ['image_text', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'],
+            cardPadding: ['cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'],
+            cardRadius: ['image_text', 'cta', 'article_grid', 'temple_grid', 'travel_discovery_bento', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery', 'faq', 'stats', 'contact'],
+            imageFrame: ['image_text', 'article_grid', 'temple_grid', 'favorites_list', 'article_list_full', 'temple_list_full', 'gallery'],
+        },
+        init() {
+            const notifyPreview = () => this.$nextTick(() => {
+                this.$root.dispatchEvent(new CustomEvent('section-editor:change', { bubbles: true }));
+            });
+
+            this.$watch('component', notifyPreview);
+            this.$watch('status', notifyPreview);
+            this.$watch('content', notifyPreview);
+            this.$watch('settings', notifyPreview);
+        },
+        supportsDesignControl(name) {
+            const group = this.designControlGroups[name] || [];
+
+            if (group.includes(this.component)) {
+                return true;
+            }
+
+            return ['card', 'cardHeading', 'cardText', 'cardPadding', 'cardRadius'].includes(name)
+                && ['hero', 'banner'].includes(this.component)
+                && this.settings.show_summary_stats;
+        },
+        filteredBlockOptions() {
+            const search = String(this.blockPickerSearch || '').trim().toLowerCase();
+
+            return this.blockOptions.filter((option) => {
+                const matchesCategory = this.blockPickerCategory === 'all' || option.category === this.blockPickerCategory;
+                const matchesSearch = search === '' || option.search.includes(search);
+
+                return matchesCategory && matchesSearch;
+            });
+        },
+        blockCategoryCount(category) {
+            if (category === 'all') {
+                return this.blockOptions.length;
+            }
+
+            return this.blockOptions.filter((option) => option.category === category).length;
+        },
+        selectedBlock() {
+            return this.blockOptions.find((option) => option.value === this.component) || this.blockOptions[0] || null;
+        },
+        previewViewportStyle() {
+            const device = this.previewDevices[this.previewDevice] || this.previewDevices.desktop;
+
+            return `width: ${device.width}; max-width: 100%;`;
+        },
+        refreshPreview() {
+            this.$root.dispatchEvent(new CustomEvent('section-editor:change', { bubbles: true }));
+        },
+        sectionGet(path) {
+            return path.split('.').reduce((value, key) => value?.[key], this);
+        },
+        sectionSet(path, value) {
+            const keys = path.split('.');
+            const last = keys.pop();
+            const target = keys.reduce((current, key) => current[key], this);
+
+            target[last] = value;
+            this.$nextTick(() => {
+                this.$root.dispatchEvent(new CustomEvent('section-editor:change', { bubbles: true }));
+            });
+        },
         pick(type) {
             this.component = type;
             if (! this.content.title) {
@@ -528,36 +705,59 @@
             data-preview-url="{{ route('admin.content.pages.sections.preview', $page) }}"
         >
             <div class="border-b border-white/10 px-5 py-4">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Section Studio</p>
                         <h2 class="mt-1 text-lg font-semibold text-white">ออกแบบเซกชัน</h2>
+                        <p class="mt-1 text-xs text-slate-500">เลือก section แก้ข้อมูล แล้วดูผลแบบ responsive ได้ทันที</p>
                     </div>
-                    <div
-                        class="hidden w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200"
-                        data-cms-section-preview-loading
-                    >
-                        กำลังอัปเดตตัวอย่าง...
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            @click="refreshPreview()"
+                            class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        >
+                            รีเฟรชตัวอย่าง
+                        </button>
+                        <div
+                            class="hidden w-fit rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-200"
+                            data-cms-section-preview-loading
+                        >
+                            กำลังอัปเดต...
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div class="min-w-0 border-b border-white/10 xl:border-b-0 xl:border-r">
-                    <div class="flex items-center justify-between gap-3 border-b border-white/10 bg-black/20 px-5 py-3">
-                        <div>
-                            <p class="text-sm font-semibold text-white">ตัวอย่างเซกชัน</p>
-                            <p class="mt-0.5 text-xs text-slate-500">อัปเดตอัตโนมัติเมื่อแก้ข้อมูล</p>
+            <div class="grid gap-0 xl:h-[min(820px,calc(100vh-9rem))] xl:min-h-[680px] xl:grid-cols-[minmax(0,1fr)_360px] xl:items-stretch">
+                <div class="flex min-h-0 min-w-0 flex-col border-b border-white/10 xl:border-b-0 xl:border-r">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-black/20 px-5 py-3">
+                        <p class="text-sm font-semibold text-white">ตัวอย่างเซกชัน</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="inline-flex rounded-xl border border-white/10 bg-slate-950/60 p-1">
+                                <template x-for="(device, key) in previewDevices" :key="key">
+                                    <button
+                                        type="button"
+                                        @click="previewDevice = key"
+                                        class="rounded-lg px-2.5 py-1 text-xs font-semibold transition"
+                                        :class="previewDevice === key ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'"
+                                        x-text="device.label"
+                                    ></button>
+                                </template>
+                            </div>
+                            <span class="rounded-full border border-white/10 bg-slate-950/60 px-2 py-0.5 text-[11px] font-medium text-slate-500" data-cms-section-preview-updated>ยังไม่โหลด</span>
                         </div>
                     </div>
 
-                    <div class="relative h-[320px] bg-slate-950 md:h-[420px]">
-                        <iframe
-                            title="ตัวอย่างเซกชันแบบเรียลไทม์"
-                            class="h-full w-full bg-slate-950"
-                            sandbox="allow-scripts allow-same-origin"
-                            data-cms-section-preview-frame
-                        ></iframe>
+                    <div class="relative min-h-[520px] flex-1 overflow-auto bg-slate-950 xl:min-h-0">
+                        <div class="mx-auto h-full min-h-[520px] bg-slate-950 transition-[width] duration-200 xl:min-h-0" :style="previewViewportStyle()">
+                            <iframe
+                                title="ตัวอย่างเซกชันแบบเรียลไทม์"
+                                class="h-full w-full bg-slate-950"
+                                sandbox="allow-scripts allow-same-origin"
+                                data-cms-section-preview-frame
+                            ></iframe>
+                        </div>
                     </div>
 
                     <div
@@ -566,26 +766,78 @@
                     ></div>
                 </div>
 
-                <aside class="space-y-5 bg-white/[0.03] p-5">
+                <aside class="min-h-0 space-y-5 overflow-y-auto bg-white/[0.03] p-5">
                     <div>
-                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ชนิดเซกชัน</label>
-                        <select
-                            class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm font-semibold text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-                            :value="component"
-                            @change="pick($event.target.value)"
-                        >
-                            @foreach($blocks as $key => $block)
-                                <option value="{{ $key }}" class="bg-slate-900">{{ $block['label'] }}</option>
-                            @endforeach
-                        </select>
+                        <div class="flex items-center justify-between gap-3">
+                            <label class="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ชนิดเซกชัน</label>
+                            <span class="rounded-full border border-white/10 bg-slate-950/60 px-2 py-0.5 text-[11px] font-medium text-slate-400" x-text="selectedBlock()?.value"></span>
+                        </div>
 
                         <div class="mt-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
-                            @foreach($blocks as $key => $block)
-                                <div x-show="component === @js($key)" x-cloak>
-                                    <p class="text-sm font-semibold text-white">{{ $block['label'] }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-slate-400">{{ $block['description'] }}</p>
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-300/20 bg-blue-400/10 text-sm font-bold text-blue-100" x-text="selectedBlock()?.icon"></div>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="text-sm font-semibold text-white" x-text="selectedBlock()?.label"></p>
+                                        <span class="rounded-full border border-white/10 bg-slate-950/50 px-2 py-0.5 text-[11px] font-medium text-slate-400" x-text="selectedBlock()?.badge"></span>
+                                    </div>
+                                    <p class="mt-1 text-xs leading-5 text-slate-400" x-text="selectedBlock()?.description"></p>
                                 </div>
-                            @endforeach
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-3 rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                            <label class="block">
+                                <span class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหา section</span>
+                                <input
+                                    type="search"
+                                    x-model="blockPickerSearch"
+                                    class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                                    placeholder="เช่น บทความ, วัด, รายการโปรด"
+                                >
+                            </label>
+
+                            <div class="flex gap-2 overflow-x-auto pb-1">
+                                <template x-for="(label, category) in blockCategories" :key="category">
+                                    <button
+                                        type="button"
+                                        @click="blockPickerCategory = category"
+                                        class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                                        :class="blockPickerCategory === category ? 'border-blue-300/50 bg-blue-500/20 text-blue-100' : 'border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/10 hover:text-white'"
+                                    >
+                                        <span x-text="label"></span>
+                                        <span class="ml-1 opacity-60" x-text="blockCategoryCount(category)"></span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <div class="max-h-[24rem] space-y-2 overflow-y-auto pr-1">
+                                <template x-for="option in filteredBlockOptions()" :key="option.value">
+                                    <button
+                                        type="button"
+                                        @click="pick(option.value)"
+                                        class="group flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition"
+                                        :class="component === option.value ? 'border-blue-300/50 bg-blue-500/15 shadow-lg shadow-blue-950/20' : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'"
+                                    >
+                                        <span
+                                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-bold"
+                                            :class="component === option.value ? 'border-blue-200/30 bg-blue-400/15 text-blue-100' : 'border-white/10 bg-slate-950/50 text-slate-300'"
+                                            x-text="option.icon"
+                                        ></span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="flex items-center justify-between gap-2">
+                                                <span class="truncate text-sm font-semibold text-white" x-text="option.label"></span>
+                                                <span class="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-slate-400" x-text="option.badge"></span>
+                                            </span>
+                                            <span class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500" x-text="option.description"></span>
+                                        </span>
+                                    </button>
+                                </template>
+
+                                <div x-show="filteredBlockOptions().length === 0" x-cloak class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-xs text-slate-500">
+                                    ไม่พบ section ที่ตรงกับคำค้นหา
+                                </div>
+                            </div>
                         </div>
 
                         @error('component_key')
@@ -596,10 +848,17 @@
                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                         <div>
                             <label for="status" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">สถานะ</label>
-                            <select id="status" name="status" class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <option value="active" class="bg-slate-900" @selected($initialสถานะ === 'active')>เปิดใช้งาน</option>
-                                <option value="inactive" class="bg-slate-900" @selected($initialสถานะ === 'inactive')>ปิดใช้งาน</option>
-                            </select>
+                            <input type="hidden" name="status" x-model="status">
+                            @include('admin.content.layout.page-sections.partials._alpine_select', [
+                                'path' => 'status',
+                                'placeholder' => 'เลือกสถานะ',
+                                'searchPlaceholder' => 'ค้นหาสถานะ...',
+                                'buttonClass' => 'w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20',
+                                'options' => collect([
+                                    ['value' => 'active', 'label' => 'เปิดใช้งาน', 'search' => 'active เปิดใช้งาน'],
+                                    ['value' => 'inactive', 'label' => 'ปิดใช้งาน', 'search' => 'inactive ปิดใช้งาน'],
+                                ]),
+                            ])
                         </div>
 
                         <div>
@@ -751,7 +1010,11 @@
                     </div>
                 </div>
 
-                <div class="grid gap-5 lg:grid-cols-2">
+                <div class="grid gap-5 lg:grid-cols-3">
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายจำนวนรวม</label>
+                        <input type="text" x-model="content.total_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เช่น ทั้งหมด">
+                    </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">คำต่อท้ายจำนวนในหัวข้อกลุ่ม</label>
                         <input type="text" x-model="content.section_count_suffix" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เช่น รายการ">
@@ -813,7 +1076,7 @@
                 </div>
 
                 <div class="grid gap-5 lg:grid-cols-3">
-                    <div x-show="component === 'article_list_full'" x-cloak>
+                    <div x-show="['article_list_full', 'temple_list_full'].includes(component)" x-cloak>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">ป้ายกำกับช่องค้นหา</label>
                         <input type="text" x-model="content.search_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                     </div>
@@ -839,6 +1102,9 @@
                     <input type="text" x-model="content.category_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="หมวดหมู่">
                     <input type="text" x-model="content.tag_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="แท็ก">
                     <input type="text" x-model="content.author_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ผู้เขียน">
+                    <input type="text" x-model="content.collection_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ประเภทรายการ">
+                    <input type="text" x-model="content.featured_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="รายการแนะนำ">
+                    <input type="text" x-model="content.popular_filter_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ยอดนิยม">
                     <input type="text" x-model="content.sort_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เรียงตาม">
                     <input type="text" x-model="content.all_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทั้งหมด">
                     <input type="text" x-model="content.likes_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ถูกใจมากสุด">
@@ -846,8 +1112,16 @@
                 </div>
 
                 <div x-show="component === 'temple_list_full'" x-cloak class="grid gap-5 lg:grid-cols-4">
-                    <input type="text" x-model="content.province_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกจังห">
+                    <input type="text" x-model="content.province_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="จังหวัด">
+                    <input type="text" x-model="content.temple_type_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ประเภทวัด">
+                    <input type="text" x-model="content.category_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="หมวดหมู่">
+                    <input type="text" x-model="content.collection_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ประเภทรายการ">
+                    <input type="text" x-model="content.sort_filter_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เรียงตาม">
+                    <input type="text" x-model="content.province_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกจังหวัด">
+                    <input type="text" x-model="content.temple_type_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกประเภท">
                     <input type="text" x-model="content.category_all_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกหมวดหมู่">
+                    <input type="text" x-model="content.featured_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="รายการแนะนำ">
+                    <input type="text" x-model="content.popular_filter_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ยอดนิยม">
                     <input type="text" x-model="content.sort_default_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="เรียงตามระบบ">
                     <input type="text" x-model="content.rating_option_label" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="รีวิวดีที่สุด">
                     <input type="text" x-model="content.total_suffix" class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="">
@@ -1030,18 +1304,28 @@
                 <div class="grid gap-4 lg:grid-cols-3">
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">รูปแบบ Bento</label>
-                        <select x-model="settings.bento_variant" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="travel" class="bg-slate-900">เลือกเนื้อหาเอง</option>
-                            <option value="article_filter" class="bg-slate-900">สุ่มจากประเภทและหมวดหมู่</option>
-                        </select>
+                        @include('admin.content.layout.page-sections.partials._alpine_select', [
+                            'path' => 'settings.bento_variant',
+                            'placeholder' => 'เลือกรูปแบบ Bento',
+                            'searchPlaceholder' => 'ค้นหารูปแบบ...',
+                            'options' => collect([
+                                ['value' => 'travel', 'label' => 'เลือกเนื้อหาเอง', 'meta' => 'จัดกล่องและเลือก content เอง'],
+                                ['value' => 'article_filter', 'label' => 'สุ่มจากประเภทและหมวดหมู่', 'meta' => 'ให้ frontend แสดงจากตัวกรอง'],
+                            ]),
+                        ])
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">ตำแหน่งเนื้อหาเซกชัน</label>
-                        <select x-model="settings.bento_content_align" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="left" class="bg-slate-900">ชิดซ้าย</option>
-                            <option value="center" class="bg-slate-900">กึ่งกลาง</option>
-                            <option value="right" class="bg-slate-900">ชิดขวา</option>
-                        </select>
+                        @include('admin.content.layout.page-sections.partials._alpine_select', [
+                            'path' => 'settings.bento_content_align',
+                            'placeholder' => 'เลือกตำแหน่ง',
+                            'searchPlaceholder' => 'ค้นหาตำแหน่ง...',
+                            'options' => collect([
+                                ['value' => 'left', 'label' => 'ชิดซ้าย'],
+                                ['value' => 'center', 'label' => 'กึ่งกลาง'],
+                                ['value' => 'right', 'label' => 'ชิดขวา'],
+                            ]),
+                        ])
                     </div>
                     <div x-show="settings.bento_variant === 'article_filter'" x-cloak>
                         <label class="mb-1.5 block text-sm font-medium text-slate-300">จำนวนที่สุ่มแสดง</label>
@@ -1052,24 +1336,48 @@
                 <div x-show="settings.bento_variant === 'article_filter'" x-cloak class="space-y-4">
                     <div class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
                         <p class="text-sm font-medium text-blue-100">Bento แบบตัวกรอง</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-400">เลือกแหล่งข้อมูลเป็นหรือ แล้วหน้าเว็บจะแสดงตัวกรองจากหมวดหมู่ของเนื้อหาประเภทนั้นให้ผู้ใช้เลือกสายที่สนใจ</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">เลือกแหล่งข้อมูลเป็น Temple หรือ Article แล้วหน้าเว็บจะแสดงตัวกรองจากหมวดหมู่ของเนื้อหาประเภทนั้นให้ผู้ใช้เลือกสายที่สนใจ</p>
                     </div>
                     <div class="grid gap-4 lg:grid-cols-2">
                         <div>
                             <label class="mb-1.5 block text-xs font-medium text-slate-400">แหล่งข้อมูล</label>
-                            <select x-model="settings.bento_content_type" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <option value="" class="bg-slate-900"></option>
-                                <option value="" class="bg-slate-900"></option>
-                            </select>
-                            <p class="mt-1 text-xs leading-5 text-slate-500">ถ้าเลือก filter จะเป็นหมวดหมู่ ถ้าเลือก filter จะเป็นหมวดหมู่</p>
+                            @include('admin.content.layout.page-sections.partials._alpine_select', [
+                                'path' => 'settings.bento_content_type',
+                                'placeholder' => 'เลือกแหล่งข้อมูล',
+                                'searchPlaceholder' => 'ค้นหาแหล่งข้อมูล...',
+                                'options' => collect([
+                                    ['value' => 'temple', 'label' => 'Temple', 'meta' => 'ใช้หมวดหมู่ของวัด'],
+                                    ['value' => 'article', 'label' => 'Article', 'meta' => 'ใช้หมวดหมู่ของบทความ'],
+                                ]),
+                            ])
+                            <p class="mt-1 text-xs leading-5 text-slate-500">เลือก Temple หรือ Article เพื่อให้ frontend ใช้ชุดหมวดหมู่ที่ถูกต้อง</p>
                         </div>
                         <div>
                         <label class="mb-1.5 block text-xs font-medium text-slate-400">ชุดขนาดกล่อง</label>
-                            <select @change="applyBentoLayout($event.target.value)" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                                <template x-for="(layout, key) in bentoLayouts" :key="key">
-                                    <option :value="key" class="bg-slate-900" x-text="layout.label" :selected="settings.bento_layout === key"></option>
-                                </template>
-                            </select>
+                            @include('admin.content.layout.page-sections.partials._alpine_select', [
+                                'path' => 'settings.bento_layout',
+                                'placeholder' => 'เลือกชุดขนาดกล่อง',
+                                'searchPlaceholder' => 'ค้นหาชุดขนาด...',
+                                'afterChoose' => 'applyBentoLayout(selectedValue);',
+                                'options' => collect($bentoLayoutPresets)->map(fn ($layout, $key) => [
+                                    'value' => $key,
+                                    'label' => $layout['label'],
+                                ])->values(),
+                            ])
+                        </div>
+                    </div>
+                    <div class="grid gap-4 lg:grid-cols-3">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-medium text-slate-400">Placeholder ค้นหา</label>
+                            <input type="text" x-model="content.search_placeholder" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหาวัดหรือบทความ...">
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-medium text-slate-400">ข้อความตัวเลือกทุกหมวดหมู่</label>
+                            <input type="text" x-model="content.category_all_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ทุกหมวดหมู่">
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-medium text-slate-400">ข้อความปุ่มกรอง</label>
+                            <input type="text" x-model="content.submit_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="กรอง">
                         </div>
                     </div>
                 </div>
@@ -1096,11 +1404,16 @@
                     </div>
                     <div>
                         <label class="mb-1.5 block text-xs font-medium text-slate-400">ใช้ชุดเริ่มต้น</label>
-                        <select @change="applyBentoLayout($event.target.value)" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <template x-for="(layout, key) in bentoLayouts" :key="key">
-                                <option :value="key" class="bg-slate-900" x-text="layout.label" :selected="settings.bento_layout === key"></option>
-                            </template>
-                        </select>
+                        @include('admin.content.layout.page-sections.partials._alpine_select', [
+                            'path' => 'settings.bento_layout',
+                            'placeholder' => 'เลือกชุดเริ่มต้น',
+                            'searchPlaceholder' => 'ค้นหาชุดขนาด...',
+                            'afterChoose' => 'applyBentoLayout(selectedValue);',
+                            'options' => collect($bentoLayoutPresets)->map(fn ($layout, $key) => [
+                                'value' => $key,
+                                'label' => $layout['label'],
+                            ])->values(),
+                        ])
                     </div>
                 </div>
 
@@ -1116,11 +1429,16 @@
                     </div>
                     <div>
                         <label class="mb-1.5 block text-xs font-medium text-slate-400">ประเภท</label>
-                        <select x-model="bentoTypeFilter" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="all" class="bg-slate-900">ทั้งหมด</option>
-                            <option value="" class="bg-slate-900"></option>
-                            <option value="" class="bg-slate-900"></option>
-                        </select>
+                        @include('admin.content.layout.page-sections.partials._alpine_select', [
+                            'path' => 'bentoTypeFilter',
+                            'placeholder' => 'เลือกประเภท',
+                            'searchPlaceholder' => 'ค้นหาประเภท...',
+                            'options' => collect([
+                                ['value' => 'all', 'label' => 'ทั้งหมด'],
+                                ['value' => 'temple', 'label' => 'Temple'],
+                                ['value' => 'article', 'label' => 'Article'],
+                            ]),
+                        ])
                     </div>
                 </div>
 
@@ -1158,6 +1476,17 @@
                             </div>
                         </div>
                     </template>
+                </div>
+
+                <div x-show="settings.bento_variant !== 'article_filter' && settings.show_search_box" x-cloak class="grid gap-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 lg:grid-cols-2">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-400">Placeholder กล่องค้นหาวัด</label>
+                        <input type="text" x-model="content.search_placeholder" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหาวัด จังหวัด หรือบรรยากาศที่อยากไป...">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-400">ข้อความปุ่มค้นหา</label>
+                        <input type="text" x-model="content.search_button_label" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="ค้นหา">
+                    </div>
                 </div>
 
                 <div x-show="settings.bento_variant !== 'article_filter' && content.bento_slots.length === 0" x-cloak class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-6 text-center text-sm text-slate-400">
@@ -1439,27 +1768,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
-                        <span class="mb-1.5 block text-xs font-medium text-slate-400">ขนาดตัวอักษร</span>
-                        <select x-model="settings.font_size" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="sm" class="bg-slate-900">เล็ก</option>
-                            <option value="base" class="bg-slate-900">มาตรฐาน</option>
-                            <option value="lg" class="bg-slate-900">ใหญ่</option>
-                            <option value="xl" class="bg-slate-900">ใหญ่มาก</option>
-                        </select>
-                    </label>
-
-                    <label class="block">
-                        <span class="mb-1.5 block text-xs font-medium text-slate-400">น้ำหนักตัวอักษร</span>
-                        <select x-model="settings.font_weight" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
-                            <option value="normal" class="bg-slate-900">ปกติ</option>
-                            <option value="medium" class="bg-slate-900">กลาง</option>
-                            <option value="semibold" class="bg-slate-900">กึ่งหนา</option>
-                            <option value="bold" class="bg-slate-900">หนา</option>
-                        </select>
-                    </label>
-
-                    <label class="block">
+                    <label x-show="supportsDesignControl('textAlign')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">จัดแนวข้อความ</span>
                         <select x-model="settings.text_align" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="inherit" class="bg-slate-900">ตาม template</option>
@@ -1489,7 +1798,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('button')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สไตล์ปุ่ม</span>
                         <select x-model="settings.button_style" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="solid" class="bg-slate-900">ทึบ</option>
@@ -1499,7 +1808,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('button')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีพื้นปุ่ม</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.button_background_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1507,7 +1816,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('button')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีตัวอักษรปุ่ม</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.button_text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1515,7 +1824,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('button')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีเส้นปุ่ม</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.button_border_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1523,7 +1832,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('button')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งปุ่ม</span>
                         <select x-model="settings.button_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="lg" class="bg-slate-900">โค้งเล็ก</option>
@@ -1552,15 +1861,15 @@
                         </select>
                     </label>
 
-                    <label class="block">
-                        <span class="mb-1.5 block text-xs font-medium text-slate-400">สีพื้นการ์ด</span>
+                    <label x-show="supportsDesignControl('card')" x-cloak class="block">
+                        <span class="mb-1.5 block text-xs font-medium text-slate-400">โทนสีพื้นการ์ดโปร่ง</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.card_background_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
                             <input type="text" x-model="settings.card_background_color" class="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20" placeholder="#ffffff">
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('card')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีเส้นการ์ด</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.card_border_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1568,7 +1877,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('cardHeading')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีหัวข้อในการ์ด</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.card_heading_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1576,7 +1885,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('cardText')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สีข้อความในการ์ด</span>
                         <div class="flex items-center gap-3">
                             <input type="color" x-model="settings.card_text_color" class="h-11 w-14 cursor-pointer rounded-xl border border-white/10 bg-slate-950/40 p-1">
@@ -1584,7 +1893,7 @@
                         </div>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('gap')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะห่างชิ้นงาน</span>
                         <select x-model="settings.section_gap" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="tight" class="bg-slate-900">แน่น</option>
@@ -1594,7 +1903,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('cardPadding')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะด้านในการ์ด</span>
                         <select x-model="settings.card_padding" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="compact" class="bg-slate-900">กระชับ</option>
@@ -1603,7 +1912,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('cardRadius')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งการ์ด</span>
                         <select x-model="settings.card_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="none" class="bg-slate-900">ไม่มี</option>
@@ -1613,7 +1922,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('imageFrame')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">สัดส่วนรูป</span>
                         <select x-model="settings.image_aspect_ratio" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="photo" class="bg-slate-900">4:3</option>
@@ -1624,7 +1933,7 @@
                         </select>
                     </label>
 
-                    <label class="block">
+                    <label x-show="supportsDesignControl('imageFrame')" x-cloak class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ความโค้งรูป</span>
                         <select x-model="settings.image_radius" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                             <option value="none" class="bg-slate-900">ตาม template</option>
@@ -1695,18 +2004,48 @@
                         </label>
                     </div>
 
-                    <div x-show="['article_grid','temple_grid','article_list_full','temple_list_full','travel_discovery_bento'].includes(component)" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <div x-show="['article_grid','temple_grid','favorites_list'].includes(component)" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                         <label class="block">
                             <span class="mb-1.5 block text-xs font-medium text-slate-400">จำนวนคอลัมน์การ์ด</span>
                             <input type="number" min="1" max="6" step="1" x-model.number="settings.grid_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                            <span class="mt-1 block text-xs text-slate-500" x-text="component === 'favorites_list' ? 'ใช้กำหนดจำนวนการ์ดต่อแถวบนจอใหญ่' : 'ใช้ทั้งโหมดกริดและโหมดสไลด์บนจอใหญ่'"></span>
                         </label>
-                        <label class="block" x-show="['article_list_full','temple_list_full','travel_discovery_bento'].includes(component)" x-cloak>
+                    </div>
+
+                    <div x-show="['article_list_full','temple_list_full'].includes(component)" x-cloak class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+                        <p class="text-sm font-medium text-blue-100">จำนวนคอลัมน์และจำนวนต่อหน้าตั้งในหัวข้อ “จำนวนการ์ดต่อหน้า” ด้านล่าง</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">ระบบใช้ค่าชุดเดียวในการวางกริดและแบ่งหน้า จึงไม่เกิดจำนวนแถวคลาดเคลื่อน</p>
+                    </div>
+
+                    <div x-show="component === 'travel_discovery_bento'" x-cloak class="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+                        <p class="text-sm font-medium text-blue-100">รูปทรงของ Bento ตั้งจาก “ชุดขนาดกล่อง” หรือ “สัดส่วนกล่อง” ในแท็บเนื้อหา</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-400">กล่องใหญ่ กว้าง สูง และเล็กจะถูกใช้กับหน้าเว็บจริงตามที่เลือก</p>
+                    </div>
+
+                    <div x-show="['article_list_full','temple_list_full'].includes(component) || (component === 'travel_discovery_bento' && (settings.bento_variant === 'article_filter' || settings.show_search_box))" x-cloak class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block">
                             <span class="mb-1.5 block text-xs font-medium text-slate-400">สไตล์แผงตัวกรอง</span>
                             <select x-model="settings.filter_panel_style" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
                                 <option value="solid" class="bg-slate-900">ทึบ</option>
                                 <option value="soft" class="bg-slate-900">นุ่ม</option>
                                 <option value="outline" class="bg-slate-900">เส้นขอบ</option>
                                 <option value="plain" class="bg-slate-900">เรียบ</option>
+                            </select>
+                        </label>
+                        <label x-show="['article_list_full','temple_list_full'].includes(component)" x-cloak class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">ช่องตัวกรองต่อแถว (จอใหญ่)</span>
+                            <select x-model.number="settings.filter_columns" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option :value="2" class="bg-slate-900">2 ช่อง - โปร่ง</option>
+                                <option :value="3" class="bg-slate-900">3 ช่อง - สมดุล</option>
+                                <option :value="4" class="bg-slate-900">4 ช่อง - กระชับ</option>
+                            </select>
+                        </label>
+                        <label x-show="['article_list_full','temple_list_full'].includes(component)" x-cloak class="block">
+                            <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะห่างแผงตัวกรอง</span>
+                            <select x-model="settings.filter_panel_spacing" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                <option value="compact" class="bg-slate-900">กระชับ</option>
+                                <option value="comfortable" class="bg-slate-900">สบายตา</option>
+                                <option value="spacious" class="bg-slate-900">โปร่ง</option>
                             </select>
                         </label>
                     </div>
@@ -1735,12 +2074,12 @@
                         </label>
                     </div>
 
-                    <div x-show="!['hero','banner','article_grid','temple_grid','article_list_full','temple_list_full','travel_discovery_bento','gallery','stats','contact'].includes(component)" x-cloak>
+                    <div x-show="!['hero','banner','article_grid','temple_grid','favorites_list','article_list_full','temple_list_full','travel_discovery_bento','gallery','stats','contact'].includes(component)" x-cloak>
                         <p class="rounded-xl border border-white/10 bg-slate-950/30 px-4 py-3 text-xs text-slate-400">ใช้ชุดปรับละเอียดร่วม เช่น สี, การ์ด, รูป, ระยะห่าง, ความกว้าง และปุ่ม ด้านบน</p>
                     </div>
                 </div>
 
-                <div class="grid gap-5 md:grid-cols-2">
+                <div x-show="settings.animation_type !== 'none'" x-cloak class="grid gap-5 md:grid-cols-2">
                     <label class="block">
                         <span class="mb-1.5 block text-xs font-medium text-slate-400">ระยะเวลาแอนิเมชัน (ms)</span>
                         <input type="number" min="100" max="3000" step="50" x-model.number="settings.animation_duration" class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
@@ -1913,18 +2252,118 @@
         .cms-section-tab-body.cms-section-media-mode > :not(.cms-media-panel) {
             display: none !important;
         }
+
+        [data-section-editor] select[data-section-enhanced] {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+        }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const enhanceSectionSelects = () => {
+                document.querySelectorAll('[data-section-editor] select:not([data-section-enhanced])').forEach((select) => {
+                    select.dataset.sectionEnhanced = 'true';
+
+                    const root = document.createElement('div');
+                    root.className = 'relative';
+                    root.innerHTML = `
+                        <button type="button" class="flex min-h-[2.75rem] w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-2.5 text-left text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                            <span class="min-w-0 truncate text-white" data-label></span>
+                            <span class="shrink-0 text-slate-500">⌄</span>
+                        </button>
+                        <div class="absolute top-full z-[80] mt-2 hidden max-h-72 w-full overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-slate-950/60 backdrop-blur" data-panel>
+                            <div class="p-2">
+                                <input type="search" class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20" placeholder="ค้นหา...">
+                            </div>
+                            <div data-options></div>
+                        </div>
+                    `;
+
+                    select.insertAdjacentElement('afterend', root);
+
+                    const button = root.querySelector('button');
+                    const label = root.querySelector('[data-label]');
+                    const panel = root.querySelector('[data-panel]');
+                    const searchInput = root.querySelector('input[type="search"]');
+                    const optionsRoot = root.querySelector('[data-options]');
+
+                    const options = () => Array.from(select.options).map((option) => ({
+                        value: option.value,
+                        label: option.textContent.trim() || option.value || 'ไม่เลือก',
+                    }));
+
+                    const currentLabel = () => {
+                        const selected = select.selectedOptions?.[0];
+                        return selected?.textContent.trim() || options()[0]?.label || 'เลือก';
+                    };
+
+                    const syncLabel = () => {
+                        label.textContent = currentLabel();
+                    };
+
+                    const renderOptions = () => {
+                        const keyword = searchInput.value.toLowerCase().trim();
+                        const matches = options().filter((option) => !keyword || option.label.toLowerCase().includes(keyword) || option.value.toLowerCase().includes(keyword));
+
+                        optionsRoot.innerHTML = matches.length
+                            ? ''
+                            : '<div class="px-3 py-4 text-center text-sm text-slate-500">ไม่พบรายการที่ตรงกับคำค้นหา</div>';
+
+                        matches.forEach((option) => {
+                            const item = document.createElement('button');
+                            item.type = 'button';
+                            item.className = `flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-white/[0.06] ${String(select.value) === String(option.value) ? 'bg-blue-500/10 text-blue-100' : 'text-slate-300'}`;
+                            item.innerHTML = `<span class="min-w-0 truncate font-medium"></span><span class="shrink-0 text-xs text-blue-300">${String(select.value) === String(option.value) ? 'เลือกแล้ว' : ''}</span>`;
+                            item.querySelector('span').textContent = option.label;
+                            item.addEventListener('click', () => {
+                                select.value = option.value;
+                                select.dispatchEvent(new Event('input', { bubbles: true }));
+                                select.dispatchEvent(new Event('change', { bubbles: true }));
+                                panel.classList.add('hidden');
+                                searchInput.value = '';
+                                syncLabel();
+                            });
+                            optionsRoot.appendChild(item);
+                        });
+                    };
+
+                    button.addEventListener('click', () => {
+                        panel.classList.toggle('hidden');
+                        renderOptions();
+                        if (!panel.classList.contains('hidden')) {
+                            searchInput.focus();
+                        }
+                    });
+                    searchInput.addEventListener('input', renderOptions);
+                    select.addEventListener('change', syncLabel);
+                    document.addEventListener('click', (event) => {
+                        if (!root.contains(event.target)) {
+                            panel.classList.add('hidden');
+                        }
+                    });
+
+                    syncLabel();
+                });
+            };
+
+            window.setTimeout(enhanceSectionSelects, 50);
+            window.setTimeout(enhanceSectionSelects, 300);
+
             document.querySelectorAll('[data-cms-section-preview]').forEach((preview) => {
                 const form = preview.closest('form');
                 const frame = preview.querySelector('[data-cms-section-preview-frame]');
                 const loading = preview.querySelector('[data-cms-section-preview-loading]');
                 const error = preview.querySelector('[data-cms-section-preview-error]');
+                const updated = preview.querySelector('[data-cms-section-preview-updated]');
                 const previewUrl = preview.dataset.previewUrl;
                 let timer = null;
                 let controller = null;
+                let requestStartedAt = 0;
 
                 if (!form || !frame || !previewUrl) {
                     return;
@@ -1946,6 +2385,7 @@
                 const แสดงผลPreview = async () => {
                     controller?.abort();
                     controller = new AbortController();
+                    requestStartedAt = Date.now();
 
                     const formData = new FormData(form);
                     formData.delete('_method');
@@ -1969,22 +2409,33 @@
 
                         const payload = await response.json();
                         frame.srcdoc = payload.html || '';
+                        const updatedAt = new Date().toLocaleTimeString('th-TH', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                        });
+                        preview.dataset.previewUpdatedAt = updatedAt;
+                        if (updated) {
+                            updated.textContent = `อัปเดต ${updatedAt}`;
+                        }
                     } catch (error) {
                         if (error.name !== 'AbortError') {
                             setError(error.message || 'ไม่สามารถโหลด preview ได้');
                         }
                     } finally {
-                        setLoading(false);
+                        const elapsed = Date.now() - requestStartedAt;
+                        window.setTimeout(() => setLoading(false), Math.max(0, 180 - elapsed));
                     }
                 };
 
                 const schedulePreview = () => {
                     window.clearTimeout(timer);
-                    timer = window.setTimeout(แสดงผลPreview, 350);
+                    timer = window.setTimeout(แสดงผลPreview, 180);
                 };
 
                 form.addEventListener('input', schedulePreview);
                 form.addEventListener('change', schedulePreview);
+                form.addEventListener('section-editor:change', schedulePreview);
                 แสดงผลPreview();
             });
         });

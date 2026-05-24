@@ -141,34 +141,6 @@
                         </div>
                     </div>
                 </section>
-
-                <section class="overflow-hidden rounded-2xl border border-rose-400/20 bg-rose-500/10 shadow-xl shadow-rose-950/20 backdrop-blur">
-                    <div class="border-b border-rose-400/20 px-6 py-4">
-                        <h2 class="text-base font-semibold text-rose-200">โซนอันตราย</h2>
-                    </div>
-
-                    <div class="p-6">
-                        <p class="mb-4 text-sm text-rose-200/80">
-                            ลบ เทมเพลต นี้ออกจากระบบ
-                        </p>
-
-                        <form
-                            method="POST"
-                            action="{{ route('admin.content.templates.destroy', $template) }}"
-                            onsubmit="return confirm('ยืนยันการลบ เทมเพลต นี้?')"
-                        >
-                            @csrf
-                            @method('DELETE')
-
-                            <button
-                                type="submit"
-                                class="w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-sm font-medium text-rose-200 transition hover:bg-rose-500/20"
-                            >
-                                ลบเทมเพลต
-                            </button>
-                        </form>
-                    </div>
-                </section>
             </div>
         </div>
     </div>

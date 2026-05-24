@@ -7,166 +7,56 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-
-        :root {
-            --admin-bg: #020617;
-            --admin-sidebar: #0b1220;
-            --admin-surface: rgba(255, 255, 255, 0.04);
-            --admin-surface-strong: rgba(15, 23, 42, 0.42);
-            --admin-border: rgba(255, 255, 255, 0.10);
-            --admin-muted: #94a3b8;
-            --admin-blue: #60a5fa;
-            --admin-scale: 80%;
-        }
-
-        html {
-            font-size: var(--admin-scale);
-        }
-
-        body {
-            font-weight: 300;
-            background:
-                radial-gradient(circle at top right, rgba(30, 64, 175, 0.18), transparent 28rem),
-                linear-gradient(180deg, #020617 0%, #0f172a 100%);
-        }
-
-        .font-medium {
-            font-weight: 400 !important;
-        }
-
-        .font-semibold {
-            font-weight: 500 !important;
-        }
-
-        .font-bold {
-            font-weight: 600 !important;
-        }
-
-        .text-slate-400,
-        .text-gray-400,
-        .text-zinc-400 {
-            color: rgb(203 213 225) !important;
-        }
-
-        .text-slate-500,
-        .text-gray-500,
-        .text-zinc-500 {
-            color: rgb(148 163 184) !important;
-        }
-
-        .admin-content {
-            background:
-                radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 24rem),
-                rgba(2, 6, 23, 0.64);
-        }
-
-        .admin-content > div > :first-child {
-            overflow: hidden;
-            border: 1px solid var(--admin-border) !important;
-            border-radius: 1.5rem !important;
-            background:
-                linear-gradient(90deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.94), rgba(49, 46, 129, 0.88)) !important;
-            box-shadow: 0 20px 42px rgba(2, 6, 23, 0.24) !important;
-            backdrop-filter: blur(16px);
-        }
-
-        .admin-content > div > :first-child:not([class*=" p-"]):not([class^="p-"]):not([class*=" px-"]):not([class^="px-"]) {
-            padding: 1.5rem;
-        }
-
-        .admin-content > div > :first-child h1 {
-            color: #fff;
-        }
-
-        .admin-content > div > :first-child > div:first-child {
-            border-color: var(--admin-border);
-        }
-
-        .admin-content section,
-        .admin-content aside,
-        .admin-content form,
-        .admin-content บทความ,
-        .admin-content div {
-            border-color: var(--admin-border);
-        }
-
-        .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-        .admin-content select,
-        .admin-content textarea {
-            border-color: var(--admin-border) !important;
-            background-color: rgba(2, 6, 23, 0.42) !important;
-            color: #fff;
-        }
-
-        .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
-        .admin-content select:focus,
-        .admin-content textarea:focus {
-            border-color: rgba(96, 165, 250, 0.9) !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
-            outline: none;
-        }
-
-        .admin-content table thead {
-            background: rgba(2, 6, 23, 0.34);
-            color: #94a3b8;
-        }
-
-        .admin-content table tbody tr:hover {
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .admin-content a,
-        .admin-content button {
-            transition-property: color, background-color, border-color, opacity, transform, box-shadow;
-            transition-duration: 150ms;
-        }
-
-        .admin-content .shadow-xl {
-            box-shadow: 0 20px 42px rgba(2, 6, 23, 0.24) !important;
-        }
-    </style>
+    @include('components.layouts.admin.styles')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-slate-950 text-white">
     @php
         $admin = auth('admin')->user();
+        $adminPreferences = app(\App\Services\Admin\AdminPreferenceService::class)->forAdmin($admin);
+        $adminTheme = in_array($adminPreferences['display.theme'] ?? 'dark', ['dark', 'light', 'system'], true)
+            ? $adminPreferences['display.theme']
+            : 'dark';
+        $adminScale = (int) ($adminPreferences['display.scale'] ?? 80);
+        $adminDensity = $adminPreferences['display.density'] ?? 'comfortable';
+        $adminSidebarCollapsed = (bool) ($adminPreferences['display.sidebar_collapsed'] ?? false);
+        $adminReducedMotion = (bool) ($adminPreferences['accessibility.reduced_motion'] ?? false);
+        $adminHighContrast = (bool) ($adminPreferences['accessibility.high_contrast'] ?? false);
+        $adminOpenDetailInNewTab = (bool) ($adminPreferences['tables.open_detail_in_new_tab'] ?? false);
+        $adminInAppNotifications = (bool) ($adminPreferences['notifications.in_app'] ?? true);
+        $adminModerationAlerts = (bool) ($adminPreferences['notifications.moderation_alerts'] ?? true);
+        $adminUnreadNotifications = collect();
+
+        if ($admin && $adminInAppNotifications) {
+            $adminUnreadNotifications = \App\Models\Admin\AdminNotification::query()
+                ->where('admin_id', $admin->id)
+                ->where('is_read', false)
+                ->when(! $adminModerationAlerts, fn ($query) => $query->where('type', '!=', 'moderation'))
+                ->latest('created_at')
+                ->limit(5)
+                ->get();
+        }
         $can = fn (string $permission): bool => $admin?->hasPermission($permission) ?? false;
 
         $canViewDashboard = $can('dashboard.view');
         $canViewUsers = $can('users.view');
         $canViewRoles = $can('roles.view');
-        $canViewPermissions = $can('permissions.view');
         $canViewTemples = $can('temples.view');
         $canViewArticles = $can('articles.view');
         $canViewCategories = $can('categories.view');
         $canViewMedia = $can('media.view');
         $canViewMenus = $can('menus.view');
         $canViewPages = $can('pages.view');
-        $canViewTemplates = $can('templates.view');
         $canViewInteractions = $can('interactions.view');
+        $canBanInteractions = $can('interactions.ban');
+        $canViewSettings = $can('settings.view');
 
-        $canViewContentManagement = $canViewTemples
-            || $canViewArticles
-            || $canViewCategories
-            || $canViewMedia
-            || $canViewMenus
-            || $canViewPages
-            || $canViewTemplates
-            || $canViewInteractions;
-
-        $canViewLayoutManagement = $canViewMenus
-            || $canViewPages
-            || $canViewTemplates;
-
-        $canViewAccessManagement = $canViewUsers
-            || $canViewRoles
-            || $canViewPermissions;
+        $isAccountManagementเปิดใช้งาน = request()->routeIs('admin.profile.*')
+            || request()->routeIs('admin.preferences.*');
 
         $isAccessManagementเปิดใช้งาน = request()->routeIs('admin.users.*')
             || request()->routeIs('admin.roles.*')
-            || request()->routeIs('admin.permissions.*');
+            || request()->routeIs('admin.settings.*');
 
         $isTempleManagementเปิดใช้งาน = request()->routeIs('admin.temples.*');
 
@@ -187,13 +77,86 @@
 
         $isContentManagementเปิดใช้งาน = $isTempleManagementเปิดใช้งาน
             || $isArticleManagementเปิดใช้งาน
-            || $isCategoryManagementเปิดใช้งาน
-            || $isMediaManagementเปิดใช้งาน
-            || $isLayoutManagementเปิดใช้งาน
-            || $isInteractionManagementเปิดใช้งาน;
+            || $isCategoryManagementเปิดใช้งาน;
+
+        $sidebarGroups = [
+            [
+                'label' => 'จัดการเนื้อหา',
+                'active' => $isContentManagementเปิดใช้งาน,
+                'items' => array_values(array_filter([
+                    $canViewTemples ? [
+                        'label' => 'จัดการวัด',
+                        'active' => $isTempleManagementเปิดใช้งาน,
+                        'items' => [
+                            ['label' => 'รายการวัด', 'route' => 'admin.temples.index', 'active' => 'admin.temples.*'],
+                        ],
+                    ] : null,
+                    $canViewArticles ? [
+                        'label' => 'จัดการบทความ',
+                        'active' => $isArticleManagementเปิดใช้งาน,
+                        'items' => [
+                            ['label' => 'บทความ', 'route' => 'admin.content.articles.index', 'active' => 'admin.content.articles.*'],
+                            ['label' => 'แท็กบทความ', 'route' => 'admin.content.article-tags.index', 'active' => 'admin.content.article-tags.*'],
+                        ],
+                    ] : null,
+                    $canViewCategories ? [
+                        'label' => 'จัดการหมวดหมู่',
+                        'active' => $isCategoryManagementเปิดใช้งาน,
+                        'items' => [
+                            ['label' => 'หมวดหมู่', 'route' => 'admin.categories.index', 'active' => 'admin.categories.*'],
+                        ],
+                    ] : null,
+                ])),
+            ],
+            [
+                'label' => 'โครงสร้างเว็บไซต์',
+                'active' => $isLayoutManagementเปิดใช้งาน,
+                'items' => array_values(array_filter([
+                    $canViewPages ? ['label' => 'หน้าเว็บไซต์', 'route' => 'admin.content.pages.index', 'active' => 'admin.content.pages.*'] : null,
+                    $canViewMenus ? ['label' => 'เมนู', 'route' => 'admin.content.menus.index', 'active' => 'admin.content.menus.*'] : null,
+                    $canViewMenus ? ['label' => 'Footer', 'route' => 'admin.content.footer.edit', 'active' => 'admin.content.footer.*'] : null,
+                ])),
+            ],
+            [
+                'label' => 'จัดการคลังสื่อ',
+                'active' => $isMediaManagementเปิดใช้งาน,
+                'items' => array_values(array_filter([
+                    $canViewMedia ? ['label' => 'คลังสื่อ', 'route' => 'admin.media.index', 'active' => 'admin.media.*'] : null,
+                ])),
+            ],
+            [
+                'label' => 'ตรวจสอบชุมชน',
+                'active' => $isInteractionManagementเปิดใช้งาน,
+                'items' => array_values(array_filter([
+                    $canViewInteractions ? ['label' => 'รีวิววัด', 'route' => 'admin.interactions.reviews.index', 'active' => 'admin.interactions.reviews.*'] : null,
+                    $canViewInteractions ? ['label' => 'ความคิดเห็น', 'route' => 'admin.interactions.comments.index', 'active' => 'admin.interactions.comments.*'] : null,
+                    $canViewInteractions ? ['label' => 'รายงาน', 'route' => 'admin.interactions.reports.index', 'active' => 'admin.interactions.reports.*'] : null,
+                    $canBanInteractions ? ['label' => 'บล็อกผู้เยี่ยมชม', 'route' => 'admin.interactions.bans.index', 'active' => 'admin.interactions.bans.*'] : null,
+                ])),
+            ],
+            [
+                'label' => 'ระบบและสิทธิ์',
+                'active' => $isAccessManagementเปิดใช้งาน,
+                'items' => array_values(array_filter([
+                    $canViewUsers ? ['label' => 'ผู้ใช้งาน', 'route' => 'admin.users.index', 'active' => 'admin.users.*'] : null,
+                    $canViewRoles ? ['label' => 'บทบาทผู้ใช้งาน', 'route' => 'admin.roles.index', 'active' => 'admin.roles.*'] : null,
+                    $canViewSettings ? ['label' => 'ตั้งค่าเว็บไซต์', 'route' => 'admin.settings.edit', 'active' => 'admin.settings.*'] : null,
+                ])),
+            ],
+            [
+                'label' => 'บัญชีของฉัน',
+                'active' => $isAccountManagementเปิดใช้งาน,
+                'items' => [
+                    ['label' => 'โปรไฟล์ของฉัน', 'route' => 'admin.profile.edit', 'active' => 'admin.profile.*'],
+                    ['label' => 'การตั้งค่าส่วนตัว', 'route' => 'admin.preferences.edit', 'active' => 'admin.preferences.*'],
+                ],
+            ],
+        ];
     @endphp
 
-    <div x-data="{ sidebarOpen: true }" class="min-h-screen">
+    @include('components.layouts.admin.preferences')
+
+    <div x-data="{ sidebarOpen: @js(! $adminSidebarCollapsed) }" class="min-h-screen">
         <div class="flex min-h-screen">
             <div
                 x-show="sidebarOpen"
@@ -202,383 +165,10 @@
                 @click="sidebarOpen = false"
             ></div>
 
-            {{-- FIXED: h-screen on aside + flex-col + overflow-hidden so logout is always visible --}}
-            <aside
-                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:border-r-0'"
-                class="fixed inset-y-0 left-0 z-40 flex h-screen w-72 flex-col border-r border-white/10 bg-[#0b1220] shadow-2xl shadow-slate-950/40 transition-all duration-300 md:sticky md:top-0 md:h-screen md:translate-x-0"
-            >
-                <div
-                    x-show="sidebarOpen"
-                    x-transition
-                    class="flex h-full min-h-0 flex-col overflow-hidden"
-                >
-                    {{-- Logo - shrink-0 ไม่ให้หด --}}
-                    <div class="shrink-0 border-b border-white/10 px-5 py-6">
-                        <h1 class="text-2xl font-bold tracking-tight text-white">PAPAIWAT</h1>
-                        <p class="mt-1 text-sm text-slate-400">ระบบจัดการเว็บไซต์</p>
-                    </div>
-
-                    {{-- User info - shrink-0 ไม่ให้หด --}}
-                    <div class="shrink-0 border-b border-white/10 px-4 py-5">
-                        <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 shadow-lg shadow-slate-950/20 backdrop-blur">
-                            <p class="text-sm font-semibold text-white">
-                                {{ $admin?->username ?? '-' }}
-                            </p>
-                            <p class="mt-1 text-sm text-slate-400">
-                                {{ $admin?->role?->name ?? 'ไม่มีบทบาท' }}
-                            </p>
-                        </div>
-                    </div>
-
-                    {{-- Nav - flex-1 + overflow-y-auto ให้ scroll ได้เฉพาะส่วนนี้ --}}
-                    <nav class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-5 text-sm">
-                        @if ($canViewDashboard)
-                            <a
-                                href="{{ route('admin.dashboard') }}"
-                                class="{{ request()->routeIs('admin.dashboard')
-                                    ? 'block rounded-2xl border border-blue-400/30 bg-blue-900/80 px-4 py-3 font-medium text-blue-300 shadow-md shadow-blue-950/30'
-                                    : 'block rounded-2xl px-4 py-3 font-medium text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                            >
-                                แดชบอร์ด
-                            </a>
-                        @endif
-
-                        @if ($canViewContentManagement)
-                        <details
-                            x-data="{ open: {{ $isContentManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                            x-bind:open="open"
-                            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
-                        >
-                            <summary
-                                @click.prevent="open = !open"
-                                class="cursor-pointer list-none rounded-xl px-3 py-2.5 font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-                            >
-                                <div class="flex items-center justify-between">
-                                    <span>จัดการเนื้อหา</span>
-                                    <span class="text-xs text-slate-500">6</span>
-                                </div>
-                            </summary>
-
-                            <div class="mt-2 space-y-2 transition-all duration-200">
-                                @if ($canViewTemples)
-                                <details
-                                    x-data="{ open: {{ $isTempleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการวัด</span>
-                                            <span class="text-xs text-slate-500">1</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-                                        <a
-                                            href="{{ route('admin.temples.index') }}"
-                                            class="{{ request()->routeIs('admin.temples.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            รายการวัด
-                                        </a>
-                                    </div>
-                                </details>
-                                @endif
-
-                                @if ($canViewArticles)
-                                <details
-                                    x-data="{ open: {{ $isArticleManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการบทความ</span>
-                                            <span class="text-xs text-slate-500">2</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-                                        <a
-                                            href="{{ route('admin.content.articles.index') }}"
-                                            class="{{ request()->routeIs('admin.content.articles.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            บทความ
-                                        </a>
-
-                                        <a
-                                            href="{{ route('admin.content.article-tags.index') }}"
-                                            class="{{ request()->routeIs('admin.content.article-tags.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            แท็กบทความ
-                                        </a>
-                                    </div>
-                                </details>
-                                @endif
-
-                                @if ($canViewCategories)
-                                <details
-                                    x-data="{ open: {{ $isCategoryManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการหมวดหมู่</span>
-                                            <span class="text-xs text-slate-500">1</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-                                        <a
-                                            href="{{ route('admin.categories.index') }}"
-                                            class="{{ request()->routeIs('admin.categories.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            หมวดหมู่
-                                        </a>
-                                    </div>
-                                </details>
-                                @endif
-
-                                @if ($canViewMedia)
-                                <details
-                                    x-data="{ open: {{ $isMediaManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการคลังสื่อ</span>
-                                            <span class="text-xs text-slate-500">1</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-
-                                        <a
-                                            href="{{ route('admin.media.index') }}"
-                                            class="{{ request()->routeIs('admin.media.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            คลังสื่อ
-                                        </a>
-                                    </div>
-                                </details>
-                                @endif
-
-                                @if ($canViewLayoutManagement)
-                                <details
-                                    x-data="{ open: {{ $isLayoutManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการโครงหน้าเว็บ</span>
-                                            <span class="text-xs text-slate-500">3</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-                                        @if ($canViewMenus)
-                                        <a
-                                            href="{{ route('admin.content.menus.index') }}"
-                                            class="{{ request()->routeIs('admin.content.menus.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            เมนู
-                                        </a>
-                                        @endif
-
-                                        @if ($canViewPages)
-                                        <a
-                                            href="{{ route('admin.content.pages.index') }}"
-                                            class="{{ request()->routeIs('admin.content.pages.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            หน้าเว็บไซต์
-                                        </a>
-                                        @endif
-
-                                        @if ($canViewMenus)
-                                        <a
-                                            href="{{ route('admin.content.footer.edit') }}"
-                                            class="{{ request()->routeIs('admin.content.footer.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            Footer
-                                        </a>
-                                        @endif
-                                    </div>
-                                </details>
-                                @endif
-
-                                @if ($canViewInteractions)
-                                <details
-                                    x-data="{ open: {{ $isInteractionManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                                    x-bind:open="open"
-                                    class="overflow-hidden rounded-xl border border-white/10 bg-[#0f1727]/70 p-2"
-                                >
-                                    <summary
-                                        @click.prevent="open = !open"
-                                        class="cursor-pointer list-none rounded-lg px-3 py-2 font-medium text-slate-400 hover:bg-white/5 hover:text-white"
-                                    >
-                                        <div class="flex items-center justify-between">
-                                            <span>จัดการปฏิสัมพันธ์</span>
-                                            <span class="text-xs text-slate-500">2</span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-1 space-y-1">
-                                        <a
-                                            href="{{ route('admin.interactions.reviews.index') }}"
-                                            class="{{ request()->routeIs('admin.interactions.reviews.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            รีวิววัด
-                                        </a>
-
-                                        <a
-                                            href="{{ route('admin.interactions.comments.index') }}"
-                                            class="{{ request()->routeIs('admin.interactions.comments.*')
-                                                ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                                : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                        >
-                                            ความคิดเห็น
-                                        </a>
-                                    </div>
-                                </details>
-                                @endif
-                            </div>
-                        </details>
-                        @endif
-
-                        @if ($canViewAccessManagement)
-                        <details
-                            x-data="{ open: {{ $isAccessManagementเปิดใช้งาน ? 'true' : 'false' }} }"
-                            x-bind:open="open"
-                            class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2 shadow-lg shadow-slate-950/20 backdrop-blur"
-                        >
-                            <summary
-                                @click.prevent="open = !open"
-                                class="cursor-pointer list-none rounded-xl px-3 py-2.5 font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-                            >
-                                <div class="flex items-center justify-between">
-                                    <span>จัดการสิทธิ์ผู้ใช้งาน</span>
-                                    <span class="text-xs text-slate-500">2</span>
-                                </div>
-                            </summary>
-
-                            <div class="mt-2 space-y-1">
-                                @if ($canViewUsers)
-                                <a
-                                    href="{{ route('admin.users.index') }}"
-                                    class="{{ request()->routeIs('admin.users.*')
-                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                >
-                                    ผู้ใช้งาน
-                                </a>
-                                @endif
-
-                                @if ($canViewRoles)
-                                <a
-                                    href="{{ route('admin.roles.index') }}"
-                                    class="{{ request()->routeIs('admin.roles.*')
-                                        ? 'block rounded-xl border border-blue-400/30 bg-blue-900/80 px-4 py-2.5 text-blue-300 shadow-md shadow-blue-950/30'
-                                        : 'block rounded-xl px-4 py-2.5 text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                                >
-                                    บทบาทผู้ใช้งาน
-                                </a>
-                                @endif
-
-                            </div>
-                        </details>
-                        @endif
-
-                        <a
-                            href="{{ route('admin.profile.edit') }}"
-                            class="{{ request()->routeIs('admin.profile.*')
-                                ? 'block rounded-2xl border border-blue-400/30 bg-blue-900/80 px-4 py-3 font-medium text-blue-300 shadow-md shadow-blue-950/30'
-                                : 'block rounded-2xl px-4 py-3 font-medium text-slate-400 hover:bg-white/5 hover:text-white' }}"
-                        >
-                            โปรไฟล์ของฉัน
-                        </a>
-                        
-                    </nav>
-
-                    {{-- Logout - shrink-0 ทำให้ติดล่างเสมอ ไม่ถูกดันออก --}}
-                    <div class="shrink-0 border-t border-white/10 px-4 py-4">
-                        <form method="POST" action="{{ route('admin.logout') }}">
-                            @csrf
-                            <button
-                                type="submit"
-                                class="w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                            >
-                                ออกจากระบบ
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </aside>
+            @include('components.layouts.admin.sidebar')
 
             <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-                <header class="sticky top-0 z-20 border-b border-white/10 bg-[#0b1220]/90 shadow-lg shadow-slate-950/10 backdrop-blur">
-                    <div class="flex items-center justify-between px-5 py-4 md:px-6">
-                        <div class="flex items-center gap-3">
-                            <button
-                                type="button"
-                                @click="sidebarOpen = !sidebarOpen"
-                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white"
-                                aria-label="Toggle sidebar"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
-                            </button>
-
-                            <div>
-                                <h2 class="text-xl font-semibold text-white">
-                                    {{ $header ?? 'แดชบอร์ด' }}
-                                </h2>
-                            </div>
-                        </div>
-
-                        <a
-                            href="{{ route('admin.profile.edit') }}"
-                            class="hidden rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white sm:inline-flex"
-                        >
-                            {{ $admin?->email ?? '-' }}
-                        </a>
-                    </div>
-                </header>
+                @include('components.layouts.admin.topbar')
 
                 <main class="admin-content flex-1 p-5 md:p-6">
                     {{ $slot }}
@@ -586,128 +176,6 @@
             </div>
         </div>
     </div>
-    <script>
-        (() => {
-            const storage = window.sessionStorage;
-            const namespace = 'papaiwat:admin-form-draft:';
-            const ignoredFormIds = new Set(['article-form', 'temple-form']);
-            const skippedFieldNames = new Set(['_token', '_method', 'password', 'password_confirmation']);
-
-            const shouldAutosave = (form) => {
-                const method = (form.getAttribute('method') || 'GET').toUpperCase();
-
-                if (form.dataset.adminAutosave === 'off' || method === 'GET' || ignoredFormIds.has(form.id)) {
-                    return false;
-                }
-
-                if (form.closest('aside') && form.action.includes('/logout')) {
-                    return false;
-                }
-
-                return Boolean(form.querySelector('input[name], textarea[name], select[name]'));
-            };
-
-            const storageKey = (form) => {
-                const action = form.getAttribute('action') || window.location.pathname;
-                const method = (form.getAttribute('method') || 'POST').toUpperCase();
-
-                return namespace + method + ':' + action;
-            };
-
-            const readDraft = (key) => {
-                try {
-                    return JSON.parse(storage.getItem(key)) || {};
-                } catch (error) {
-                    return {};
-                }
-            };
-
-            const collect = (form) => {
-                const fields = {};
-                const checks = {};
-
-                form.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
-                    if (field.disabled || skippedFieldNames.has(field.name) || field.type === 'file') {
-                        return;
-                    }
-
-                    if (field.type === 'hidden' && field.name.startsWith('_')) {
-                        return;
-                    }
-
-                    if (field.type === 'checkbox' || field.type === 'radio') {
-                        checks[field.name] ??= [];
-
-                        if (field.checked) {
-                            checks[field.name].push(field.value);
-                        }
-
-                        return;
-                    }
-
-                    fields[field.name] = field.value;
-                });
-
-                return { fields, checks };
-            };
-
-            const save = (form) => {
-                storage.setItem(storageKey(form), JSON.stringify(collect(form)));
-            };
-
-            const restore = (form) => {
-                const draft = readDraft(storageKey(form));
-
-                form.querySelectorAll('input[name], textarea[name], select[name]').forEach((field) => {
-                    if (field.disabled || skippedFieldNames.has(field.name) || field.type === 'file') {
-                        return;
-                    }
-
-                    if (field.type === 'hidden' && field.name.startsWith('_')) {
-                        return;
-                    }
-
-                    if (field.type === 'checkbox' || field.type === 'radio') {
-                        const values = draft.checks?.[field.name];
-
-                        if (Array.isArray(values)) {
-                            field.checked = values.includes(field.value);
-                            field.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-
-                        return;
-                    }
-
-                    if (Object.prototype.hasOwnProperty.call(draft.fields || {}, field.name)) {
-                        field.value = draft.fields[field.name] ?? '';
-                        field.dispatchEvent(new Event('input', { bubbles: true }));
-                        field.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-            };
-
-            const bind = () => {
-                document.querySelectorAll('form').forEach((form) => {
-                    if (!shouldAutosave(form) || form.dataset.adminAutosaveBound === 'true') {
-                        return;
-                    }
-
-                    form.dataset.adminAutosaveBound = 'true';
-                    restore(form);
-
-                    form.addEventListener('input', () => save(form), true);
-                    form.addEventListener('change', () => save(form), true);
-                    form.addEventListener('submit', () => storage.removeItem(storageKey(form)));
-                    window.addEventListener('beforeunload', () => save(form));
-                });
-            };
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bind);
-            } else {
-                bind();
-            }
-        })();
-    </script>
+    @include('components.layouts.admin.scripts')
 </body>
 </html>

@@ -32,7 +32,13 @@
         @endif
 
         {{-- Filter --}}
-        <div class="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+        <div class="relative z-[70] rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/20 backdrop-blur">
+            @php
+                $filterKeys = ['search', 'status'];
+                $activeFilterCount = collect(request()->only($filterKeys))->filter(fn ($value) => filled($value))->count();
+                $filterSelectClass = 'w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
+            @endphp
+
             <form method="GET" action="{{ route('admin.content.article-tags.index') }}" class="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div class="lg:col-span-7">
                     <label for="search" class="mb-1.5 block text-xs font-medium text-slate-400">ค้นหาแท็ก</label>
@@ -47,16 +53,20 @@
                 </div>
 
                 <div class="lg:col-span-3">
-                    <label for="status" class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
-                    <select
-                        id="status"
-                        name="status"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="" class="bg-slate-900">ทุกสถานะ</option>
-                        <option value="active" class="bg-slate-900" @selected(request('status') === 'active')>เปิดใช้งาน</option>
-                        <option value="inactive" class="bg-slate-900" @selected(request('status') === 'inactive')>ปิดใช้งาน</option>
-                    </select>
+                    <label class="mb-1.5 block text-xs font-medium text-slate-400">สถานะ</label>
+                    @include('admin.content.partials._searchable_select', [
+                        'id' => 'status',
+                        'name' => 'status',
+                        'selected' => request('status'),
+                        'emptyLabel' => 'ทุกสถานะ',
+                        'placeholder' => 'เลือกสถานะ',
+                        'searchPlaceholder' => 'ค้นหาสถานะ...',
+                        'inputClass' => $filterSelectClass,
+                        'options' => collect([
+                            ['value' => 'active', 'label' => 'เปิดใช้งาน', 'search' => 'active เปิดใช้งาน'],
+                            ['value' => 'inactive', 'label' => 'ปิดใช้งาน', 'search' => 'inactive ปิดใช้งาน'],
+                        ]),
+                    ])
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 lg:col-span-2 lg:self-end">
@@ -75,10 +85,16 @@
                     </a>
                 </div>
             </form>
+
+            @if ($activeFilterCount > 0)
+                <div class="mt-3 inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-200">
+                    ใช้ตัวกรอง {{ $activeFilterCount }} รายการ
+                </div>
+            @endif
         </div>
 
         {{-- Table --}}
-        <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
+        <section class="relative z-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-lg shadow-slate-950/20 backdrop-blur">
             <div class="flex flex-col gap-1 border-b border-white/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-base font-semibold text-white">รายการแท็ก</h2>

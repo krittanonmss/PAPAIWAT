@@ -1,7 +1,9 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const form = document.querySelector('[data-ajax-list-form]');
-        const results = document.querySelector('[data-ajax-list-results]');
+        const currentForm = () => document.querySelector('[data-ajax-list-form]');
+        const currentResults = () => document.querySelector('[data-ajax-list-results]');
+        const form = currentForm();
+        const results = currentResults();
 
         if (!form || !results) {
             return;
@@ -11,7 +13,8 @@
         let inputTimer = null;
         let isResetting = false;
 
-        const buildUrl = (baseUrl = form.action) => {
+        const buildUrl = (baseUrl = currentForm()?.action) => {
+            const form = currentForm();
             const url = new URL(baseUrl, window.location.origin);
             const formData = new FormData(form);
 
@@ -27,6 +30,14 @@
         };
 
         const loadList = async (url, pushState = true) => {
+            const form = currentForm();
+            const results = currentResults();
+
+            if (!form || !results) {
+                window.location.href = url.toString();
+                return;
+            }
+
             if (controller) {
                 controller.abort();
             }
@@ -59,6 +70,7 @@
                 }
 
                 results.innerHTML = nextResults.innerHTML;
+                window.Alpine?.initTree?.(results);
 
                 if (pushState) {
                     window.history.pushState({}, '', url.toString());
@@ -76,12 +88,22 @@
             }
         };
 
-        form.addEventListener('submit', (event) => {
+        document.addEventListener('submit', (event) => {
+            if (!event.target.matches('[data-ajax-list-form]')) {
+                return;
+            }
+
             event.preventDefault();
             loadList(buildUrl());
         });
 
-        form.addEventListener('change', (event) => {
+        document.addEventListener('change', (event) => {
+            const form = event.target.closest('[data-ajax-list-form]');
+
+            if (!form) {
+                return;
+            }
+
             if (isResetting) {
                 return;
             }
@@ -91,7 +113,13 @@
             }
         });
 
-        form.addEventListener('input', (event) => {
+        document.addEventListener('input', (event) => {
+            const form = event.target.closest('[data-ajax-list-form]');
+
+            if (!form) {
+                return;
+            }
+
             if (!event.target.matches('input[type="text"], input[type="search"]')) {
                 return;
             }
@@ -106,6 +134,13 @@
 
             if (resetLink) {
                 event.preventDefault();
+                const form = currentForm();
+
+                if (!form) {
+                    loadList(new URL(resetLink.href, window.location.origin));
+                    return;
+                }
+
                 isResetting = true;
                 form.reset();
                 form.querySelectorAll('input[type="hidden"]').forEach((input) => {
@@ -117,7 +152,7 @@
                 return;
             }
 
-            if (pageLink && pageLink.href.includes(window.location.pathname)) {
+            if (pageLink && new URL(pageLink.href, window.location.origin).pathname === window.location.pathname) {
                 event.preventDefault();
                 loadList(new URL(pageLink.href));
             }

@@ -118,6 +118,57 @@ class TemplateFrontendSystemFeatureTest extends TestCase
         ])->assertSessionHasErrors('content');
     }
 
+    public function test_section_editor_shows_existing_pages_as_button_destinations(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'Editor Page',
+            'slug' => 'editor-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+        Page::query()->create([
+            'title' => 'Destination Page',
+            'slug' => 'destination-page',
+            'page_type' => 'custom',
+            'status' => 'published',
+        ]);
+
+        $this->get(route('admin.content.pages.sections.create', $page))
+            ->assertOk()
+            ->assertSee('Destination Page')
+            ->assertSee('destination-page')
+            ->assertSee('โทนสีพื้นการ์ดโปร่ง')
+            ->assertSee('สไตล์แผงตัวกรอง')
+            ->assertSee('ช่องตัวกรองต่อแถว')
+            ->assertSee('ระยะห่างแผงตัวกรอง')
+            ->assertDontSee('ขนาดตัวอักษร')
+            ->assertDontSee('น้ำหนักตัวอักษร');
+    }
+
+    public function test_cta_requires_at_least_one_enabled_button(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'CTA Page',
+            'slug' => 'cta-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+
+        $this->post(route('admin.content.pages.sections.store', $page), [
+            'component_key' => 'cta',
+            'content' => json_encode([
+                'title' => 'CTA',
+                'primary_enabled' => false,
+                'primary_label' => 'Open',
+                'primary_url' => '/destination',
+                'secondary_enabled' => false,
+            ]),
+            'settings' => json_encode([]),
+            'status' => 'active',
+            'is_visible' => '1',
+        ])->assertSessionHasErrors('content');
+    }
+
     public function test_section_preview_renders_incomplete_required_content_instead_of_422(): void
     {
         $page = Page::query()->create([
@@ -137,6 +188,32 @@ class TemplateFrontendSystemFeatureTest extends TestCase
             ->assertJsonPath('html', fn ($html) => is_string($html)
                 && str_contains($html, 'ข้อความ section')
                 && ! str_contains($html, 'ตัวอย่างเซกชันมีข้อผิดพลาด'));
+    }
+
+    public function test_full_list_preview_applies_filter_panel_layout_controls(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'Filter Layout Preview',
+            'slug' => 'filter-layout-preview',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+
+        $this->postJson(route('admin.content.pages.sections.preview', $page), [
+            'component_key' => 'article_list_full',
+            'content' => json_encode(['title' => 'รายการบทความ']),
+            'settings' => json_encode([
+                'filter_panel_style' => 'outline',
+                'filter_panel_spacing' => 'spacious',
+                'filter_columns' => 2,
+            ]),
+        ])
+            ->assertOk()
+            ->assertJsonPath('html', fn ($html) => is_string($html)
+                && str_contains($html, 'data-section-filter-controls')
+                && str_contains($html, 'p-8')
+                && str_contains($html, 'gap-5 sm:grid-cols-2 xl:grid-cols-2')
+                && str_contains($html, '--section-filter-bg: transparent'));
     }
 
     public function test_page_preview_uses_frontend_section_pipeline(): void

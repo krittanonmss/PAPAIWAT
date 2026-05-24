@@ -24,10 +24,12 @@ class SectionSchemaValidator
         }
 
         if (! empty($schema['cta'])) {
-            $hasPrimary = ! empty($content['primary_label']) && ! empty($content['primary_url']);
-            $hasPrimaryPage = ! empty($content['primary_label']) && ! empty($content['primary_page_id']);
-            $hasSecondary = ! empty($content['secondary_label']) && ! empty($content['secondary_url']);
-            $hasSecondaryPage = ! empty($content['secondary_label']) && ! empty($content['secondary_page_id']);
+            $primaryEnabled = (bool) ($content['primary_enabled'] ?? true);
+            $secondaryEnabled = (bool) ($content['secondary_enabled'] ?? true);
+            $hasPrimary = $primaryEnabled && ! empty($content['primary_label']) && ! empty($content['primary_url']);
+            $hasPrimaryPage = $primaryEnabled && ! empty($content['primary_label']) && ! empty($content['primary_page_id']);
+            $hasSecondary = $secondaryEnabled && ! empty($content['secondary_label']) && ! empty($content['secondary_url']);
+            $hasSecondaryPage = $secondaryEnabled && ! empty($content['secondary_label']) && ! empty($content['secondary_page_id']);
 
             if (! $hasPrimary && ! $hasPrimaryPage && ! $hasSecondary && ! $hasSecondaryPage) {
                 throw ValidationException::withMessages([

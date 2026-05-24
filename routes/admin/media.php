@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\Content\Media\MediaController;
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['admin.auth', 'admin.active', 'admin.activity'])
+    ->middleware(['admin.auth', 'admin.active', 'admin.activity', 'admin.remember_filters'])
     ->group(function () {
 
         /*
@@ -84,6 +84,10 @@ Route::prefix('admin')
             Route::post('/quick-upload', [MediaController::class, 'quickUpload'])
                 ->middleware('admin.permission:media.create')
                 ->name('quick-upload');
+
+            Route::patch('/bulk-folder', [MediaController::class, 'bulkUpdateFolder'])
+                ->middleware('admin.permission:media.update')
+                ->name('bulk-folder');
 
             Route::post('/{media}/regenerate-variants', [MediaController::class, 'regenerateVariants'])
                 ->middleware('admin.permission:media.update')

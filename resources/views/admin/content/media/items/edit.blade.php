@@ -86,7 +86,7 @@
 
                 {{-- Main Form --}}
                 <div class="space-y-6">
-                    <section class="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <section class="overflow-visible rounded-3xl border border-white/10 bg-white/[0.04] shadow-xl shadow-slate-950/30 backdrop-blur">
                         <div class="border-b border-white/10 px-6 py-4">
                             <h2 class="text-base font-semibold text-white">ข้อมูลไฟล์</h2>
                             <p class="mt-1 text-xs text-slate-400">

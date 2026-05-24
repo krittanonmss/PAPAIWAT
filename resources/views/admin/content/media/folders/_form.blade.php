@@ -69,20 +69,25 @@
 
             <div class="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                 <div>
-                    <label for="slug_preview" class="mb-1.5 block text-sm font-medium text-slate-300">
+                    <label for="slug" class="mb-1.5 block text-sm font-medium text-slate-300">
                         URL (Slug)
                     </label>
 
                     <input
                         type="text"
-                        id="slug_preview"
-                        class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-slate-400 outline-none"
-                        readonly
+                        id="slug"
+                        name="slug"
+                        value="{{ old('slug', $folder?->slug) }}"
+                        class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="เว้นว่างไว้เพื่อให้ระบบสร้างอัตโนมัติ"
                     >
 
                     <p class="mt-1 text-xs text-slate-500">
-                        ระบบจะแสดงตัวอย่าง slug จากชื่อโฟลเดอร์
+                        กรอกเองได้ หรือเว้นว่างไว้เพื่อให้ระบบสร้างจากชื่อโฟลเดอร์ ถ้าชื่อเป็นภาษาไทยระบบจะแปลงเป็นตัวอักษรอังกฤษให้
                     </p>
+                    @error('slug')
+                        <p class="mt-1 text-sm text-rose-300">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="mt-4 rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
@@ -199,14 +204,29 @@
 <script>
     (() => {
         const folderNameInput = document.getElementById('name');
-        const slugPreviewInput = document.getElementById('slug_preview');
+        const slugInput = document.getElementById('slug');
+        let slugEdited = Boolean(slugInput?.value);
 
-        if (!folderNameInput || !slugPreviewInput) {
+        if (!folderNameInput || !slugInput) {
             return;
         }
 
         function makeSlug(value) {
-            return value
+            const thaiMap = {
+                'พระ': 'phra', 'วัด': 'wat', 'ธรรมะ': 'dhamma', 'ธรรม': 'dhamma', 'กรุงเทพ': 'bangkok',
+                'ก': 'k', 'ข': 'kh', 'ค': 'kh', 'ฆ': 'kh', 'ง': 'ng', 'จ': 'ch', 'ฉ': 'ch', 'ช': 'ch', 'ซ': 's',
+                'ญ': 'y', 'ด': 'd', 'ต': 't', 'ถ': 'th', 'ท': 'th', 'ธ': 'th', 'น': 'n', 'บ': 'b', 'ป': 'p',
+                'ผ': 'ph', 'ฝ': 'f', 'พ': 'ph', 'ฟ': 'f', 'ภ': 'ph', 'ม': 'm', 'ย': 'y', 'ร': 'r', 'ล': 'l',
+                'ว': 'w', 'ศ': 's', 'ษ': 's', 'ส': 's', 'ห': 'h', 'อ': 'o', 'ฮ': 'h', 'ะ': 'a', 'ั': 'a',
+                'า': 'a', 'ำ': 'am', 'ิ': 'i', 'ี': 'i', 'ึ': 'ue', 'ื': 'ue', 'ุ': 'u', 'ู': 'u', 'เ': 'e',
+                'แ': 'ae', 'โ': 'o', 'ใ': 'ai', 'ไ': 'ai', '่': '', '้': '', '๊': '', '๋': '', '์': '', '็': '',
+            };
+            let romanized = value.toString();
+            Object.entries(thaiMap).forEach(([thai, latin]) => {
+                romanized = romanized.split(thai).join(latin);
+            });
+
+            return romanized
                 .toLowerCase()
                 .trim()
                 .replace(/[^\w\s-]/g, '')
@@ -215,10 +235,15 @@
         }
 
         function updateSlugPreview() {
-            slugPreviewInput.value = makeSlug(folderNameInput.value);
+            if (!slugEdited) {
+                slugInput.value = makeSlug(folderNameInput.value);
+            }
         }
 
         folderNameInput.addEventListener('input', updateSlugPreview);
+        slugInput.addEventListener('input', () => {
+            slugEdited = true;
+        });
         updateSlugPreview();
     })();
 </script>

@@ -10,11 +10,10 @@ use App\Models\Interaction\PublicComment;
 use App\Models\Interaction\TempleReview;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use App\Support\SiteSettings;
 
 class PublicInteractionService
 {
-    private const AUTO_HIDE_REPORTS = 3;
-
     public function submitTempleReview(
         Temple $temple,
         AnonymousVisitor $visitor,
@@ -74,11 +73,15 @@ class PublicInteractionService
         ]);
     }
 
-    public function approveReview(TempleReview $review): TempleReview
+    public function approveReview(TempleReview $review, ?string $reason = null, ?string $note = null): TempleReview
     {
         $review->update([
             'status' => 'approved',
             'approved_at' => now(),
+            'moderation_reason' => $reason,
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
         ]);
 
         $this->syncTempleReviewStats($review->temple);
@@ -86,11 +89,15 @@ class PublicInteractionService
         return $review->refresh();
     }
 
-    public function rejectReview(TempleReview $review): TempleReview
+    public function rejectReview(TempleReview $review, ?string $reason = null, ?string $note = null): TempleReview
     {
         $review->update([
             'status' => 'rejected',
             'approved_at' => null,
+            'moderation_reason' => $reason,
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
         ]);
 
         $this->syncTempleReviewStats($review->temple);
@@ -98,21 +105,59 @@ class PublicInteractionService
         return $review->refresh();
     }
 
-    public function approveComment(PublicComment $comment): PublicComment
+    public function markReviewSpam(TempleReview $review, ?string $note = null): TempleReview
+    {
+        $review->update([
+            'status' => 'spam',
+            'approved_at' => null,
+            'moderation_reason' => 'spam',
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
+        ]);
+
+        $this->syncTempleReviewStats($review->temple);
+
+        return $review->refresh();
+    }
+
+    public function approveComment(PublicComment $comment, ?string $reason = null, ?string $note = null): PublicComment
     {
         $comment->update([
             'status' => 'approved',
             'approved_at' => now(),
+            'moderation_reason' => $reason,
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
         ]);
 
         return $comment->refresh();
     }
 
-    public function rejectComment(PublicComment $comment): PublicComment
+    public function rejectComment(PublicComment $comment, ?string $reason = null, ?string $note = null): PublicComment
     {
         $comment->update([
             'status' => 'rejected',
             'approved_at' => null,
+            'moderation_reason' => $reason,
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
+        ]);
+
+        return $comment->refresh();
+    }
+
+    public function markCommentSpam(PublicComment $comment, ?string $note = null): PublicComment
+    {
+        $comment->update([
+            'status' => 'spam',
+            'approved_at' => null,
+            'moderation_reason' => 'spam',
+            'moderation_note' => $note,
+            'moderated_by_admin_id' => auth('admin')->id(),
+            'moderated_at' => now(),
         ]);
 
         return $comment->refresh();
@@ -141,14 +186,19 @@ class PublicInteractionService
 
             $updates = ['report_count' => $reportCount];
 
-            if ($reportCount >= self::AUTO_HIDE_REPORTS) {
+            $autoHideThreshold = max(1, (int) SiteSettings::get('moderation', 'auto_hide_report_threshold', 3));
+
+            if ($reportCount >= $autoHideThreshold) {
                 $updates['status'] = 'rejected';
                 $updates['approved_at'] = null;
+                $updates['moderation_reason'] = 'auto_reported';
+                $updates['moderation_note'] = 'Auto-hidden after '.$reportCount.' reports.';
+                $updates['moderated_at'] = now();
             }
 
             $reportable->update($updates);
 
-            if ($reportable instanceof TempleReview && $reportCount >= self::AUTO_HIDE_REPORTS) {
+            if ($reportable instanceof TempleReview && $reportCount >= $autoHideThreshold) {
                 $this->syncTempleReviewStats($reportable->temple);
             }
         });

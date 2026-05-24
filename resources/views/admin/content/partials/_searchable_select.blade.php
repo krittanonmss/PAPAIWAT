@@ -32,6 +32,7 @@
 
 <div
     class="relative"
+    :class="open ? 'z-[90]' : 'z-0'"
     x-data="{
         open: false,
         dropUp: false,
@@ -39,6 +40,27 @@
         value: @js($selected),
         options: @js($normalizedOptions),
         visibleLimit: @js($visibleLimit),
+        layerTargets: [],
+        init() {
+            let element = this.$root.parentElement;
+
+            while (element) {
+                if (element.matches?.('[data-dropdown-layer]')) {
+                    this.layerTargets.push(element);
+                }
+
+                element = element.parentElement;
+            }
+
+            this.$watch('open', (isOpen) => this.updateLayer(isOpen));
+            window.addEventListener('resize', () => {
+                if (! this.open) {
+                    return;
+                }
+
+                this.updateDropDirection();
+            });
+        },
         get selectedOption() {
             return this.options.find((option) => option.value === String(this.value));
         },
@@ -77,13 +99,21 @@
                 this.$refs.valueInput.dispatchEvent(new Event('change', { bubbles: true }));
             });
         },
+        updateLayer(isOpen) {
+            this.layerTargets.forEach((layerTarget) => {
+                layerTarget.style.zIndex = isOpen ? '120' : '';
+            });
+        },
+        updateDropDirection() {
+            const rect = this.$refs.triggerButton.getBoundingClientRect();
+            this.dropUp = window.innerHeight - rect.bottom < 320 && rect.top > 320;
+        },
         toggle() {
             this.open = !this.open;
 
             if (this.open) {
                 this.$nextTick(() => {
-                    const rect = this.$refs.triggerButton.getBoundingClientRect();
-                    this.dropUp = window.innerHeight - rect.bottom < 320 && rect.top > 320;
+                    this.updateDropDirection();
                     this.$refs.searchInput?.focus();
                 });
             }
