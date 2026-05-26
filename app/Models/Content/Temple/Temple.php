@@ -90,6 +90,15 @@ class Temple extends Model
             ->orderBy('id');
     }
 
+    public function nearbyRecommendations(): HasMany
+    {
+        return $this->hasMany(TempleNearbyRecommendation::class, 'temple_id')
+            ->orderBy('category')
+            ->orderByDesc('sort_score')
+            ->orderBy('distance_meters')
+            ->orderBy('id');
+    }
+
     public function stat(): HasOne
     {
         return $this->hasOne(TempleStat::class, 'temple_id');

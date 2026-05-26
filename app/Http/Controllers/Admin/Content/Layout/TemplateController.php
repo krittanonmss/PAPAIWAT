@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Admin\Content\Layout;
 use App\Http\Controllers\Controller;
 use App\Models\Content\Content;
 use App\Models\Content\Layout\Template;
+use App\Services\Admin\AdminPreferenceService;
 use App\Services\Admin\Content\Layout\LayoutVersionService;
 use App\Support\TemplateRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TemplateController extends Controller
@@ -18,16 +18,21 @@ class TemplateController extends Controller
     public function __construct(
         private readonly TemplateRegistry $templateRegistry,
         private readonly LayoutVersionService $versionService,
-    ) {
-    }
+    ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $perPage = app(AdminPreferenceService::class)->preferredPerPage(
+            $request->user('admin'),
+            AdminPreferenceService::PER_PAGE_OPTIONS,
+            15
+        );
+
         $templates = Template::query()
             ->withCount('pages')
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate($perPage);
 
         return view('admin.content.layout.templates.index', compact('templates'));
     }
@@ -94,7 +99,7 @@ class TemplateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'key' => ['required', 'string', 'max:255', 'unique:templates,key,' . $template->id],
+            'key' => ['required', 'string', 'max:255', 'unique:templates,key,'.$template->id],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:active,inactive'],
             'is_default' => ['nullable', 'boolean'],

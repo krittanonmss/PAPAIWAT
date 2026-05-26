@@ -218,6 +218,12 @@
                         <p class="mt-4 text-sm text-stone-500">ยังไม่มีรูปภาพ</p>
                     @endif
                 </section>
+
+                <div class="mt-8">
+                    @include('frontend.templates.details.partials._nearby_recommendations', [
+                        'theme' => 'light',
+                    ])
+                </div>
             </article>
         </section>
     </main>

@@ -2,10 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Http\Controllers\Admin\Content\Article\ArticleController;
 use App\Models\Content\Content;
+use App\Services\Admin\Content\Article\ArticleDataSyncService;
 use App\Support\SlugGenerator;
-use ReflectionMethod;
 use Tests\TestCase;
 
 class ArticleSlugGenerationTest extends TestCase
@@ -50,10 +49,7 @@ class ArticleSlugGenerationTest extends TestCase
 
     private function generateSlug(string $value, ?int $ignoreContentId = null): string
     {
-        $method = new ReflectionMethod(ArticleController::class, 'generateUniqueSlug');
-        $method->setAccessible(true);
-
-        return $method->invoke(new ArticleController(), $value, $ignoreContentId);
+        return app(ArticleDataSyncService::class)->generateUniqueSlug($value, $ignoreContentId);
     }
 
     private function migrationPaths(): array

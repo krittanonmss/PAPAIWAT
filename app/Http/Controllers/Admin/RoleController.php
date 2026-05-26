@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Role;
 use App\Models\Admin\Admin;
+use App\Models\Admin\Role;
+use App\Services\Admin\AdminPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,12 +20,17 @@ class RoleController extends Controller
             $search = $request->string('search')->toString();
 
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('description', 'like', '%' . $search . '%');
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%');
             });
         }
 
-        $roles = $query->paginate(10)->withQueryString();
+        $perPage = app(AdminPreferenceService::class)->preferredPerPage(
+            $request->user('admin'),
+            AdminPreferenceService::PER_PAGE_OPTIONS,
+            10
+        );
+        $roles = $query->paginate($perPage)->withQueryString();
 
         return view('admin.roles.index', compact('roles'));
     }
@@ -60,7 +66,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:roles,name,' . $role->id],
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name,'.$role->id],
             'description' => ['nullable', 'string'],
         ]);
 

@@ -7,31 +7,32 @@ use App\Http\Requests\Admin\Article\StoreArticleRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleRequest;
 use App\Models\Admin\AuditLog;
 use App\Models\Content\Article\Article;
-use App\Models\Content\Article\ArticleStat;
+use App\Models\Content\Article\ArticleTag;
 use App\Models\Content\Category;
-use App\Models\Content\Content;
-use App\Models\Content\ContentVersion;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
 use App\Services\Admin\AdminNotificationService;
 use App\Services\Admin\AdminPreferenceService;
+use App\Services\Admin\Content\Article\ArticleDataSyncService;
 use App\Services\Admin\Content\Article\ArticleValidationService;
-use App\Support\SafeRichText;
-use App\Support\SlugGenerator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ArticleController extends Controller
 {
     private ArticleValidationService $articleValidationService;
 
-    public function __construct(?ArticleValidationService $articleValidationService = null)
-    {
+    private ArticleDataSyncService $articleDataSyncService;
+
+    public function __construct(
+        ?ArticleValidationService $articleValidationService = null,
+        ?ArticleDataSyncService $articleDataSyncService = null
+    ) {
         $this->articleValidationService = $articleValidationService ?? new ArticleValidationService;
+        $this->articleDataSyncService = $articleDataSyncService ?? new ArticleDataSyncService;
     }
 
     public function index(Request $request): View
@@ -52,10 +53,10 @@ class ArticleController extends Controller
                     $search = $request->string('search')->toString();
 
                     $q->where(function (Builder $subQuery) use ($search) {
-                        $subQuery->where('title', 'like', '%' . $search . '%')
-                            ->orWhere('slug', 'like', '%' . $search . '%')
-                            ->orWhere('excerpt', 'like', '%' . $search . '%')
-                            ->orWhere('description', 'like', '%' . $search . '%');
+                        $subQuery->where('title', 'like', '%'.$search.'%')
+                            ->orWhere('slug', 'like', '%'.$search.'%')
+                            ->orWhere('excerpt', 'like', '%'.$search.'%')
+                            ->orWhere('description', 'like', '%'.$search.'%');
                     });
                 }
 
@@ -73,7 +74,7 @@ class ArticleController extends Controller
             });
 
         if ($request->filled('author_name')) {
-            $query->where('author_name', 'like', '%' . $request->string('author_name')->toString() . '%');
+            $query->where('author_name', 'like', '%'.$request->string('author_name')->toString().'%');
         }
 
         if ($request->filled('body_format')) {
@@ -116,7 +117,7 @@ class ArticleController extends Controller
             ->orderBy('name')
             ->get();
 
-        $tags = \App\Models\Content\Article\ArticleTag::query()
+        $tags = ArticleTag::query()
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -150,57 +151,7 @@ class ArticleController extends Controller
         $validated = $request->validated();
         $this->articleValidationService->validateForSave($validated);
 
-        $article = DB::transaction(function () use ($validated) {
-            $content = Content::query()->create([
-                'content_type' => 'article',
-                'title' => $validated['title'],
-                'slug' => $this->generateUniqueSlug($validated['slug'] ?? $validated['title']),
-                'template_id' => $validated['template_id'] ?? null,
-                'excerpt' => $this->sanitizeRichText($validated['excerpt'] ?? null),
-                'description' => $this->sanitizeRichText($validated['description'] ?? null),
-                'status' => $validated['status'],
-                'is_featured' => $validated['is_featured'] ?? false,
-                'is_popular' => $validated['is_popular'] ?? false,
-                'meta_title' => $validated['meta_title'] ?? null,
-                'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? now() : null),
-                'created_by_admin_id' => auth('admin')->id(),
-                'updated_by_admin_id' => auth('admin')->id(),
-            ]);
-
-            $article = Article::query()->create([
-                'content_id' => $content->id,
-                'title_en' => $validated['title_en'] ?? null,
-                'excerpt_en' => $this->sanitizeRichText($validated['excerpt_en'] ?? null),
-                'body' => $this->sanitizeRichText($validated['body'] ?? null),
-                'body_format' => $validated['body_format'],
-                'author_name' => $validated['author_name'] ?? null,
-                'reading_time_minutes' => $validated['reading_time_minutes'] ?? null,
-                'seo_keywords' => $validated['seo_keywords'] ?? null,
-                'allow_comments' => $validated['allow_comments'] ?? true,
-                'show_on_homepage' => $validated['show_on_homepage'] ?? false,
-                'scheduled_at' => $validated['scheduled_at'] ?? null,
-                'expired_at' => $validated['expired_at'] ?? null,
-            ]);
-
-            ArticleStat::query()->create([
-                'article_id' => $article->id,
-                'view_count' => 0,
-                'like_count' => 0,
-                'bookmark_count' => 0,
-                'share_count' => 0,
-                'updated_at' => now(),
-            ]);
-
-            $this->syncCategories($content, $validated['category_ids'] ?? []);
-            $this->syncTags($article, $validated['tag_ids'] ?? []);
-            $this->syncCoverMedia($content, $validated['cover_media_id'] ?? null);
-            $this->syncRelatedArticles($article, $validated['related_article_ids'] ?? []);
-
-            $this->createVersion($article, 'created');
-
-            return $article;
-        });
+        $article = $this->articleDataSyncService->create($validated);
 
         $article->load('content.mediaUsages');
         $this->writeAuditLog($request, 'article.created', $article, null, $this->articleAuditData($article));
@@ -279,62 +230,7 @@ class ArticleController extends Controller
         $oldData = $this->articleAuditData($article);
 
         $this->articleValidationService->validateForSave($validated, $article);
-
-        DB::transaction(function () use ($validated, $article) {
-            $article->content->update([
-                'title' => $validated['title'],
-                'slug' => $this->generateUniqueSlug(
-                    $validated['slug'] ?? $validated['title'],
-                    $article->content->id
-                ),
-                'template_id' => $validated['template_id'] ?? null,
-                'excerpt' => $this->sanitizeRichText($validated['excerpt'] ?? null),
-                'description' => $this->sanitizeRichText($validated['description'] ?? null),
-                'status' => $validated['status'],
-                'is_featured' => $validated['is_featured'] ?? false,
-                'is_popular' => $validated['is_popular'] ?? false,
-                'meta_title' => $validated['meta_title'] ?? null,
-                'meta_description' => $validated['meta_description'] ?? null,
-                'published_at' => $validated['published_at'] ?? ($validated['status'] === 'published' ? ($article->content->published_at ?? now()) : null),
-                'updated_by_admin_id' => auth('admin')->id(),
-            ]);
-
-            $article->update([
-                'title_en' => $validated['title_en'] ?? null,
-                'excerpt_en' => $this->sanitizeRichText($validated['excerpt_en'] ?? null),
-                'body' => $this->sanitizeRichText($validated['body'] ?? null),
-                'body_format' => $validated['body_format'],
-                'author_name' => $validated['author_name'] ?? null,
-                'reading_time_minutes' => $validated['reading_time_minutes'] ?? null,
-                'seo_keywords' => $validated['seo_keywords'] ?? null,
-                'allow_comments' => $validated['allow_comments'] ?? true,
-                'show_on_homepage' => $validated['show_on_homepage'] ?? false,
-                'scheduled_at' => $validated['scheduled_at'] ?? null,
-                'expired_at' => $validated['expired_at'] ?? null,
-            ]);
-
-            if ($article->stat) {
-                $article->stat->update([
-                    'updated_at' => now(),
-                ]);
-            } else {
-                ArticleStat::query()->create([
-                    'article_id' => $article->id,
-                    'view_count' => 0,
-                    'like_count' => 0,
-                    'bookmark_count' => 0,
-                    'share_count' => 0,
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $this->syncCategories($article->content, $validated['category_ids'] ?? []);
-            $this->syncTags($article, $validated['tag_ids'] ?? []);
-            $this->syncCoverMedia($article->content, $validated['cover_media_id'] ?? null);
-            $this->syncRelatedArticles($article, $validated['related_article_ids'] ?? []);
-
-            $this->createVersion($article, 'updated');
-        });
+        $this->articleDataSyncService->update($article, $validated);
 
         $article->refresh()->load('content.mediaUsages');
         $newData = $this->articleAuditData($article);
@@ -395,7 +291,7 @@ class ArticleController extends Controller
             'updated_by_admin_id' => auth('admin')->id(),
         ])->save();
 
-        $this->createVersion($article, 'unpublished');
+        $this->articleDataSyncService->createVersion($article, 'unpublished');
 
         $article->refresh()->load('content.mediaUsages');
         $this->writeAuditLog($request, 'article.unpublished', $article, $oldData, $this->articleAuditData($article));
@@ -408,7 +304,7 @@ class ArticleController extends Controller
 
     private function recordPublishedTransition(Request $request, Article $article, ?array $oldData): void
     {
-        $this->createVersion($article, 'published');
+        $this->articleDataSyncService->createVersion($article, 'published');
 
         $article->refresh()->load('content.mediaUsages');
         $this->writeAuditLog($request, 'article.published', $article, $oldData, $this->articleAuditData($article));
@@ -506,115 +402,13 @@ class ArticleController extends Controller
         $article->load('content.mediaUsages');
         $oldData = $this->articleAuditData($article);
 
-        DB::transaction(function () use ($article) {
-            $this->createVersion($article, 'deleted');
-
-            $article->tags()->detach();
-            $article->relatedArticles()->detach();
-            $article->content->categories()->detach();
-            $article->content->media()->detach();
-
-            $article->content->update([
-                'updated_by_admin_id' => auth('admin')->id(),
-            ]);
-
-            $article->content->delete();
-        });
+        $this->articleDataSyncService->delete($article);
 
         $this->writeAuditLog($request, 'article.deleted', $article, $oldData, ['deleted' => true]);
 
         return redirect()
             ->route('admin.content.articles.index')
             ->with('success', 'ลบบทความเรียบร้อยแล้ว');
-    }
-
-    private function syncCategories(Content $content, array $categoryIds): void
-    {
-        $syncData = [];
-
-        foreach (array_values($categoryIds) as $index => $categoryId) {
-            $syncData[$categoryId] = [
-                'is_primary' => $index === 0,
-                'sort_order' => $index,
-                'created_at' => now(),
-            ];
-        }
-
-        $content->categories()->sync($syncData);
-    }
-
-    private function syncTags(Article $article, array $tagIds): void
-    {
-        $syncData = [];
-
-        foreach ($tagIds as $tagId) {
-            $syncData[$tagId] = [
-                'created_at' => now(),
-            ];
-        }
-
-        $article->tags()->sync($syncData);
-    }
-
-    private function syncCoverMedia(Content $content, int|string|null $coverMediaId): void
-    {
-        $content->mediaUsages()
-            ->where('role_key', 'cover')
-            ->delete();
-
-        if (!$coverMediaId) {
-            return;
-        }
-
-        $content->mediaUsages()->create([
-            'media_id' => (int) $coverMediaId,
-            'entity_type' => Content::class,
-            'entity_id' => $content->id,
-            'role_key' => 'cover',
-            'sort_order' => 0,
-            'created_by_admin_id' => auth('admin')->id(),
-        ]);
-    }
-
-    private function syncRelatedArticles(Article $article, array $relatedArticleIds): void
-    {
-        $syncData = [];
-
-        foreach (array_values($relatedArticleIds) as $index => $relatedArticleId) {
-            if ((int) $relatedArticleId === (int) $article->id) {
-                continue;
-            }
-
-            $syncData[$relatedArticleId] = [
-                'sort_order' => $index,
-                'created_at' => now(),
-            ];
-        }
-
-        $article->relatedArticles()->sync($syncData);
-    }
-
-    private function generateUniqueSlug(string $value, ?int $ignoreContentId = null): string
-    {
-        $baseSlug = SlugGenerator::make($value, 'article');
-        $slug = $baseSlug;
-        $counter = 1;
-
-        while (
-            Content::query()
-                ->withTrashed()
-                ->where('content_type', 'article')
-                ->where('slug', $slug)
-                ->when($ignoreContentId, function (Builder $query) use ($ignoreContentId) {
-                    $query->where('id', '!=', $ignoreContentId);
-                })
-                ->exists()
-        ) {
-            $slug = $baseSlug . '-' . $counter;
-            $counter++;
-        }
-
-        return $slug;
     }
 
     private function detailTemplates(string $contentType)
@@ -635,9 +429,9 @@ class ArticleController extends Controller
             ->where('media_type', 'image')
             ->when($search !== '', function (Builder $query) use ($search) {
                 $query->where(function (Builder $subQuery) use ($search) {
-                    $subQuery->where('title', 'like', '%' . $search . '%')
-                        ->orWhere('original_filename', 'like', '%' . $search . '%')
-                        ->orWhere('filename', 'like', '%' . $search . '%')
+                    $subQuery->where('title', 'like', '%'.$search.'%')
+                        ->orWhere('original_filename', 'like', '%'.$search.'%')
+                        ->orWhere('filename', 'like', '%'.$search.'%')
                         ->orWhere('id', $search);
                 });
             })
@@ -683,72 +477,6 @@ class ArticleController extends Controller
         );
 
         return $mediaItems;
-    }
-
-    private function sanitizeRichText(?string $value): ?string
-    {
-        return SafeRichText::clean($value);
-    }
-
-    private function createVersion(Article $article, string $versionName): void
-    {
-        $article->loadMissing([
-            'content.categories',
-            'content.mediaUsages',
-            'tags',
-            'relatedItems',
-        ]);
-
-        if (! $article->content) {
-            return;
-        }
-
-        ContentVersion::query()->create([
-            'content_id' => $article->content->id,
-            'content_type' => 'article',
-            'version_name' => $versionName,
-            'snapshot' => [
-                'content' => $article->content->only([
-                    'id',
-                    'content_type',
-                    'title',
-                    'slug',
-                    'template_id',
-                    'excerpt',
-                    'description',
-                    'status',
-                    'is_featured',
-                    'is_popular',
-                    'meta_title',
-                    'meta_description',
-                    'published_at',
-                ]),
-                'article' => $article->only([
-                    'id',
-                    'content_id',
-                    'title_en',
-                    'excerpt_en',
-                    'body',
-                    'body_format',
-                    'author_name',
-                    'reading_time_minutes',
-                    'seo_keywords',
-                    'allow_comments',
-                    'show_on_homepage',
-                    'scheduled_at',
-                    'expired_at',
-                ]),
-                'category_ids' => $article->content->categories->pluck('id')->values()->all(),
-                'tag_ids' => $article->tags->pluck('id')->values()->all(),
-                'media' => $article->content->mediaUsages->map(fn ($usage) => [
-                    'media_id' => $usage->media_id,
-                    'role_key' => $usage->role_key,
-                    'sort_order' => $usage->sort_order,
-                ])->values()->all(),
-                'related_article_ids' => $article->relatedItems->pluck('related_article_id')->values()->all(),
-            ],
-            'created_by_admin_id' => auth('admin')->id(),
-        ]);
     }
 
     private function perPage(Request $request, int $default): int

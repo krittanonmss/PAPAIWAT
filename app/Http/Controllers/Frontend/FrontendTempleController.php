@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Content\Temple\Temple;
 use App\Models\Interaction\TempleReview;
 use App\Services\Frontend\ContentViewTrackingService;
+use App\Services\Frontend\NearbyPlaces\NearbyPlaceRecommendationService;
 use App\Services\Interaction\AnonymousVisitorService;
 use App\Support\ContentTemplateResolver;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class FrontendTempleController extends Controller
         Temple $temple,
         ContentTemplateResolver $templateResolver,
         ContentViewTrackingService $viewTrackingService,
+        NearbyPlaceRecommendationService $nearbyPlaceRecommendationService,
         AnonymousVisitorService $visitorService
     ): View
     {
@@ -61,6 +63,8 @@ class FrontendTempleController extends Controller
             'temple' => $temple,
             'approvedReviews' => $approvedReviews,
             'visitorPendingReviews' => $visitorPendingReviews,
+            'nearbyRecommendations' => $nearbyPlaceRecommendationService->forTemple($temple),
+            'nearbyRecommendationLabels' => $nearbyPlaceRecommendationService->categoryLabels(),
             'page' => null,
         ];
 

@@ -23,6 +23,7 @@
         $adminReducedMotion = (bool) ($adminPreferences['accessibility.reduced_motion'] ?? false);
         $adminHighContrast = (bool) ($adminPreferences['accessibility.high_contrast'] ?? false);
         $adminOpenDetailInNewTab = (bool) ($adminPreferences['tables.open_detail_in_new_tab'] ?? false);
+        $adminAutosaveDrafts = (bool) ($adminPreferences['editor.autosave_drafts'] ?? true);
         $adminInAppNotifications = (bool) ($adminPreferences['notifications.in_app'] ?? true);
         $adminModerationAlerts = (bool) ($adminPreferences['notifications.moderation_alerts'] ?? true);
         $adminUnreadNotifications = collect();

@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Requests\Admin\Permission\StorePermissionRequest;
 use App\Http\Requests\Admin\Permission\UpdatePermissionRequest;
 use App\Models\Admin\Permission;
+use App\Services\Admin\AdminPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class PermissionController extends Controller
@@ -69,7 +70,11 @@ class PermissionController extends Controller
             })
             ->values();
 
-        $perPage = 5;
+        $perPage = app(AdminPreferenceService::class)->preferredPerPage(
+            $request->user('admin'),
+            AdminPreferenceService::PER_PAGE_OPTIONS,
+            5
+        );
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
 
         $paginatedGroups = new LengthAwarePaginator(

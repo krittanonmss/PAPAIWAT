@@ -234,7 +234,7 @@
                                 </td>
                                 <td class="px-5 py-4 align-top">
 	                                    <div class="flex justify-end gap-2">
-	                                        <a href="{{ route('admin.interactions.comments.show', $comment) }}" class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">รายละเอียด</a>
+	                                        <a href="{{ route('admin.interactions.comments.show', $comment) }}" data-admin-detail-link class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">รายละเอียด</a>
 	                                        @if($comment->status !== 'approved')
 	                                            <form method="POST" action="{{ route('admin.interactions.comments.approve', $comment) }}">@csrf @method('PATCH')<button class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">อนุมัติ</button></form>
 	                                        @endif

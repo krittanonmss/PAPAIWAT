@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Article\StoreArticleTagRequest;
 use App\Http\Requests\Admin\Article\UpdateArticleTagRequest;
 use App\Models\Content\Article\ArticleTag;
+use App\Services\Admin\AdminPreferenceService;
 use App\Support\SlugGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +22,8 @@ class ArticleTagController extends Controller
             $search = $request->string('search')->toString();
 
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('slug', 'like', '%' . $search . '%');
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('slug', 'like', '%'.$search.'%');
             });
         }
 
@@ -30,10 +31,16 @@ class ArticleTagController extends Controller
             $query->where('status', $request->string('status')->toString());
         }
 
+        $perPage = app(AdminPreferenceService::class)->preferredPerPage(
+            $request->user('admin'),
+            AdminPreferenceService::PER_PAGE_OPTIONS,
+            10
+        );
+
         $articleTags = $query
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         return view('admin.content.article-tags.index', compact('articleTags'));
@@ -104,7 +111,7 @@ class ArticleTagController extends Controller
                 })
                 ->exists()
         ) {
-            $slug = $baseSlug . '-' . $counter;
+            $slug = $baseSlug.'-'.$counter;
             $counter++;
         }
 

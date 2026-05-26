@@ -580,6 +580,7 @@
                                     <div class="flex justify-end gap-2">
                                         <a
                                             href="{{ route('admin.temples.show', $temple) }}"
+                                            data-admin-detail-link
                                             class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
                                         >
                                             ดู

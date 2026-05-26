@@ -4,8 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
+use App\Models\Admin\AdminPreference;
 use App\Models\Admin\AdminSession;
-use App\Models\Admin\AuditLog;
 use App\Models\Admin\Role;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Support\Facades\Hash;
@@ -58,6 +58,8 @@ class UserManagementFeatureTest extends TestCase
 
         $this->get(route('admin.users.index'))
             ->assertOk()
+            ->assertSee('data-admin-detail-link', false)
+            ->assertSee("document.querySelectorAll('.admin-content a[data-admin-detail-link]')", false)
             ->assertSee('พิมพ์ชื่อบทบาท...')
             ->assertSee('พิมพ์สถานะ...')
             ->assertSee('name="role_id"', false)
@@ -72,6 +74,29 @@ class UserManagementFeatureTest extends TestCase
             ->assertOk()
             ->assertSee('พิมพ์ชื่อบทบาท...')
             ->assertSee('พิมพ์สถานะ...');
+    }
+
+    public function test_user_index_uses_preferred_default_per_page(): void
+    {
+        AdminPreference::query()->create([
+            'admin_id' => $this->admin->id,
+            'key' => 'tables.default_per_page',
+            'value' => ['value' => 5],
+        ]);
+
+        $role = Role::query()->where('name', 'Editor')->firstOrFail();
+
+        foreach (range(1, 6) as $index) {
+            $this->createAdmin("preference-user-{$index}", "preference-user-{$index}@example.com", $role);
+        }
+
+        $this->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertViewHas('admins', function ($admins) {
+                return $admins->perPage() === 5
+                    && $admins->count() === 5
+                    && $admins->lastPage() > 1;
+            });
     }
 
     public function test_admin_can_update_user_without_replacing_password_then_change_password(): void

@@ -331,6 +331,10 @@
                     </section>
                 @endif
 
+                @include('frontend.templates.details.partials._nearby_recommendations', [
+                    'theme' => 'dark',
+                ])
+
                 <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                         <div>

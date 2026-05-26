@@ -346,6 +346,7 @@
                                         @unless ($admin->trashed())
                                             <a
                                                 href="{{ route('admin.users.show', $admin) }}"
+                                                data-admin-detail-link
                                                 class="rounded-xl border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
                                             >
                                                 ดู

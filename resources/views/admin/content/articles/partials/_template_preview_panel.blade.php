@@ -9,7 +9,7 @@
         ]))
         : null;
     $previewPanelOpen = (bool) (app(\App\Services\Admin\AdminPreferenceService::class)
-        ->forAdmin(auth('admin')->user())['editor.preview_panel_open'] ?? true);
+        ->forAdmin(auth('admin')->user())['editor.preview_panel_open'] ?? false);
 @endphp
 
 @if ($templatePreviewSrc)
@@ -55,7 +55,7 @@
             </div>
         </div>
 
-        <div x-show="previewOpen" class="relative h-[360px] bg-slate-950 md:h-[460px] xl:h-[560px]">
+        <div x-show="previewOpen" x-cloak class="relative h-[360px] bg-slate-950 md:h-[460px] xl:h-[560px]">
             <iframe
                 id="article-template-preview"
                 src="{{ $templatePreviewSrc }}"

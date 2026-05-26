@@ -16,8 +16,82 @@
         }
 
         @if ($adminDensity === 'compact')
-            .admin-content {
-                --admin-density-padding: 0.875rem;
+            body[data-admin-density="compact"] .admin-content {
+                --admin-density-padding: 1rem;
+                padding: 1rem !important;
+            }
+
+            body[data-admin-density="compact"] header > div {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+
+            body[data-admin-density="compact"] aside > div > div:first-child {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            body[data-admin-density="compact"] aside > div > div:nth-child(2),
+            body[data-admin-density="compact"] aside > div > div:last-child {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+
+            body[data-admin-density="compact"] aside nav {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+
+            body[data-admin-density="compact"] aside nav > * + * {
+                margin-top: 0.5rem !important;
+            }
+
+            body[data-admin-density="compact"] aside nav a,
+            body[data-admin-density="compact"] aside nav summary {
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .p-6 {
+                padding: 1rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .p-5 {
+                padding: 0.875rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .px-6 {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .py-6 {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .space-y-5 > :not([hidden]) ~ :not([hidden]),
+            body[data-admin-density="compact"] .admin-content .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+                margin-top: 0.875rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content .gap-5,
+            body[data-admin-density="compact"] .admin-content .gap-6 {
+                gap: 0.875rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content table th,
+            body[data-admin-density="compact"] .admin-content table td {
+                padding-top: 0.625rem !important;
+                padding-bottom: 0.625rem !important;
+            }
+
+            body[data-admin-density="compact"] .admin-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            body[data-admin-density="compact"] .admin-content select,
+            body[data-admin-density="compact"] .admin-content a[class~="py-2.5"],
+            body[data-admin-density="compact"] .admin-content button[class~="py-2.5"] {
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
             }
         @endif
 

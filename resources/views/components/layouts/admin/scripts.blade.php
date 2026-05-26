@@ -1,13 +1,7 @@
     <script>
         (() => {
             if (@js($adminOpenDetailInNewTab)) {
-                document.querySelectorAll('.admin-content a[href]').forEach((link) => {
-                    const label = (link.textContent || '').trim();
-
-                    if (! label.match(/รายละเอียด|ดูรายละเอียด/)) {
-                        return;
-                    }
-
+                document.querySelectorAll('.admin-content a[data-admin-detail-link]').forEach((link) => {
                     const url = new URL(link.href, window.location.origin);
 
                     if (url.origin !== window.location.origin || ! url.pathname.startsWith('/admin/')) {
@@ -17,6 +11,10 @@
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
                 });
+            }
+
+            if (! @js($adminAutosaveDrafts)) {
+                return;
             }
 
             const storage = window.sessionStorage;

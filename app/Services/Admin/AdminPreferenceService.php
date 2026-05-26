@@ -18,9 +18,8 @@ class AdminPreferenceService
         'tables.remember_filters' => true,
         'tables.open_detail_in_new_tab' => false,
         'editor.autosave_drafts' => true,
-        'editor.preview_panel_open' => true,
+        'editor.preview_panel_open' => false,
         'media.default_view_mode' => 'grid',
-        'media.upload_duplicate_behavior' => 'reject',
         'notifications.in_app' => true,
         'notifications.email' => false,
         'notifications.moderation_alerts' => true,
@@ -55,6 +54,7 @@ class AdminPreferenceService
                 'localization.language',
                 'localization.timezone',
                 'media.default_visibility',
+                'media.upload_duplicate_behavior',
             ])
             ->delete();
 
@@ -97,7 +97,6 @@ class AdminPreferenceService
             'editor.autosave_drafts' => (bool) ($preferences['editor']['autosave_drafts'] ?? false),
             'editor.preview_panel_open' => (bool) ($preferences['editor']['preview_panel_open'] ?? false),
             'media.default_view_mode' => $preferences['media']['default_view_mode'] ?? self::DEFAULTS['media.default_view_mode'],
-            'media.upload_duplicate_behavior' => 'reject',
             'notifications.in_app' => (bool) ($preferences['notifications']['in_app'] ?? false),
             'notifications.email' => (bool) ($preferences['notifications']['email'] ?? false),
             'notifications.moderation_alerts' => (bool) ($preferences['notifications']['moderation_alerts'] ?? false),

@@ -10,6 +10,7 @@ use App\Models\Admin\AdminSession;
 use App\Models\Admin\LoginLog;
 use App\Services\Admin\AdminNotificationService;
 use Database\Seeders\SystemAccessSeeder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\Concerns\MigratesAppDatabase;
@@ -181,7 +182,7 @@ class AdminAuthFeatureTest extends TestCase
             'ip_address' => '203.0.113.10',
             'user_agent' => 'Symfony',
         ]);
-        $request = \Illuminate\Http\Request::create(
+        $request = Request::create(
             uri: '/admin/dashboard',
             server: ['HTTP_USER_AGENT' => 'Symfony', 'REMOTE_ADDR' => '127.0.0.1']
         );
@@ -251,7 +252,6 @@ class AdminAuthFeatureTest extends TestCase
         $this->withoutMiddleware(AdminAuthenticate::class);
 
         $admin = $this->authenticateAsDefaultAdminWithTrackedSession();
-
         AdminSession::query()->create([
             'admin_id' => $admin->id,
             'session_token_hash' => hash('sha256', 'another-session'),
@@ -307,6 +307,11 @@ class AdminAuthFeatureTest extends TestCase
         $this->withoutMiddleware(AdminAuthenticate::class);
 
         $admin = $this->authenticateAsDefaultAdminWithTrackedSession();
+        AdminPreference::query()->create([
+            'admin_id' => $admin->id,
+            'key' => 'media.upload_duplicate_behavior',
+            'value' => ['value' => 'reject'],
+        ]);
 
         $this->get(route('admin.preferences.edit'))
             ->assertOk()
@@ -350,12 +355,21 @@ class AdminAuthFeatureTest extends TestCase
         $this->get(route('admin.preferences.edit'))
             ->assertOk()
             ->assertSee("document.body.dataset.adminTheme = 'light';", false)
+            ->assertSee("document.body.dataset.adminDensity = 'compact';", false)
             ->assertSee("document.body.dataset.adminDetailNewTab = '1';", false)
-            ->assertSee("document.body.dataset.adminReducedMotion = '1';", false);
+            ->assertSee("document.body.dataset.adminReducedMotion = '1';", false)
+            ->assertSee('body[data-admin-density="compact"] .admin-content', false)
+            ->assertSee('padding: 1rem !important;', false)
+            ->assertSee('if (true) {', false)
+            ->assertSee('if (! false) {', false);
 
         $this->assertDatabaseMissing('admin_preferences', [
             'admin_id' => $admin->id,
             'key' => 'editor.default_body_format',
+        ]);
+        $this->assertDatabaseMissing('admin_preferences', [
+            'admin_id' => $admin->id,
+            'key' => 'media.upload_duplicate_behavior',
         ]);
 
         $this->assertTrue(

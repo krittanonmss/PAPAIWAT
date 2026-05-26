@@ -7,12 +7,13 @@ use App\Models\Admin\Admin;
 use App\Models\Admin\AdminSession;
 use App\Models\Admin\AuditLog;
 use App\Models\Admin\Role;
+use App\Services\Admin\AdminPreferenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserManagementController extends Controller
@@ -45,7 +46,12 @@ class UserManagementController extends Controller
             $query->where('role_id', $request->integer('role_id'));
         }
 
-        $admins = $query->paginate(10)->withQueryString();
+        $perPage = app(AdminPreferenceService::class)->preferredPerPage(
+            $request->user('admin'),
+            AdminPreferenceService::PER_PAGE_OPTIONS,
+            10
+        );
+        $admins = $query->paginate($perPage)->withQueryString();
         $roles = Role::query()->orderByDesc('level')->orderBy('name')->get();
 
         return view('admin.user-management.index', compact('admins', 'roles'));
