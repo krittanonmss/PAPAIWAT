@@ -27,13 +27,20 @@
             </div>
         @endif
 
-        <nav class="flex flex-wrap gap-2 border-b border-white/10 pb-4" aria-label="Settings tabs">
-            @foreach ($tabs as $tab => $label)
-                <a href="{{ route('admin.settings.edit', ['tab' => $tab]) }}"
-                    class="{{ $activeTab === $tab ? 'border-blue-400/30 bg-blue-900/70 text-blue-200' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/10 hover:text-white' }} rounded-xl border px-4 py-2.5 text-sm font-medium">
-                    {{ $label }}
-                </a>
-            @endforeach
+        <nav class="sticky top-4 z-20 rounded-3xl border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-slate-950/30 backdrop-blur" aria-label="Settings tabs">
+            <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                @foreach ($tabs as $tab => $label)
+                    <a href="{{ route('admin.settings.edit', ['tab' => $tab]) }}"
+                        @class([
+                            'rounded-2xl border px-4 py-3 text-center text-sm font-semibold transition',
+                            'border-blue-400/30 bg-blue-500/20 text-blue-100' => $activeTab === $tab,
+                            'border-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white' => $activeTab !== $tab,
+                        ])
+                        @if ($activeTab === $tab) aria-current="page" @endif>
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
         </nav>
 
         @if ($activeTab !== 'audit')

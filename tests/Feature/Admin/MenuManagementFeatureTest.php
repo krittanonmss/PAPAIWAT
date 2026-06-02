@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
 use App\Models\Admin\Role;
+use App\Models\Content\Article\Article;
 use App\Models\Content\Content;
 use App\Models\Content\Layout\Menu;
 use App\Models\Content\Layout\MenuItem;
@@ -118,7 +119,7 @@ class MenuManagementFeatureTest extends TestCase
             'name' => 'Header Two',
             'slug' => 'header-two',
             'location_key' => 'header',
-            'status' => 'active',
+            'status' => 'inactive',
             'is_default' => '1',
         ])->assertRedirect(route('admin.content.menus.index'));
 
@@ -126,6 +127,7 @@ class MenuManagementFeatureTest extends TestCase
         $this->assertTrue($footer->fresh()->is_default);
 
         $newHeader = Menu::query()->where('slug', 'header-two')->firstOrFail();
+        $this->assertSame('active', $newHeader->status);
         $this->delete(route('admin.content.menus.destroy', $newHeader))
             ->assertSessionHasErrors('menu');
 
@@ -151,20 +153,93 @@ class MenuManagementFeatureTest extends TestCase
             'page_type' => 'custom',
             'status' => 'published',
         ]);
+        Page::query()->create([
+            'title' => 'Lookup Draft Page Target',
+            'slug' => 'lookup-draft-page-target',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
         Content::query()->create([
             'content_type' => 'article',
             'title' => 'Lookup Content Target',
             'slug' => 'lookup-content-target',
             'status' => 'published',
         ]);
+        Content::query()->create([
+            'content_type' => 'article',
+            'title' => 'Lookup Draft Content Target',
+            'slug' => 'lookup-draft-content-target',
+            'status' => 'draft',
+        ]);
 
         $this->getJson(route('admin.content.menu-items.lookups.pages', [$menu, 'q' => 'Lookup Page']))
             ->assertOk()
-            ->assertJsonPath('items.0.label', 'Lookup Page Target');
+            ->assertJsonPath('items.0.label', 'Lookup Page Target')
+            ->assertJsonMissing(['label' => 'Lookup Draft Page Target']);
 
         $this->getJson(route('admin.content.menu-items.lookups.contents', [$menu, 'q' => 'Lookup Content']))
             ->assertOk()
-            ->assertJsonPath('items.0.label', 'Lookup Content Target');
+            ->assertJsonPath('items.0.label', 'Lookup Content Target')
+            ->assertJsonMissing(['label' => 'Lookup Draft Content Target']);
+    }
+
+    public function test_enabled_menu_item_requires_published_reachable_target(): void
+    {
+        $menu = $this->menu();
+        $draftPage = Page::query()->create([
+            'title' => 'Draft Page',
+            'slug' => 'draft-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ]);
+        $orphanContent = Content::query()->create([
+            'content_type' => 'article',
+            'title' => 'Orphan Article',
+            'slug' => 'orphan-article',
+            'status' => 'published',
+        ]);
+        $publishedContent = Content::query()->create([
+            'content_type' => 'article',
+            'title' => 'Published Article',
+            'slug' => 'published-article',
+            'status' => 'published',
+        ]);
+        Article::query()->create([
+            'content_id' => $publishedContent->id,
+            'body' => 'Body',
+            'body_format' => 'markdown',
+        ]);
+
+        $this->post(route('admin.content.menu-items.store', $menu), [
+            'label' => 'Draft page',
+            'menu_item_type' => 'page',
+            'page_id' => $draftPage->id,
+            'target' => '_self',
+            'is_enabled' => '1',
+        ])->assertSessionHasErrors('page_id');
+
+        $this->post(route('admin.content.menu-items.store', $menu), [
+            'label' => 'Disabled draft page',
+            'menu_item_type' => 'page',
+            'page_id' => $draftPage->id,
+            'target' => '_self',
+        ])->assertRedirect(route('admin.content.menus.show', $menu));
+
+        $this->post(route('admin.content.menu-items.store', $menu), [
+            'label' => 'Orphan content',
+            'menu_item_type' => 'content',
+            'content_id' => $orphanContent->id,
+            'target' => '_self',
+            'is_enabled' => '1',
+        ])->assertSessionHasErrors('content_id');
+
+        $this->post(route('admin.content.menu-items.store', $menu), [
+            'label' => 'Published content',
+            'menu_item_type' => 'content',
+            'content_id' => $publishedContent->id,
+            'target' => '_self',
+            'is_enabled' => '1',
+        ])->assertRedirect(route('admin.content.menus.show', $menu));
     }
 
     public function test_parameterless_route_ignores_stale_route_params_while_custom_route_validates_json(): void

@@ -54,7 +54,6 @@ class FooterSettingsController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'brand_title' => ['nullable', 'string', 'max:120'],
             'brand_description' => ['nullable', 'string', 'max:500'],
             'footer_note' => ['nullable', 'string', 'max:500'],
             'copyright_text' => ['nullable', 'string', 'max:255'],
@@ -165,7 +164,9 @@ class FooterSettingsController extends Controller
             'parent_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('menu_items', 'id')->where(fn ($query) => $query->where('menu_id', $menu->id)),
+                Rule::exists('menu_items', 'id')->where(fn ($query) => $query
+                    ->where('menu_id', $menu->id)
+                    ->whereNull('parent_id')),
             ],
             'label' => ['required', 'string', 'max:255'],
             'external_url' => ['required', 'string', 'max:255'],

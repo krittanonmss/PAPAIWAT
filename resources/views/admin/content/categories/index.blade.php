@@ -217,7 +217,7 @@
                     'id' => 'bulk_move_parent_id',
                     'name' => 'parent_id',
                     'selected' => '',
-                    'searchUrl' => route('admin.lookups.categories'),
+                    'searchUrl' => route('admin.lookups.categories', ['status' => 'active']),
                     'placeholder' => 'เลือกหมวดหมู่ปลายทาง',
                     'searchPlaceholder' => 'ค้นหาชื่อ / slug / ID',
                     'emptyLabel' => 'ยังไม่เลือกปลายทาง',

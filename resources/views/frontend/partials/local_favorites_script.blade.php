@@ -1,8 +1,30 @@
+@php
+    $canSyncLocalFavorites = auth()->check()
+        && auth()->user()?->hasVerifiedEmail()
+        && \Illuminate\Support\Facades\Schema::hasTable('user_favorites');
+    $localAccountFavorites = $canSyncLocalFavorites
+        ? \App\Models\UserFavorite::query()
+            ->where('user_id', auth()->id())
+            ->latest('added_at')
+            ->limit(100)
+            ->get()
+            ->map(fn ($favorite) => [
+                'type' => $favorite->favoritable_type,
+                'id' => (int) $favorite->favoritable_id,
+                'addedAt' => $favorite->added_at?->toISOString(),
+            ])
+            ->values()
+        : collect();
+@endphp
+
 <script>
     (() => {
         const storageKey = 'papaiwat_favorites';
         const endpoint = @json(route('interactions.favorite'));
+        const syncEndpoint = @json($canSyncLocalFavorites ? route('favorites.sync') : null);
+        const accountFavorites = @json($localAccountFavorites);
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        let initialSyncPromise = null;
 
         const readFavorites = () => {
             try {
@@ -35,6 +57,22 @@
         };
 
         const itemKey = (item) => `${item.type}:${Number(item.id)}`;
+
+        const mergeFavorites = (...groups) => {
+            const merged = new Map();
+
+            groups.flat().forEach((item) => {
+                if (item?.type && item?.id) {
+                    merged.set(itemKey(item), {
+                        type: item.type,
+                        id: Number(item.id),
+                        addedAt: item.addedAt || null,
+                    });
+                }
+            });
+
+            return Array.from(merged.values());
+        };
 
         const currentCount = (type, id) => {
             const element = document.querySelector(`[data-favorite-count="${type}:${id}"]`);
@@ -69,6 +107,68 @@
 
             const data = await response.json();
             updateCount(payload.type, payload.id, data.count);
+        };
+
+        const syncUserFavorites = async (mode = 'pull') => {
+            if (!syncEndpoint) {
+                return;
+            }
+
+            try {
+                const response = await fetch(syncEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        mode,
+                        items: readFavorites(),
+                    }),
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                writeFavorites(data.items || []);
+            } catch (error) {
+                //
+            }
+        };
+
+        const isPayloadSaved = (payload) => {
+            const key = itemKey(payload);
+
+            return readFavorites().some((item) => itemKey(item) === key);
+        };
+
+        const refreshButtonsFromStorage = () => {
+            document.querySelectorAll('[data-local-favorite-toggle]').forEach((button) => {
+                try {
+                    const payload = JSON.parse(button.dataset.favorite || '{}');
+
+                    if (payload.type && payload.id) {
+                        updateButton(button, isPayloadSaved(payload));
+                    }
+                } catch (error) {
+                    //
+                }
+            });
+        };
+
+        const syncInitialFavorites = () => {
+            if (!syncEndpoint) {
+                return Promise.resolve();
+            }
+
+            initialSyncPromise ||= syncUserFavorites('pull').then(() => {
+                refreshButtonsFromStorage();
+            });
+
+            return initialSyncPromise;
         };
 
         const updateButton = (button, isSaved) => {
@@ -113,6 +213,10 @@
         };
 
         const init = () => {
+            if (accountFavorites.length > 0) {
+                writeFavorites(accountFavorites);
+            }
+
             if (!document.getElementById('local-favorite-style')) {
                 const style = document.createElement('style');
                 style.id = 'local-favorite-style';
@@ -154,7 +258,7 @@
                 }
 
                 const key = itemKey(payload);
-                const isSaved = () => readFavorites().some((item) => itemKey(item) === key);
+                const isSaved = () => isPayloadSaved(payload);
 
                 updateButton(button, isSaved());
 
@@ -168,6 +272,7 @@
                         syncMatchingButtons(payload, false);
                         updateCount(payload.type, payload.id, Math.max(currentCount(payload.type, payload.id) - 1, 0));
                         syncFavoriteCount(payload, 'remove').catch(() => {});
+                        syncUserFavorites('replace').catch(() => {});
                         window.dispatchEvent(new CustomEvent('papaiwat:favorites-updated'));
                         return;
                     }
@@ -181,10 +286,27 @@
                     syncMatchingButtons(payload, true);
                     updateCount(payload.type, payload.id, currentCount(payload.type, payload.id) + 1);
                     syncFavoriteCount(payload, 'add').catch(() => {});
+                    syncUserFavorites('merge').catch(() => {});
                     window.dispatchEvent(new CustomEvent('papaiwat:favorites-updated'));
                 });
             });
+
+            syncInitialFavorites().catch(() => {});
         };
+
+        const refreshFromAccount = () => {
+            syncUserFavorites('pull')
+                .then(() => refreshButtonsFromStorage())
+                .catch(() => {});
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                refreshFromAccount();
+            }
+        });
+
+        window.addEventListener('focus', refreshFromAccount);
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);

@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Temple\Temple;
+use App\Models\Interaction\PublicComment;
 use App\Services\Admin\AdminNotificationService;
 use App\Services\Interaction\AnonymousVisitorService;
 use App\Services\Interaction\PublicInteractionService;
 use App\Support\SiteSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class PublicCommentController extends Controller
 {
@@ -51,6 +53,8 @@ class PublicCommentController extends Controller
             'parent_id' => ['nullable', 'integer', 'exists:public_comments,id'],
         ]);
 
+        $this->validateParentComment($validated['parent_id'] ?? null, $commentable);
+
         $visitor = $visitorService->resolve($request);
         abort_if($visitor->isBanned(), 403);
 
@@ -70,5 +74,25 @@ class PublicCommentController extends Controller
         );
 
         return back()->with('success', 'ความคิดเห็นของท่านกำลังรอการตรวจสอบก่อนเผยแพร่');
+    }
+
+    private function validateParentComment(mixed $parentId, object $commentable): void
+    {
+        if (blank($parentId)) {
+            return;
+        }
+
+        $parentExists = PublicComment::query()
+            ->whereKey((int) $parentId)
+            ->where('status', 'approved')
+            ->where('commentable_type', $commentable::class)
+            ->where('commentable_id', $commentable->getKey())
+            ->exists();
+
+        if (! $parentExists) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'ความคิดเห็นแม่ต้องเป็นความคิดเห็นที่อนุมัติแล้วในเนื้อหาเดียวกัน',
+            ]);
+        }
     }
 }

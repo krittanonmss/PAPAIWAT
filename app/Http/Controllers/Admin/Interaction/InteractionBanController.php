@@ -19,12 +19,23 @@ class InteractionBanController extends Controller
         $defaultPerPage = app(AdminPreferenceService::class)->preferredPerPage($request->user('admin'), $perPageOptions, 20);
         $filters = [
             'search' => trim($request->string('search')->toString()),
+            'ban_type' => $request->string('ban_type')->toString(),
+            'status' => $request->string('status')->toString(),
+            'date_from' => $request->string('date_from')->toString(),
+            'date_to' => $request->string('date_to')->toString(),
             'per_page' => (int) $request->query('per_page', $defaultPerPage),
         ];
         $filters['per_page'] = in_array($filters['per_page'], $perPageOptions, true) ? $filters['per_page'] : $defaultPerPage;
 
         $bans = InteractionBan::query()
             ->with('creator')
+            ->when($filters['ban_type'] !== '', fn ($query) => $query->where('ban_type', $filters['ban_type']))
+            ->when($filters['status'] === 'active', fn ($query) => $query->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now())))
+            ->when($filters['status'] === 'expired', fn ($query) => $query->whereNotNull('expires_at')->where('expires_at', '<=', now()))
+            ->when($filters['status'] === 'permanent', fn ($query) => $query->whereNull('expires_at'))
+            ->when($filters['status'] === 'temporary', fn ($query) => $query->whereNotNull('expires_at'))
+            ->when($filters['date_from'] !== '', fn ($query) => $query->whereDate('created_at', '>=', $filters['date_from']))
+            ->when($filters['date_to'] !== '', fn ($query) => $query->whereDate('created_at', '<=', $filters['date_to']))
             ->when($filters['search'] !== '', function ($query) use ($filters) {
                 $like = '%'.$filters['search'].'%';
 
@@ -38,7 +49,12 @@ class InteractionBanController extends Controller
             ->paginate($filters['per_page'])
             ->withQueryString();
 
-        return view('admin.interactions.bans.index', compact('bans', 'filters'));
+        $types = InteractionBan::query()
+            ->distinct()
+            ->orderBy('ban_type')
+            ->pluck('ban_type');
+
+        return view('admin.interactions.bans.index', compact('bans', 'filters', 'types'));
     }
 
     public function destroy(InteractionBan $ban): RedirectResponse

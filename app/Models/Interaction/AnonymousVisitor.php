@@ -40,6 +40,27 @@ class AnonymousVisitor extends Model
 
     public function isBanned(): bool
     {
-        return $this->status === 'banned';
+        $hasActiveBan = InteractionBan::query()
+            ->where('ban_type', 'visitor')
+            ->where('value_hash', hash('sha256', $this->visitor_uuid))
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->exists();
+
+        if ($hasActiveBan) {
+            if ($this->status !== 'banned') {
+                $this->update(['status' => 'banned', 'banned_at' => $this->banned_at ?? now()]);
+            }
+
+            return true;
+        }
+
+        if ($this->status === 'banned') {
+            $this->update(['status' => 'active', 'banned_at' => null]);
+        }
+
+        return false;
     }
 }

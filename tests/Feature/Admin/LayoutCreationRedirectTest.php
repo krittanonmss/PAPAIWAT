@@ -99,4 +99,46 @@ class LayoutCreationRedirectTest extends TestCase
             'group_key' => 'layout',
         ]);
     }
+
+    public function test_footer_quick_link_parent_must_be_root_item(): void
+    {
+        $menu = Menu::query()->create([
+            'name' => 'Footer Menu',
+            'slug' => 'footer-menu-nested',
+            'location_key' => 'footer',
+            'status' => 'active',
+        ]);
+        $column = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Column',
+            'slug' => 'column',
+            'menu_item_type' => 'heading',
+            'target' => '_self',
+            'is_enabled' => true,
+        ]);
+        $child = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'parent_id' => $column->id,
+            'label' => 'Child',
+            'slug' => 'child',
+            'menu_item_type' => 'external_url',
+            'external_url' => '/child',
+            'target' => '_self',
+            'is_enabled' => true,
+        ]);
+
+        $this->post(route('admin.content.footer.links.store', $menu), [
+            'parent_id' => $child->id,
+            'label' => 'Too Deep',
+            'external_url' => '/too-deep',
+            'target' => '_self',
+        ])->assertSessionHasErrors('parent_id');
+
+        $this->post(route('admin.content.footer.links.store', $menu), [
+            'parent_id' => $column->id,
+            'label' => 'Valid Child',
+            'external_url' => '/valid-child',
+            'target' => '_self',
+        ])->assertRedirect(route('admin.content.footer.edit'));
+    }
 }

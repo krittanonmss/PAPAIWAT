@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Content\Layout\Menu;
 use App\Models\Content\Layout\MenuItem;
 use App\Support\FooterSettings;
+use App\Support\SiteSettings;
 use Tests\Concerns\MigratesAppDatabase;
 use Tests\TestCase;
 
@@ -120,8 +121,17 @@ class FrontendFooterMenuTest extends TestCase
 
     public function test_frontend_footer_uses_custom_footer_settings(): void
     {
+        SiteSettings::saveGroup('general', [
+            'site_name' => 'วัดไทย Directory',
+            'tagline' => null,
+            'contact_email' => null,
+            'contact_phone' => null,
+            'contact_address' => null,
+            'locale' => 'th',
+            'timezone' => 'Asia/Bangkok',
+        ]);
+
         FooterSettings::save([
-            'brand_title' => 'วัดไทย Custom',
             'brand_description' => 'ข้อความ footer ที่จัดการเอง',
             'footer_note' => 'หมายเหตุท้ายเว็บ',
             'copyright_text' => '© {year} โดย {brand}',
@@ -135,12 +145,45 @@ class FrontendFooterMenuTest extends TestCase
 
         $footerHtml = view('frontend.partials.footer')->render();
 
-        $this->assertStringContainsString('วัดไทย Custom', $footerHtml);
+        $this->assertStringContainsString('วัดไทย Directory', $footerHtml);
         $this->assertStringContainsString('ข้อความ footer ที่จัดการเอง', $footerHtml);
         $this->assertStringContainsString('หมายเหตุท้ายเว็บ', $footerHtml);
-        $this->assertStringContainsString('© '.date('Y').' โดย วัดไทย Custom', $footerHtml);
+        $this->assertStringContainsString('© '.date('Y').' โดย วัดไทย Directory', $footerHtml);
         $this->assertStringContainsString('grid h-11 w-11', $footerHtml);
         $this->assertStringNotContainsString('หน้าแรก</a>', $footerHtml);
+    }
+
+    public function test_site_name_setting_drives_header_and_footer_brand(): void
+    {
+        SiteSettings::saveGroup('general', [
+            'site_name' => 'เที่ยววัดไทย',
+            'tagline' => null,
+            'contact_email' => null,
+            'contact_phone' => null,
+            'contact_address' => null,
+            'locale' => 'th',
+            'timezone' => 'Asia/Bangkok',
+        ]);
+
+        FooterSettings::save([
+            'brand_title' => 'ชื่อเก่าใน Footer',
+            'brand_description' => 'ข้อความ footer',
+            'copyright_text' => '© {year} {brand}',
+            'show_brand' => true,
+            'show_menu' => false,
+            'show_bottom_bar' => true,
+            'show_border' => true,
+            'background_style' => 'glass',
+            'column_count' => '4',
+        ]);
+
+        $headerHtml = view('frontend.partials.header')->render();
+        $footerHtml = view('frontend.partials.footer')->render();
+
+        $this->assertStringContainsString('เที่ยววัดไทย', $headerHtml);
+        $this->assertStringContainsString('เที่ยววัดไทย', $footerHtml);
+        $this->assertStringContainsString('© '.date('Y').' เที่ยววัดไทย', $footerHtml);
+        $this->assertStringNotContainsString('ชื่อเก่าใน Footer', $footerHtml);
     }
 
     public function test_frontend_navigation_renders_nested_dropdown_menu_items(): void

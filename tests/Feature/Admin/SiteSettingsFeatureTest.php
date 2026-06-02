@@ -73,7 +73,7 @@ class SiteSettingsFeatureTest extends TestCase
             'slug' => 'home',
             'status' => 'published',
             'is_homepage' => true,
-            'published_at' => now(),
+            'published_at' => now()->subDay(),
         ]);
 
         SiteSettings::saveGroup('seo', [
@@ -97,6 +97,68 @@ class SiteSettingsFeatureTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('ปิดปรับปรุงเวลา 22:00 น.');
+    }
+
+    public function test_general_and_integration_settings_drive_public_runtime_output(): void
+    {
+        Page::query()->create([
+            'title' => 'Home',
+            'slug' => 'home',
+            'status' => 'published',
+            'is_homepage' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        SiteSettings::saveGroup('general', [
+            'site_name' => 'Wat Runtime',
+            'tagline' => 'Discover meaningful temples',
+            'contact_email' => 'hello@example.com',
+            'contact_phone' => '02-123-4567',
+            'contact_address' => 'Bangkok, Thailand',
+            'locale' => 'en',
+            'timezone' => 'UTC',
+        ]);
+        SiteSettings::saveGroup('integrations', [
+            'analytics_measurement_id' => 'G-ABC123',
+            'tag_manager_container_id' => 'GTM-ABC123',
+            'maps_enabled' => true,
+            'maps_public_browser_key' => 'public-maps-key',
+        ]);
+
+        $this->assertSame('GTM-ABC123', SiteSettings::get('integrations', 'tag_manager_container_id'));
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('<html lang="en">', false)
+            ->assertSee('hello@example.com')
+            ->assertSee('02-123-4567')
+            ->assertSee('Bangkok, Thailand');
+
+        $layoutHtml = view('frontend.layouts.app', [
+            'frontendSiteSettings' => SiteSettings::all(),
+        ])->render();
+
+        $this->assertStringContainsString('<title>Wat Runtime | Discover meaningful temples</title>', $layoutHtml);
+        $this->assertStringContainsString('content="Discover meaningful temples"', $layoutHtml);
+        $this->assertStringContainsString('GTM-ABC123', $layoutHtml);
+        $this->assertStringContainsString('G-ABC123', $layoutHtml);
+        $this->assertStringContainsString('maps.googleapis.com/maps/api/js?key=public-maps-key', $layoutHtml);
+
+        $this->assertSame('en', app()->getLocale());
+        $this->assertSame('UTC', config('app.timezone'));
+        $this->assertSame('UTC', date_default_timezone_get());
+
+        $contactHtml = view('frontend.templates.sections.contact', [
+            'section' => (object) [
+                'content_data' => ['title' => 'Reach us'],
+                'settings_data' => [],
+            ],
+            'frontendSiteSettings' => SiteSettings::all(),
+        ])->render();
+
+        $this->assertStringContainsString('Bangkok, Thailand', $contactHtml);
+        $this->assertStringContainsString('02-123-4567', $contactHtml);
+        $this->assertStringContainsString('hello@example.com', $contactHtml);
     }
 
     public function test_moderation_settings_block_comments_and_control_report_threshold(): void

@@ -5,6 +5,7 @@
     $selectedParentId = old('parent_id', $category?->parent_id);
     $lookupParams = [
         'max_level' => \App\Models\Content\Category::MAX_LEVEL - 1,
+        'status' => 'active',
     ];
 
     if ($category) {

@@ -67,6 +67,7 @@ class MediaFolderController extends Controller
             ->get();
 
         $parents = MediaFolder::query()
+            ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -95,6 +96,7 @@ class MediaFolderController extends Controller
     public function create(): View
     {
         $parents = MediaFolder::query()
+            ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -130,6 +132,7 @@ class MediaFolderController extends Controller
     {
         $parents = MediaFolder::query()
             ->where('id', '!=', $mediaFolder->id)
+            ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name']);
 

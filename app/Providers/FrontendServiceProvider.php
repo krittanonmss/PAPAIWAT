@@ -12,6 +12,7 @@ class FrontendServiceProvider extends ServiceProvider
     {
         View::composer([
             'frontend.layouts.app',
+            'frontend.partials.header',
             'frontend.partials.navigation',
             'frontend.partials.footer',
         ], FrontendMenuComposer::class);

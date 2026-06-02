@@ -179,12 +179,9 @@ class PublicInteractionService
                 ]
             );
 
-            $reportCount = InteractionReport::query()
-                ->where('reportable_type', $reportable::class)
-                ->where('reportable_id', $reportable->getKey())
-                ->count();
+            $reportCount = $this->syncReportCount($reportable);
 
-            $updates = ['report_count' => $reportCount];
+            $updates = [];
 
             $autoHideThreshold = max(1, (int) SiteSettings::get('moderation', 'auto_hide_report_threshold', 3));
 
@@ -202,6 +199,18 @@ class PublicInteractionService
                 $this->syncTempleReviewStats($reportable->temple);
             }
         });
+    }
+
+    public function syncReportCount(Model $reportable): int
+    {
+        $reportCount = InteractionReport::query()
+            ->where('reportable_type', $reportable::class)
+            ->where('reportable_id', $reportable->getKey())
+            ->count();
+
+        $reportable->update(['report_count' => $reportCount]);
+
+        return $reportCount;
     }
 
     public function syncTempleReviewStats(Temple $temple): void

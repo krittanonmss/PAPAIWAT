@@ -21,12 +21,14 @@ class InteractionReportController extends Controller
         PublicInteractionService $interactionService
     ): RedirectResponse {
         abort_unless((bool) SiteSettings::get('moderation', 'reports_enabled', true), 403);
+        abort_unless($review->status === 'approved', 404);
 
         $validated = $request->validate([
             'reason' => ['nullable', 'string', 'max:80'],
         ]);
 
         $visitor = $visitorService->resolve($request);
+        abort_if($visitor->isBanned(), 403);
 
         $interactionService->report(
             $review,
@@ -53,12 +55,14 @@ class InteractionReportController extends Controller
         PublicInteractionService $interactionService
     ): RedirectResponse {
         abort_unless((bool) SiteSettings::get('moderation', 'reports_enabled', true), 403);
+        abort_unless($comment->status === 'approved', 404);
 
         $validated = $request->validate([
             'reason' => ['nullable', 'string', 'max:80'],
         ]);
 
         $visitor = $visitorService->resolve($request);
+        abort_if($visitor->isBanned(), 403);
 
         $interactionService->report(
             $comment,

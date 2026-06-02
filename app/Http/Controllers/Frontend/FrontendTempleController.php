@@ -21,8 +21,7 @@ class FrontendTempleController extends Controller
         ContentViewTrackingService $viewTrackingService,
         NearbyPlaceRecommendationService $nearbyPlaceRecommendationService,
         AnonymousVisitorService $visitorService
-    ): View
-    {
+    ): View {
         $temple->load([
             'content.categories',
             'content.mediaUsages.media',
@@ -34,7 +33,7 @@ class FrontendTempleController extends Controller
             'visitRules',
             'travelInfos',
             'facilityItems.facility',
-            'nearbyPlaces.nearbyTemple.content',
+            'nearbyPlaces.nearbyTemple.content.mediaUsages.media',
         ]);
 
         abort_unless($temple->content?->status === 'published', 404);

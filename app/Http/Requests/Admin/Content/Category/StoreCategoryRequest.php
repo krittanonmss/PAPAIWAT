@@ -39,7 +39,9 @@ class StoreCategoryRequest extends FormRequest
                     return;
                 }
 
-                $parent = Category::query()->find($parentId);
+                $parent = Category::query()
+                    ->where('status', 'active')
+                    ->find($parentId);
 
                 if (! $parent) {
                     $validator->errors()->add('parent_id', 'ไม่พบหมวดหมู่แม่ที่เปิดใช้งานอยู่');

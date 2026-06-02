@@ -44,6 +44,7 @@ class MenuItemController extends Controller
         $validated = $request->validate($this->rules($menu));
 
         $this->validateTypeData($validated);
+        $this->validateUsableTarget($validated, $request->boolean('is_enabled'));
         $this->validateEditorDepth($menu, empty($validated['parent_id']) ? null : (int) $validated['parent_id']);
 
         $validated = $this->prepareMenuItemData($validated, $request, $menu);
@@ -68,6 +69,7 @@ class MenuItemController extends Controller
 
         $pages = Page::query()
             ->when($ids->isNotEmpty(), fn ($query) => $query->whereIn('id', $ids))
+            ->when($ids->isEmpty(), fn ($query) => $query->published())
             ->when($ids->isEmpty() && $q !== '', function ($query) use ($q) {
                 $query->where(function ($query) use ($q) {
                     $query->where('title', 'like', '%' . $q . '%')
@@ -103,6 +105,7 @@ class MenuItemController extends Controller
 
         $contents = Content::query()
             ->when($ids->isNotEmpty(), fn ($query) => $query->whereIn('id', $ids))
+            ->when($ids->isEmpty(), fn ($query) => $query->where('status', 'published'))
             ->when($ids->isEmpty() && $q !== '', function ($query) use ($q) {
                 $query->where(function ($query) use ($q) {
                     $query->where('title', 'like', '%' . $q . '%')
@@ -198,6 +201,7 @@ class MenuItemController extends Controller
         }
 
         $this->validateTypeData($validated);
+        $this->validateUsableTarget($validated, $request->boolean('is_enabled'));
         $this->validateEditorDepth($menu, empty($validated['parent_id']) ? null : (int) $validated['parent_id']);
 
         $validated = $this->prepareMenuItemData($validated, $request, $menu);
@@ -310,6 +314,45 @@ class MenuItemController extends Controller
 
         if ($messages !== []) {
             throw ValidationException::withMessages($messages);
+        }
+    }
+
+    private function validateUsableTarget(array $validated, bool $enabled): void
+    {
+        if (! $enabled) {
+            return;
+        }
+
+        if (($validated['menu_item_type'] ?? null) === 'page') {
+            $pageIsPublished = Page::query()
+                ->published()
+                ->whereKey((int) ($validated['page_id'] ?? 0))
+                ->exists();
+
+            if (! $pageIsPublished) {
+                throw ValidationException::withMessages([
+                    'page_id' => 'เมนูที่เปิดใช้งานต้องเลือก Page ที่ published และอยู่ในช่วงเวลาเผยแพร่',
+                ]);
+            }
+        }
+
+        if (($validated['menu_item_type'] ?? null) === 'content') {
+            $content = Content::query()
+                ->whereKey((int) ($validated['content_id'] ?? 0))
+                ->where('status', 'published')
+                ->first();
+
+            $targetExists = match ($content?->content_type) {
+                'article' => $content->article()->exists(),
+                'temple' => $content->temple()->exists(),
+                default => $content !== null,
+            };
+
+            if (! $targetExists) {
+                throw ValidationException::withMessages([
+                    'content_id' => 'เมนูที่เปิดใช้งานต้องเลือก Content ที่ published และมีหน้าปลายทางจริง',
+                ]);
+            }
         }
     }
 

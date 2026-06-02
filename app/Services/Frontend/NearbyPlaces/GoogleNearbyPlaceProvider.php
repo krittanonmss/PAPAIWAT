@@ -2,6 +2,7 @@
 
 namespace App\Services\Frontend\NearbyPlaces;
 
+use App\Support\SiteSettings;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -12,8 +13,12 @@ class GoogleNearbyPlaceProvider implements NearbyPlaceProvider
     public function search(float $latitude, float $longitude, string $category, array $settings): Collection
     {
         $apiKey = (string) config('services.google.places_api_key');
+        $siteSettings = SiteSettings::all();
+        $locale = (string) ($siteSettings['general']['locale'] ?? 'th');
 
-        if ($apiKey === '' || ! config('nearby_places.enabled')) {
+        if ($apiKey === ''
+            || ! config('nearby_places.enabled')
+            || ! (bool) ($siteSettings['integrations']['maps_enabled'] ?? false)) {
             return collect();
         }
 
@@ -46,13 +51,14 @@ class GoogleNearbyPlaceProvider implements NearbyPlaceProvider
                         'places.googleMapsUri',
                         'places.types',
                         'places.primaryType',
+                        'places.photos',
                     ]),
                 ])
                 ->post('https://places.googleapis.com/v1/places:searchNearby', [
                     'includedTypes' => $types,
                     'maxResultCount' => min(20, max((int) ($settings['limit'] ?? 6) * 3, 6)),
                     'rankPreference' => 'POPULARITY',
-                    'languageCode' => 'th',
+                    'languageCode' => in_array($locale, ['th', 'en'], true) ? $locale : 'th',
                     'regionCode' => 'TH',
                     'locationRestriction' => [
                         'circle' => [
@@ -101,8 +107,20 @@ class GoogleNearbyPlaceProvider implements NearbyPlaceProvider
             'latitude' => isset($place['location']['latitude']) ? (float) $place['location']['latitude'] : null,
             'longitude' => isset($place['location']['longitude']) ? (float) $place['location']['longitude'] : null,
             'maps_url' => $place['googleMapsUri'] ?? null,
+            'photo_names' => $this->photoNames((array) ($place['photos'] ?? [])),
             'provider_types' => array_values(array_filter((array) ($place['types'] ?? []))),
         ];
+    }
+
+    private function photoNames(array $photos): array
+    {
+        return collect($photos)
+            ->pluck('name')
+            ->filter()
+            ->take(1)
+            ->map(fn (string $name): string => ltrim($name, '/'))
+            ->values()
+            ->all();
     }
 
     private function consumeDailyBudget(): bool

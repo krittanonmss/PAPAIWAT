@@ -9,6 +9,7 @@ use App\Models\Content\Content;
 use App\Models\Content\Media\Media;
 use App\Models\Content\Media\MediaFolder;
 use App\Models\Content\Media\MediaUsage;
+use App\Models\Content\Media\MediaVariant;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -273,6 +274,113 @@ class MediaUploadFeatureTest extends TestCase
         ]);
     }
 
+    public function test_media_cannot_be_assigned_to_inactive_folder(): void
+    {
+        Storage::fake('public');
+
+        $inactiveFolder = MediaFolder::query()->create([
+            'name' => 'Inactive Assets',
+            'slug' => 'inactive-assets',
+            'status' => 'inactive',
+        ]);
+        $media = Media::query()->create([
+            'filename' => 'folder-target.jpg',
+            'path' => 'uploads/folder-target.jpg',
+            'original_filename' => 'folder-target.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'visibility' => 'public',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => Admin::query()->first()->id,
+            'uploaded_at' => now(),
+        ]);
+
+        $this->from(route('admin.media.create'))
+            ->post(route('admin.media.store'), [
+                'files' => [UploadedFile::fake()->image('inactive-folder.jpg')],
+                'media_folder_id' => $inactiveFolder->id,
+                'visibility' => 'public',
+            ])
+            ->assertRedirect(route('admin.media.create'))
+            ->assertSessionHasErrors('media_folder_id');
+
+        $this->from(route('admin.media.edit', $media))
+            ->put(route('admin.media.update', $media), [
+                'title' => 'Folder Target',
+                'media_folder_id' => $inactiveFolder->id,
+                'visibility' => 'public',
+            ])
+            ->assertRedirect(route('admin.media.edit', $media))
+            ->assertSessionHasErrors('media_folder_id');
+
+        $this->patch(route('admin.media.bulk-folder'), [
+            'media_ids' => [$media->id],
+            'media_folder_id' => $inactiveFolder->id,
+        ])->assertSessionHasErrors('media_folder_id');
+
+        $this->assertDatabaseHas('media', [
+            'id' => $media->id,
+            'media_folder_id' => null,
+        ]);
+    }
+
+    public function test_media_visibility_change_moves_file_and_variants_between_disks(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        Storage::disk('public')->put('media/uploads/2026/05/original.jpg', 'original-bytes');
+        Storage::disk('public')->put('media/uploads/2026/05/thumb.jpg', 'thumb-bytes');
+
+        $media = Media::query()->create([
+            'disk' => 'public',
+            'filename' => 'original.jpg',
+            'path' => 'media/uploads/2026/05/original.jpg',
+            'original_filename' => 'original.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'visibility' => 'public',
+            'upload_status' => 'completed',
+            'uploaded_by_admin_id' => Admin::query()->first()->id,
+            'uploaded_at' => now(),
+        ]);
+        $variant = MediaVariant::query()->create([
+            'media_id' => $media->id,
+            'variant_name' => 'thumb',
+            'disk' => 'public',
+            'directory' => 'media/uploads/2026/05',
+            'filename' => 'thumb.jpg',
+            'path' => 'media/uploads/2026/05/thumb.jpg',
+            'extension' => 'jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 10,
+            'width' => 100,
+            'height' => 100,
+            'processing_status' => 'completed',
+            'generated_at' => now(),
+        ]);
+
+        $this->put(route('admin.media.update', $media), [
+            'title' => 'Private Image',
+            'visibility' => 'private',
+        ])->assertRedirect(route('admin.media.index'));
+
+        $media->refresh();
+        $variant->refresh();
+
+        $this->assertSame('private', $media->visibility);
+        $this->assertSame('local', $media->disk);
+        $this->assertSame('local', $variant->disk);
+        $this->assertStringStartsWith('media/private/', $media->path);
+        $this->assertStringStartsWith('media/private/', $variant->path);
+        Storage::disk('local')->assertExists($media->path);
+        Storage::disk('local')->assertExists($variant->path);
+        Storage::disk('public')->assertMissing('media/uploads/2026/05/original.jpg');
+        Storage::disk('public')->assertMissing('media/uploads/2026/05/thumb.jpg');
+    }
+
     public function test_media_create_and_edit_render_preview_ui(): void
     {
         $media = Media::query()->create([
@@ -411,5 +519,39 @@ class MediaUploadFeatureTest extends TestCase
             ->assertJsonFragment([
                 'label' => 'Press Kit',
             ]);
+    }
+
+    public function test_media_folder_parent_must_be_active_and_cannot_create_cycle(): void
+    {
+        $inactiveParent = MediaFolder::query()->create([
+            'name' => 'Inactive Parent',
+            'slug' => 'inactive-parent',
+            'status' => 'inactive',
+        ]);
+        $root = MediaFolder::query()->create([
+            'name' => 'Root',
+            'slug' => 'root',
+            'status' => 'active',
+        ]);
+        $child = MediaFolder::query()->create([
+            'parent_id' => $root->id,
+            'name' => 'Child',
+            'slug' => 'child',
+            'status' => 'active',
+        ]);
+
+        $this->post(route('admin.media-folders.store'), [
+            'parent_id' => $inactiveParent->id,
+            'name' => 'Nested Under Inactive',
+            'slug' => 'nested-under-inactive',
+            'status' => 'active',
+        ])->assertSessionHasErrors('parent_id');
+
+        $this->put(route('admin.media-folders.update', $root), [
+            'parent_id' => $child->id,
+            'name' => 'Root',
+            'slug' => 'root',
+            'status' => 'active',
+        ])->assertSessionHasErrors('parent_id');
     }
 }

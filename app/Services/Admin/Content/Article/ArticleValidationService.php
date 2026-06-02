@@ -3,6 +3,7 @@
 namespace App\Services\Admin\Content\Article;
 
 use App\Models\Content\Article\Article;
+use App\Models\Content\Article\ArticleTag;
 use App\Models\Content\Category;
 use App\Models\Content\Media\Media;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +16,8 @@ class ArticleValidationService
 
         $errors += $this->validateStatus($validated, $article);
         $errors += $this->validateCategories($validated);
+        $errors += $this->validateTags($validated);
+        $errors += $this->validateRelatedArticles($validated, $article);
         $errors += $this->validateCoverMedia($validated);
         $errors += $this->validateDates($validated);
 
@@ -126,13 +129,64 @@ class ArticleValidationService
         $validCount = Category::query()
             ->whereIn('id', $categoryIds)
             ->where('type_key', 'article')
+            ->where('status', 'active')
             ->count();
 
         if ($validCount !== $categoryIds->count()) {
-            return ['category_ids' => 'หมวดหมู่บทความต้องเป็น type article เท่านั้น'];
+            return ['category_ids' => 'หมวดหมู่บทความต้องเป็น type article และ active เท่านั้น'];
         }
 
         return [];
+    }
+
+    private function validateTags(array $validated): array
+    {
+        $tagIds = collect($validated['tag_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($tagIds->isEmpty()) {
+            return [];
+        }
+
+        $validCount = ArticleTag::query()
+            ->whereIn('id', $tagIds)
+            ->where('status', 'active')
+            ->count();
+
+        return $validCount === $tagIds->count()
+            ? []
+            : ['tag_ids' => 'แท็กบทความต้อง active เท่านั้น'];
+    }
+
+    private function validateRelatedArticles(array $validated, ?Article $article): array
+    {
+        $relatedArticleIds = collect($validated['related_article_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($article) {
+            $relatedArticleIds = $relatedArticleIds
+                ->reject(fn (int $id) => $id === (int) $article->id)
+                ->values();
+        }
+
+        if ($relatedArticleIds->isEmpty()) {
+            return [];
+        }
+
+        $validCount = Article::query()
+            ->whereIn('id', $relatedArticleIds)
+            ->whereHas('content', fn ($query) => $query
+                ->where('content_type', 'article')
+                ->whereNull('deleted_at'))
+            ->count();
+
+        return $validCount === $relatedArticleIds->count()
+            ? []
+            : ['related_article_ids' => 'บทความที่เกี่ยวข้องต้องเป็นบทความที่ยังใช้งานอยู่'];
     }
 
     private function validateCoverMedia(array $validated): array

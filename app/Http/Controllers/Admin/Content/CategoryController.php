@@ -259,7 +259,9 @@ class CategoryController extends Controller
             'parent_id' => ['required', 'integer', 'exists:categories,id'],
         ]);
 
-        $parent = Category::query()->findOrFail((int) $validated['parent_id']);
+        $parent = Category::query()
+            ->where('status', 'active')
+            ->findOrFail((int) $validated['parent_id']);
         $categories = Category::query()
             ->whereIn('id', $validated['category_ids'])
             ->orderBy('level')

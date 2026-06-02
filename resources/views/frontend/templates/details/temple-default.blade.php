@@ -180,8 +180,8 @@
         </section>
 
         <section class="mx-auto grid max-w-6xl gap-6 px-4 py-10 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div class="space-y-6">
-                <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur md:p-8">
+            <div class="order-2 flex flex-col gap-6 lg:order-1">
+                <article class="order-4 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur md:p-8">
                     <h2 class="text-2xl font-semibold">ประวัติและข้อมูลวัด</h2>
                     <div class="temple-rich-content temple-rich-content-dark mt-5 space-y-5 text-sm leading-7 text-slate-300">
                         @if ($content?->description)
@@ -209,7 +209,7 @@
                 </article>
 
                 @if ($temple?->highlights?->isNotEmpty())
-                    <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <section class="order-1 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h2 class="text-2xl font-semibold">จุดเด่น</h2>
                         <div class="mt-5 grid gap-4 md:grid-cols-2">
                             @foreach ($temple->highlights as $highlight)
@@ -224,7 +224,7 @@
                     </section>
                 @endif
 
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <section class="order-3 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <h2 class="text-2xl font-semibold">แกลเลอรีรูปภาพ</h2>
                     @if ($galleryUsages->isNotEmpty())
                         <div class="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -260,7 +260,7 @@
                 </section>
 
                 @if ($temple?->visitRules?->isNotEmpty())
-                    <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <section class="order-2 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h2 class="text-2xl font-semibold">กฎการเข้าชม</h2>
                         <ul class="mt-5 space-y-3">
                             @foreach ($temple->visitRules as $rule)
@@ -276,7 +276,7 @@
                 @endif
 
                 @if ($temple?->travelInfos?->isNotEmpty())
-                    <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <section class="order-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h2 class="text-2xl font-semibold">การเดินทาง</h2>
                         <div class="mt-5 grid gap-4 md:grid-cols-2">
                             @foreach ($temple->travelInfos as $travelInfo)
@@ -306,36 +306,87 @@
                 @endif
 
                 @if ($temple?->nearbyPlaces?->isNotEmpty())
-                    <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
-                        <h2 class="text-2xl font-semibold">วัดใกล้เคียง</h2>
-                        <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    <section class="order-7 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                        <div class="flex items-end justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-blue-200">Nearby Temples</p>
+                                <h2 class="mt-2 text-2xl font-semibold">วัดใกล้เคียง</h2>
+                            </div>
+                            <span class="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs text-slate-300">
+                                {{ number_format($temple->nearbyPlaces->count()) }} วัด
+                            </span>
+                        </div>
+
+                        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             @foreach ($temple->nearbyPlaces as $nearby)
                                 @php
                                     $nearbyTemple = $nearby->nearbyTemple;
                                     $nearbyContent = $nearbyTemple?->content;
+                                    $nearbyCoverUsage = $nearbyContent?->mediaUsages?->firstWhere('role_key', 'cover');
+                                    $nearbyCoverPath = $nearbyCoverUsage?->media?->path;
+                                    $nearbyCoverUrl = $nearbyCoverPath
+                                        ? (filter_var($nearbyCoverPath, FILTER_VALIDATE_URL) ? $nearbyCoverPath : '/storage/'.ltrim($nearbyCoverPath, '/'))
+                                        : null;
+                                    $nearbySummary = $nearbyContent?->excerpt
+                                        ?: ($nearbyContent?->description ? \Illuminate\Support\Str::limit(trim(strip_tags($nearbyContent->description)), 80) : null);
                                 @endphp
-                                <a href="{{ $nearbyTemple ? route('temples.show', $nearbyTemple) : '#' }}" class="rounded-2xl border border-white/10 bg-slate-950/45 p-4 transition hover:border-blue-300/40">
-                                    <h3 class="font-medium text-white">{{ $nearbyContent?->title ?? 'วัดใกล้เคียง' }}</h3>
-                                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                                        {{ $nearby->relation_type ?: 'สถานที่ใกล้เคียง' }}
-                                        @if ($nearby->distance_km)
-                                            · {{ number_format((float) $nearby->distance_km, 1) }} กม.
+                                <a href="{{ $nearbyTemple ? route('temples.show', $nearbyTemple) : '#' }}" class="group flex min-h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/45 transition hover:-translate-y-0.5 hover:border-blue-300/40 hover:bg-slate-950/70">
+                                    <div class="h-44 overflow-hidden bg-white/[0.04]">
+                                        @if ($nearbyCoverUrl)
+                                            <img
+                                                src="{{ $nearbyCoverUrl }}"
+                                                alt="{{ $nearbyCoverUsage?->media?->alt_text ?: $nearbyContent?->title ?: 'วัดใกล้เคียง' }}"
+                                                class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                                loading="lazy"
+                                            >
+                                        @else
+                                            <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 text-xs font-medium text-slate-500">
+                                                ไม่มีรูปภาพ
+                                            </div>
                                         @endif
-                                        @if ($nearby->duration_minutes)
-                                            · {{ number_format($nearby->duration_minutes) }} นาที
+                                    </div>
+
+                                    <div class="flex min-h-[11rem] flex-1 flex-col p-4">
+                                        <h3 class="line-clamp-2 font-semibold leading-6 text-white">{{ $nearbyContent?->title ?? 'วัดใกล้เคียง' }}</h3>
+
+                                        @if ($nearbySummary)
+                                            <p class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">{{ $nearbySummary }}</p>
                                         @endif
-                                    </p>
+
+                                        <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
+                                            <span class="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-slate-300">
+                                                {{ $nearby->relation_type ?: 'สถานที่ใกล้เคียง' }}
+                                            </span>
+                                            @if ($nearby->distance_km)
+                                                <span class="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-slate-300">
+                                                    {{ number_format((float) $nearby->distance_km, 1) }} กม.
+                                                </span>
+                                            @endif
+                                            @if ($nearby->duration_minutes)
+                                                <span class="rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-slate-300">
+                                                    {{ number_format($nearby->duration_minutes) }} นาที
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <span class="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-blue-200 group-hover:text-blue-100">
+                                            ดูรายละเอียด
+                                            <span aria-hidden="true" class="transition group-hover:translate-x-0.5">→</span>
+                                        </span>
+                                    </div>
                                 </a>
                             @endforeach
                         </div>
                     </section>
                 @endif
 
-                @include('frontend.templates.details.partials._nearby_recommendations', [
-                    'theme' => 'dark',
-                ])
+                <div class="order-6">
+                    @include('frontend.templates.details.partials._nearby_recommendations', [
+                        'theme' => 'dark',
+                    ])
+                </div>
 
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <section class="order-8 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                         <div>
                             <h2 class="text-2xl font-semibold">รีวิวจากผู้เยี่ยมชม</h2>
@@ -441,8 +492,8 @@
                 </section>
             </div>
 
-            <aside class="space-y-6 lg:sticky lg:top-24 lg:self-start">
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+            <aside class="order-1 flex flex-col gap-6 lg:order-2 lg:sticky lg:top-24 lg:self-start">
+                <section class="order-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <h2 class="text-lg font-semibold">ข้อมูลวัด</h2>
                     <div class="mt-5 divide-y divide-white/10 text-sm">
                         @foreach ($infoItems as $label => $value)
@@ -460,7 +511,7 @@
                     </div>
                 </section>
 
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <section class="order-1 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <h2 class="text-lg font-semibold">ที่ตั้ง</h2>
                     <div class="mt-4 space-y-3 text-sm text-slate-300">
                         <p><span class="text-slate-500">ที่อยู่:</span> {{ $address?->address_line ?? '-' }}</p>
@@ -483,7 +534,7 @@
                     </div>
                 </section>
 
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <section class="order-2 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <h2 class="text-lg font-semibold">เวลาเปิด-ปิด</h2>
                     <div class="mt-4 divide-y divide-white/10 text-sm">
                         @forelse ($temple?->openingHours ?? collect() as $hour)
@@ -505,7 +556,7 @@
                 </section>
 
                 @if ($temple?->fees?->isNotEmpty())
-                    <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                    <section class="order-3 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                         <h2 class="text-lg font-semibold">ค่าธรรมเนียม</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($temple->fees as $fee)
@@ -526,7 +577,7 @@
                     </section>
                 @endif
 
-                <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
+                <section class="order-4 rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/30 backdrop-blur">
                     <h2 class="text-lg font-semibold">สิ่งอำนวยความสะดวก</h2>
                     <div class="mt-4 flex flex-wrap gap-2">
                         @forelse ($temple?->facilityItems ?? collect() as $item)

@@ -23,6 +23,8 @@ class TempleNearbyRecommendation extends Model
         'distance_meters',
         'maps_url',
         'sort_score',
+        'photo_names',
+        'photo_path',
         'provider_types',
         'fetched_at',
         'expires_at',
@@ -37,6 +39,7 @@ class TempleNearbyRecommendation extends Model
         'longitude' => 'decimal:7',
         'distance_meters' => 'integer',
         'sort_score' => 'decimal:2',
+        'photo_names' => 'array',
         'provider_types' => 'array',
         'fetched_at' => 'datetime',
         'expires_at' => 'datetime',
@@ -67,5 +70,14 @@ class TempleNearbyRecommendation extends Model
         return $this->distance_meters >= 1000
             ? number_format($this->distance_meters / 1000, 1).' กม.'
             : number_format($this->distance_meters).' ม.';
+    }
+
+    public function getPhotoUrlsAttribute(): array
+    {
+        if (! $this->photo_path) {
+            return [];
+        }
+
+        return ['/storage/'.ltrim($this->photo_path, '/')];
     }
 }

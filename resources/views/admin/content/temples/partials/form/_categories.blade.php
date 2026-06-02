@@ -26,7 +26,7 @@
                         'placeholder' => 'ค้นหาจากชื่อหมวดหมู่ slug หรือ ID',
                         'emptyText' => 'ยังไม่ได้เลือกหมวดหมู่',
                         'noResultsText' => 'ไม่พบหมวดหมู่ที่ตรงกับคำค้นหา',
-                        'searchUrl' => route('admin.lookups.categories', ['type' => 'temple']),
+                        'searchUrl' => route('admin.lookups.categories', ['type' => 'temple', 'status' => 'active']),
                         'selectedIds' => old('category_ids', $existingCategoryIds),
                         'selectedOptions' => $categories->map(fn ($cat) => [
                             'id' => $cat->id,
@@ -51,7 +51,7 @@
                             'emptyLabel' => '— ไม่ระบุ —',
                             'placeholder' => 'เลือกหมวดหมู่หลัก',
                             'searchPlaceholder' => 'ค้นหาหมวดหมู่หลัก...',
-                            'searchUrl' => route('admin.lookups.categories', ['type' => 'temple']),
+                            'searchUrl' => route('admin.lookups.categories', ['type' => 'temple', 'status' => 'active']),
                         ])
 
                         <p class="mt-2 text-xs leading-5 text-slate-500">

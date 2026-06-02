@@ -51,7 +51,9 @@ class UpdateCategoryRequest extends FormRequest
                 }
 
                 if ($parentId) {
-                    $parent = Category::query()->find($parentId);
+                    $parent = Category::query()
+                        ->where('status', 'active')
+                        ->find($parentId);
 
                     if (! $parent) {
                         $validator->errors()->add('parent_id', 'ไม่พบหมวดหมู่แม่ที่เปิดใช้งานอยู่');
@@ -69,6 +71,10 @@ class UpdateCategoryRequest extends FormRequest
 
                 if ($category->type_key !== $this->input('type_key') && $category->children()->exists()) {
                     $validator->errors()->add('type_key', 'ไม่สามารถเปลี่ยนประเภทของหมวดหมู่ที่มีหมวดหมู่ย่อยอยู่');
+                }
+
+                if ($category->type_key !== $this->input('type_key') && $category->contents()->exists()) {
+                    $validator->errors()->add('type_key', 'ไม่สามารถเปลี่ยนประเภทของหมวดหมู่ที่มีเนื้อหาใช้งานอยู่');
                 }
             },
         ];

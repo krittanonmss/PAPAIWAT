@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\AdminAuthenticate;
+use App\Mail\AdminNotificationMail;
 use App\Models\Admin\Admin;
 use App\Models\Admin\AdminPreference;
 use App\Models\Content\Article\Article;
@@ -11,10 +12,12 @@ use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Temple\Temple;
 use App\Models\Interaction\AnonymousVisitor;
+use App\Models\Interaction\InteractionBan;
 use App\Models\Interaction\InteractionReport;
 use App\Models\Interaction\PublicComment;
 use App\Models\Interaction\TempleReview;
 use App\Services\Interaction\PublicInteractionService;
+use App\Support\SiteSettings;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -255,6 +258,28 @@ class PublicInteractionFeatureTest extends TestCase
         ]);
     }
 
+    public function test_moderation_notification_email_setting_receives_public_alerts(): void
+    {
+        Mail::fake();
+        SiteSettings::saveGroup('moderation', [
+            'comments_enabled' => true,
+            'reviews_enabled' => true,
+            'reports_enabled' => true,
+            'auto_hide_report_threshold' => 3,
+            'notification_email' => 'moderation@example.com',
+        ]);
+
+        $article = $this->createPublishedArticle();
+
+        $this->post(route('articles.comments.store', $article), [
+            'display_name' => 'Reader',
+            'body' => 'ช่วยตรวจข้อความนี้',
+        ])->assertRedirect();
+
+        Mail::assertQueued(AdminNotificationMail::class, fn (AdminNotificationMail $mail) => $mail->hasTo('moderation@example.com'));
+        Mail::assertQueuedCount(1);
+    }
+
     public function test_article_with_comments_disabled_hides_comment_area_and_rejects_submission(): void
     {
         $article = $this->createPublishedArticle(allowComments: false);
@@ -335,6 +360,227 @@ class PublicInteractionFeatureTest extends TestCase
         $this->get(route('articles.show', $article->content->slug))
             ->assertOk()
             ->assertSee('อนุมัติแล้ว');
+    }
+
+    public function test_comment_parent_must_be_approved_and_belong_to_same_content(): void
+    {
+        $article = $this->createPublishedArticle();
+        $otherArticle = $this->createPublishedArticle();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $pendingParent = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $article->id,
+            'body' => 'pending parent',
+            'status' => 'pending',
+        ]);
+        $otherParent = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $otherArticle->id,
+            'body' => 'other parent',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $this->post(route('articles.comments.store', $article), [
+            'parent_id' => $pendingParent->id,
+            'body' => 'reply to pending',
+        ])->assertSessionHasErrors('parent_id');
+
+        $this->post(route('articles.comments.store', $article), [
+            'parent_id' => $otherParent->id,
+            'body' => 'reply across content',
+        ])->assertSessionHasErrors('parent_id');
+
+        $this->assertDatabaseMissing('public_comments', [
+            'body' => 'reply to pending',
+        ]);
+        $this->assertDatabaseMissing('public_comments', [
+            'body' => 'reply across content',
+        ]);
+    }
+
+    public function test_reports_require_public_targets_and_report_count_syncs_when_report_is_deleted(): void
+    {
+        $article = $this->createPublishedArticle();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $pendingComment = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $article->id,
+            'body' => 'pending target',
+            'status' => 'pending',
+        ]);
+        $approvedComment = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $article->id,
+            'body' => 'approved target',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $this->post(route('comments.report', $pendingComment), [
+            'reason' => 'spam',
+        ])->assertNotFound();
+
+        app(PublicInteractionService::class)->report($approvedComment, $visitor, 'spam', null, null);
+        $report = InteractionReport::query()->firstOrFail();
+
+        $this->assertDatabaseHas('public_comments', [
+            'id' => $approvedComment->id,
+            'report_count' => 1,
+        ]);
+
+        $this->withoutMiddleware(AdminAuthenticate::class);
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
+
+        $this->delete(route('admin.interactions.reports.destroy', $report))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('public_comments', [
+            'id' => $approvedComment->id,
+            'report_count' => 0,
+        ]);
+    }
+
+    public function test_admin_reports_index_can_filter_reports(): void
+    {
+        $article = $this->createPublishedArticle();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $otherVisitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+        $comment = PublicComment::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'commentable_type' => Article::class,
+            'commentable_id' => $article->id,
+            'body' => 'reported target',
+            'status' => 'approved',
+        ]);
+        $review = TempleReview::query()->create([
+            'temple_id' => $this->createPublishedTemple()->id,
+            'anonymous_visitor_id' => $otherVisitor->id,
+            'rating' => 1,
+            'comment' => 'other report target',
+            'status' => 'approved',
+        ]);
+
+        InteractionReport::query()->create([
+            'anonymous_visitor_id' => $visitor->id,
+            'reportable_type' => PublicComment::class,
+            'reportable_id' => $comment->id,
+            'reason' => 'spam-only-report',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        InteractionReport::query()->create([
+            'anonymous_visitor_id' => $otherVisitor->id,
+            'reportable_type' => TempleReview::class,
+            'reportable_id' => $review->id,
+            'reason' => 'abusive-review-report',
+            'created_at' => now()->subDays(4),
+            'updated_at' => now()->subDays(4),
+        ]);
+
+        $this->withoutMiddleware(AdminAuthenticate::class);
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
+
+        $this->get(route('admin.interactions.reports.index', [
+            'type' => PublicComment::class,
+            'visitor_id' => $visitor->id,
+            'date_from' => now()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertSee('ตัวกรองรายงาน')
+            ->assertSee('มาจากบทความ')
+            ->assertSee('reported target')
+            ->assertSee('เปิดรายการต้นทาง')
+            ->assertSee('spam-only-report')
+            ->assertDontSee('abusive-review-report');
+    }
+
+    public function test_admin_bans_index_can_filter_bans(): void
+    {
+        InteractionBan::query()->create([
+            'ban_type' => 'visitor',
+            'value_hash' => hash('sha256', 'active-ban'),
+            'reason' => 'active-ban-reason',
+            'expires_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        InteractionBan::query()->create([
+            'ban_type' => 'ip',
+            'value_hash' => hash('sha256', 'expired-ban'),
+            'reason' => 'expired-ban-reason',
+            'expires_at' => now()->subDay(),
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $this->withoutMiddleware(AdminAuthenticate::class);
+        $this->actingAs(Admin::query()->where('status', 'active')->firstOrFail(), 'admin');
+
+        $this->get(route('admin.interactions.bans.index', [
+            'ban_type' => 'ip',
+            'status' => 'expired',
+            'date_from' => now()->subDays(2)->toDateString(),
+            'date_to' => now()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertSee('ตัวกรองรายการบล็อก')
+            ->assertSee('expired-ban-reason')
+            ->assertDontSee('active-ban-reason');
+    }
+
+    public function test_expired_visitor_ban_no_longer_blocks_public_submission(): void
+    {
+        $article = $this->createPublishedArticle();
+        $visitor = AnonymousVisitor::query()->create([
+            'visitor_uuid' => (string) str()->uuid(),
+            'status' => 'banned',
+            'banned_at' => now()->subDays(2),
+            'first_seen_at' => now()->subDays(3),
+            'last_seen_at' => now()->subDay(),
+        ]);
+        InteractionBan::query()->create([
+            'ban_type' => 'visitor',
+            'value_hash' => hash('sha256', $visitor->visitor_uuid),
+            'reason' => 'expired',
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $this->withSession(['papaiwat_visitor_id' => $visitor->visitor_uuid])
+            ->post(route('articles.comments.store', $article), [
+                'body' => 'กลับมาแสดงความคิดเห็นได้',
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('anonymous_visitors', [
+            'id' => $visitor->id,
+            'status' => 'active',
+            'banned_at' => null,
+        ]);
+        $this->assertDatabaseHas('public_comments', [
+            'anonymous_visitor_id' => $visitor->id,
+            'body' => 'กลับมาแสดงความคิดเห็นได้',
+            'status' => 'pending',
+        ]);
     }
 
     public function test_admin_can_bulk_moderate_reviews_with_reason_and_note(): void
@@ -450,10 +696,12 @@ class PublicInteractionFeatureTest extends TestCase
 
     private function createPublishedArticle(bool $allowComments = true): Article
     {
+        $suffix = Content::query()->where('content_type', 'article')->count() + 1;
+
         $content = Content::query()->create([
             'content_type' => 'article',
-            'title' => 'Public Article',
-            'slug' => 'public-article',
+            'title' => 'Public Article '.$suffix,
+            'slug' => 'public-article-'.$suffix,
             'status' => 'published',
             'published_at' => now(),
         ]);

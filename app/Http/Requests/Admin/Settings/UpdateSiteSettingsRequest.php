@@ -65,7 +65,7 @@ class UpdateSiteSettingsRequest extends FormRequest
                 'settings.analytics_measurement_id' => ['nullable', 'string', 'max:40', 'regex:/^G-[A-Z0-9]+$/'],
                 'settings.tag_manager_container_id' => ['nullable', 'string', 'max:40', 'regex:/^GTM-[A-Z0-9]+$/'],
                 'settings.maps_enabled' => ['required', 'boolean'],
-                'settings.maps_public_browser_key' => ['nullable', 'string', 'max:255'],
+                'settings.maps_public_browser_key' => ['nullable', 'string', 'max:255', 'required_if:settings.maps_enabled,1'],
             ],
             'maintenance' => [
                 'settings.announcement_enabled' => ['required', 'boolean'],

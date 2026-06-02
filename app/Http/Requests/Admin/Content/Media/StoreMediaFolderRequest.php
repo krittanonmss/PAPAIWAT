@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Content\Media;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMediaFolderRequest extends FormRequest
 {
@@ -14,7 +15,11 @@ class StoreMediaFolderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'parent_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('media_folders', 'id')->where(fn ($query) => $query->where('status', 'active')),
+            ],
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],

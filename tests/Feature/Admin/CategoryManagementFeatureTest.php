@@ -80,6 +80,23 @@ class CategoryManagementFeatureTest extends TestCase
         ])->assertSessionHasErrors('parent_id');
     }
 
+    public function test_category_parent_must_be_active(): void
+    {
+        $inactiveParent = Category::query()->create([
+            'name' => 'หมวดแม่ปิดใช้งาน',
+            'slug' => 'inactive-parent-category',
+            'type_key' => 'temple',
+            'status' => 'inactive',
+        ]);
+
+        $this->post(route('admin.categories.store'), [
+            'parent_id' => $inactiveParent->id,
+            'name' => 'หมวดย่อย',
+            'type_key' => 'temple',
+            'status' => 'active',
+        ])->assertSessionHasErrors('parent_id');
+    }
+
     public function test_category_cannot_use_its_descendant_as_parent(): void
     {
         $root = Category::query()->create([
@@ -128,6 +145,7 @@ class CategoryManagementFeatureTest extends TestCase
 
         $this->get(route('admin.categories.edit', $root))
             ->assertOk()
+            ->assertSee('status=active', false)
             ->assertDontSee('value="'.$child->id.'"', false);
     }
 
@@ -160,6 +178,36 @@ class CategoryManagementFeatureTest extends TestCase
             'id' => $category->id,
             'deleted_at' => null,
         ]);
+    }
+
+    public function test_category_type_cannot_change_when_content_uses_it(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'หมวดที่มีบทความ',
+            'slug' => 'article-category-in-use',
+            'type_key' => 'article',
+            'status' => 'active',
+        ]);
+
+        $content = Content::query()->create([
+            'content_type' => 'article',
+            'title' => 'บทความในหมวด',
+            'slug' => 'article-using-category',
+            'status' => 'draft',
+        ]);
+
+        $content->categories()->attach($category->id, [
+            'is_primary' => true,
+            'sort_order' => 0,
+        ]);
+
+        $this->put(route('admin.categories.update', $category), [
+            'name' => $category->name,
+            'type_key' => 'temple',
+            'status' => 'active',
+        ])->assertSessionHasErrors('type_key');
+
+        $this->assertSame('article', $category->fresh()->type_key);
     }
 
     public function test_moving_category_recalculates_descendant_levels_and_writes_audit_log(): void
@@ -264,6 +312,7 @@ class CategoryManagementFeatureTest extends TestCase
         $this->get(route('admin.categories.index'))
             ->assertOk()
             ->assertSee('id="category-bulk-move-form"', false)
+            ->assertSee('status=active', false)
             ->assertSee('form="category-bulk-move-form"', false)
             ->assertSee('name="category_ids[]"', false);
 

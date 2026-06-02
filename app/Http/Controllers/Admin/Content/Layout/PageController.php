@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Content\Layout;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\FrontendPageController;
+use App\Models\Content\Layout\MenuItem;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\Template;
 use App\Models\Content\Media\Media;
@@ -136,6 +137,12 @@ class PageController extends Controller
                 ->withErrors(['template_id' => 'Template นี้ไม่รองรับหน้า Page/List']);
         }
 
+        if (($validated['og_image_media_id'] ?? null) && ! $this->mediaIsAllowedForOgImage((int) $validated['og_image_media_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['og_image_media_id' => 'OG Image ต้องเป็นรูปภาพที่อัปโหลดสำเร็จแล้ว']);
+        }
+
         DB::transaction(function () use ($validated) {
             if ($validated['is_homepage']) {
                 Page::query()->update(['is_homepage' => false]);
@@ -228,6 +235,12 @@ class PageController extends Controller
                 ->withErrors(['template_id' => 'Template นี้ไม่รองรับหน้า Page/List']);
         }
 
+        if (($validated['og_image_media_id'] ?? null) && ! $this->mediaIsAllowedForOgImage((int) $validated['og_image_media_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['og_image_media_id' => 'OG Image ต้องเป็นรูปภาพที่อัปโหลดสำเร็จแล้ว']);
+        }
+
         DB::transaction(function () use ($page, $validated) {
             $this->versionService->snapshotPage($page, 'before_update');
 
@@ -254,6 +267,10 @@ class PageController extends Controller
 
         if ($this->pageIsReferencedBySections($page)) {
             return back()->withErrors(['page' => 'ไม่สามารถลบหน้าที่ถูกใช้งานใน section อื่น']);
+        }
+
+        if ($this->pageIsReferencedByMenus($page)) {
+            return back()->withErrors(['page' => 'ไม่สามารถลบหน้าที่ถูกใช้งานในเมนู']);
         }
 
         DB::transaction(function () use ($page) {
@@ -442,6 +459,14 @@ class PageController extends Controller
             ->exists();
     }
 
+    private function pageIsReferencedByMenus(Page $page): bool
+    {
+        return MenuItem::query()
+            ->where('menu_item_type', 'page')
+            ->where('page_id', $page->id)
+            ->exists();
+    }
+
     private function makeUniqueSlug(string $value, ?Page $ignorePage = null): string
     {
         $baseSlug = SlugGenerator::make($value, 'page');
@@ -465,7 +490,17 @@ class PageController extends Controller
     {
         return Template::query()
             ->whereKey($templateId)
+            ->active()
             ->whereIn('template_type', ['page', 'list'])
+            ->exists();
+    }
+
+    private function mediaIsAllowedForOgImage(int $mediaId): bool
+    {
+        return Media::query()
+            ->whereKey($mediaId)
+            ->where('upload_status', 'completed')
+            ->where('media_type', 'image')
             ->exists();
     }
 }

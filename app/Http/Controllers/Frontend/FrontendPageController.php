@@ -30,7 +30,7 @@ class FrontendPageController extends Controller
                 'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
             ->where('is_homepage', true)
-            ->where('status', 'published')
+            ->published()
             ->firstOrFail();
 
         return $this->renderPage($page);
@@ -45,7 +45,7 @@ class FrontendPageController extends Controller
                 'sections' => fn ($query) => $query->visible()->orderBy('sort_order'),
             ])
             ->where('slug', $slug)
-            ->where('status', 'published')
+            ->published()
             ->firstOrFail();
 
         return $this->renderPage($page);
@@ -268,7 +268,9 @@ class FrontendPageController extends Controller
     private function resolveSectionPageUrl(array $content, string $pageKey = 'all_button_page_id', string $urlKey = 'all_button_url'): ?string
     {
         if (! empty($content[$pageKey])) {
-            $page = Page::query()->find((int) $content[$pageKey]);
+            $page = Page::query()
+                ->published()
+                ->find((int) $content[$pageKey]);
 
             if ($page) {
                 return $page->is_homepage

@@ -57,10 +57,24 @@ class MenuUrl
 
         $page = DB::table('pages')
             ->where('id', $item->page_id)
+            ->whereNull('deleted_at')
+            ->where('status', 'published')
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('unpublished_at')
+                    ->orWhere('unpublished_at', '>=', now());
+            })
             ->first();
 
         if (!$page || empty($page->slug)) {
             return '#';
+        }
+
+        if (!empty($page->is_homepage)) {
+            return route('home');
         }
 
         return url('/' . ltrim($page->slug, '/'));
@@ -74,6 +88,8 @@ class MenuUrl
 
         $content = DB::table('contents')
             ->where('id', $item->content_id)
+            ->whereNull('deleted_at')
+            ->where('status', 'published')
             ->first();
 
         if (!$content || empty($content->slug)) {

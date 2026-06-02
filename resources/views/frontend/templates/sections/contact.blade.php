@@ -1,6 +1,11 @@
 @php
     $content = $section->content_data ?? [];
     $settings = $section->settings_data ?? [];
+    $frontendSiteSettings = $frontendSiteSettings ?? \App\Support\SiteSettings::all();
+    $generalSettings = $frontendSiteSettings['general'] ?? [];
+    $address = filled($content['address'] ?? null) ? $content['address'] : ($generalSettings['contact_address'] ?? null);
+    $phone = filled($content['phone'] ?? null) ? $content['phone'] : ($generalSettings['contact_phone'] ?? null);
+    $email = filled($content['email'] ?? null) ? $content['email'] : ($generalSettings['contact_email'] ?? null);
     $phoneLabel = trim((string) ($content['phone_label'] ?? '')) ?: 'โทร:';
     $emailLabel = trim((string) ($content['email_label'] ?? '')) ?: 'อีเมล:';
     $mapButtonLabel = trim((string) ($content['map_button_label'] ?? '')) ?: 'เปิดแผนที่';
@@ -16,18 +21,18 @@
                 <p class="text-sm font-semibold text-blue-300">{{ $content['eyebrow'] }}</p>
             @endif
             <h2 class="mt-2 text-3xl font-bold text-white">{{ $content['title'] ?? 'ติดต่อเรา' }}</h2>
-            @if(!empty($content['address']))
-                <p class="mt-5 whitespace-pre-line text-base leading-8 text-slate-300">{{ $content['address'] }}</p>
+            @if(!empty($address))
+                <p class="mt-5 whitespace-pre-line text-base leading-8 text-slate-300">{{ $address }}</p>
             @endif
         </div>
 
         <div data-section-card data-section-card-padding class="{{ $cardPosition === 'left' ? 'lg:order-1' : 'lg:order-2' }} rounded-3xl border border-white/10 bg-white/[0.04] p-6">
             <div class="space-y-4 text-sm text-slate-300">
-                @if($showPhone && !empty($content['phone']))
-                    <p><span class="text-slate-500">{{ $phoneLabel }}</span> <a href="tel:{{ $content['phone'] }}" class="hover:text-white">{{ $content['phone'] }}</a></p>
+                @if($showPhone && !empty($phone))
+                    <p><span class="text-slate-500">{{ $phoneLabel }}</span> <a href="tel:{{ $phone }}" class="hover:text-white">{{ $phone }}</a></p>
                 @endif
-                @if($showEmail && !empty($content['email']))
-                    <p><span class="text-slate-500">{{ $emailLabel }}</span> <a href="mailto:{{ $content['email'] }}" class="hover:text-white">{{ $content['email'] }}</a></p>
+                @if($showEmail && !empty($email))
+                    <p><span class="text-slate-500">{{ $emailLabel }}</span> <a href="mailto:{{ $email }}" class="hover:text-white">{{ $email }}</a></p>
                 @endif
                 @if($showMapButton && !empty($content['map_url']))
                     <a href="{{ $content['map_url'] }}" data-section-button target="_blank" rel="noopener noreferrer" class="inline-flex rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">{{ $mapButtonLabel }}</a>

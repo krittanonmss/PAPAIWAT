@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Throwable;
 use Illuminate\View\View;
 
@@ -263,22 +264,43 @@ class MediaController extends Controller
         }
 
         $oldFiles = $request->hasFile('file') ? $this->mediaStoragePaths($media) : [];
+        $movedFiles = [];
 
         try {
-            DB::transaction(function () use ($media, $updateData, $request): void {
+            if (! $request->hasFile('file') && $media->visibility !== $validated['visibility']) {
+                $visibilityMove = $this->moveExistingFilesForVisibility($media, $validated['visibility']);
+                $updateData = array_merge($updateData, $visibilityMove['media']);
+                $movedFiles = $visibilityMove;
+            }
+
+            DB::transaction(function () use ($media, $updateData, $request, $movedFiles): void {
                 if ($request->hasFile('file')) {
                     $media->variants()->delete();
                 }
 
                 $media->update($updateData);
+
+                foreach ($movedFiles['variants'] ?? [] as $variantId => $variantData) {
+                    $media->variants()
+                        ->whereKey($variantId)
+                        ->update($variantData);
+                }
             });
 
             foreach ($oldFiles as $file) {
                 $this->deleteStorageFile($file['disk'], $file['path']);
             }
+
+            foreach ($movedFiles['delete'] ?? [] as $file) {
+                $this->deleteStorageFile($file['disk'], $file['path']);
+            }
         } catch (Throwable $e) {
             if (isset($storedFile)) {
                 $this->deleteStorageFile($storedFile['disk'], $storedFile['path']);
+            }
+
+            foreach ($movedFiles['created'] ?? [] as $file) {
+                $this->deleteStorageFile($file['disk'], $file['path']);
             }
 
             throw $e;
@@ -325,7 +347,11 @@ class MediaController extends Controller
         $validated = $request->validate([
             'media_ids' => ['required', 'array', 'min:1'],
             'media_ids.*' => ['integer', 'exists:media,id'],
-            'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+            'media_folder_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('media_folders', 'id')->where(fn ($query) => $query->where('status', 'active')),
+            ],
         ], [
             'media_ids.required' => 'กรุณาเลือกไฟล์ที่ต้องการจัดการ',
             'media_ids.min' => 'กรุณาเลือกไฟล์ที่ต้องการจัดการ',
@@ -536,5 +562,63 @@ class MediaController extends Controller
         if (Storage::disk($disk)->exists($path)) {
             Storage::disk($disk)->delete($path);
         }
+    }
+
+    private function moveExistingFilesForVisibility(Media $media, string $visibility): array
+    {
+        $targetDisk = $visibility === 'private' ? 'local' : 'public';
+
+        if ($media->disk === $targetDisk || ! $media->path || ! Storage::disk($media->disk)->exists($media->path)) {
+            return ['media' => [], 'variants' => [], 'delete' => [], 'created' => []];
+        }
+
+        $moved = [
+            'media' => [],
+            'variants' => [],
+            'delete' => [],
+            'created' => [],
+        ];
+
+        $mainFile = $this->copyStoredFileToVisibility($media->disk, $media->path, $targetDisk, $visibility);
+        $moved['media'] = [
+            'disk' => $mainFile['disk'],
+            'directory' => $mainFile['directory'],
+            'path' => $mainFile['path'],
+        ];
+        $moved['delete'][] = ['disk' => $media->disk, 'path' => $media->path];
+        $moved['created'][] = ['disk' => $mainFile['disk'], 'path' => $mainFile['path']];
+
+        foreach ($media->variants as $variant) {
+            if (! $variant->path || ! Storage::disk($variant->disk)->exists($variant->path)) {
+                continue;
+            }
+
+            $variantFile = $this->copyStoredFileToVisibility($variant->disk, $variant->path, $targetDisk, $visibility);
+            $moved['variants'][$variant->id] = [
+                'disk' => $variantFile['disk'],
+                'directory' => $variantFile['directory'],
+                'path' => $variantFile['path'],
+            ];
+            $moved['delete'][] = ['disk' => $variant->disk, 'path' => $variant->path];
+            $moved['created'][] = ['disk' => $variantFile['disk'], 'path' => $variantFile['path']];
+        }
+
+        return $moved;
+    }
+
+    private function copyStoredFileToVisibility(string $sourceDisk, string $sourcePath, string $targetDisk, string $visibility): array
+    {
+        $folderPath = ($visibility === 'private' ? 'media/private/' : 'media/uploads/') . now()->format('Y/m');
+        $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
+        $filename = Str::uuid()->toString() . ($extension ? '.' . strtolower($extension) : '');
+        $targetPath = $folderPath . '/' . $filename;
+
+        Storage::disk($targetDisk)->put($targetPath, Storage::disk($sourceDisk)->get($sourcePath));
+
+        return [
+            'disk' => $targetDisk,
+            'directory' => dirname($targetPath),
+            'path' => $targetPath,
+        ];
     }
 }

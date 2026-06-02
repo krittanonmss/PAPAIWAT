@@ -10,7 +10,7 @@ class FooterSettings
     public static function defaults(): array
     {
         return [
-            'brand_title' => 'PAPAIWAT',
+            'brand_title' => self::siteName(),
             'brand_description' => 'แพลตฟอร์มรวบรวมข้อมูลวัด สถานที่ศักดิ์สิทธิ์ และวัฒนธรรมไทย',
             'footer_note' => null,
             'copyright_text' => '© {year} {brand}. All rights reserved.',
@@ -35,12 +35,15 @@ class FooterSettings
 
         $settings = is_string($value) ? json_decode($value, true) : null;
 
-        return array_merge(self::defaults(), is_array($settings) ? $settings : []);
+        return self::normalize(is_array($settings) ? $settings : []);
     }
 
     public static function save(array $settings): void
     {
+        unset($settings['brand_title']);
+
         $settings = self::normalize($settings);
+        unset($settings['brand_title']);
 
         $exists = DB::table('site_settings')
             ->where('key', 'footer')
@@ -70,6 +73,7 @@ class FooterSettings
     public static function normalize(array $settings): array
     {
         $settings = array_merge(self::defaults(), $settings);
+        $settings['brand_title'] = self::siteName();
 
         foreach (['show_brand', 'show_menu', 'show_bottom_bar', 'show_border'] as $key) {
             $settings[$key] = filter_var($settings[$key] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -90,7 +94,12 @@ class FooterSettings
     {
         return strtr($settings['copyright_text'] ?: self::defaults()['copyright_text'], [
             '{year}' => date('Y'),
-            '{brand}' => $settings['brand_title'] ?: self::defaults()['brand_title'],
+            '{brand}' => self::siteName(),
         ]);
+    }
+
+    private static function siteName(): string
+    {
+        return (string) (SiteSettings::get('general', 'site_name', 'PAPAIWAT') ?: 'PAPAIWAT');
     }
 }

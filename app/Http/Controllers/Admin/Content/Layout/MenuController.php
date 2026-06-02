@@ -86,6 +86,7 @@ class MenuController extends Controller
 
         $validated['slug'] = $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name']);
         $validated['is_default'] = $request->boolean('is_default');
+        $validated['status'] = $validated['is_default'] ? 'active' : $validated['status'];
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
         $validated['created_by_admin_id'] = auth('admin')->id();
         $validated['updated_by_admin_id'] = auth('admin')->id();
@@ -147,6 +148,7 @@ class MenuController extends Controller
 
         $validated['slug'] = $this->makeUniqueSlug(($validated['slug'] ?? '') !== '' ? $validated['slug'] : $validated['name'], $menu);
         $validated['is_default'] = $request->boolean('is_default');
+        $validated['status'] = $validated['is_default'] ? 'active' : $validated['status'];
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
         $validated['updated_by_admin_id'] = auth('admin')->id();
 

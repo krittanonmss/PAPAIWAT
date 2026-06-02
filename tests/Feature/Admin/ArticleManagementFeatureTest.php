@@ -180,6 +180,48 @@ class ArticleManagementFeatureTest extends TestCase
         ]);
     }
 
+    public function test_article_save_rejects_inactive_relationship_targets(): void
+    {
+        $inactiveCategory = Category::query()->create([
+            'name' => 'หมวดปิดใช้งาน',
+            'slug' => 'inactive-article-category',
+            'type_key' => 'article',
+            'status' => 'inactive',
+        ]);
+        $inactiveTag = ArticleTag::query()->create([
+            'name' => 'แท็กปิดใช้งาน',
+            'slug' => 'inactive-tag',
+            'status' => 'inactive',
+        ]);
+        $relatedContent = Content::query()->create([
+            'content_type' => 'article',
+            'title' => 'บทความถูกลบ',
+            'slug' => 'deleted-related-article',
+            'status' => 'draft',
+        ]);
+        $relatedArticle = Article::query()->create([
+            'content_id' => $relatedContent->id,
+            'body_format' => 'markdown',
+        ]);
+        $relatedContent->delete();
+
+        $this->post(route('admin.content.articles.store'), [
+            'title' => 'บทความมี relation ปิดใช้งาน',
+            'slug' => 'article-with-inactive-relations',
+            'status' => 'draft',
+            'body_format' => 'markdown',
+            'category_ids' => [$inactiveCategory->id],
+            'tag_ids' => [$inactiveTag->id],
+            'related_article_ids' => [$relatedArticle->id],
+        ])->assertSessionHasErrors([
+            'category_ids',
+            'tag_ids',
+            'related_article_ids',
+        ]);
+
+        $this->assertSame(0, Article::query()->whereHas('content', fn ($query) => $query->where('slug', 'article-with-inactive-relations'))->count());
+    }
+
     public function test_admin_can_soft_delete_article_content(): void
     {
         $this->post(route('admin.content.articles.store'), [

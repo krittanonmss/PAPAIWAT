@@ -28,7 +28,11 @@ class UpdateMediaRequest extends FormRequest
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+            'media_folder_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('media_folders', 'id')->where(fn ($query) => $query->where('status', 'active')),
+            ],
             'visibility' => ['required', Rule::in(['public', 'private'])],
         ];
     }

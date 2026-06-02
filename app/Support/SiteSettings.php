@@ -195,7 +195,7 @@ class SiteSettings
                 continue;
             }
 
-            if (str_ends_with($key, '_id') && $value !== null && $value !== '') {
+            if (str_ends_with($key, '_id') && $value !== null && $value !== '' && is_numeric($value)) {
                 $values[$key] = (int) $value;
             }
         }

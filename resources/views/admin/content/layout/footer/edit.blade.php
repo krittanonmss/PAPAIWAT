@@ -236,8 +236,13 @@
                         <h2 class="text-sm font-semibold text-white">แบรนด์</h2>
                         <div class="mt-4 space-y-4">
                             <div>
-                                <label for="brand_title" class="mb-1.5 block text-sm text-slate-300">ชื่อแบรนด์</label>
-                                <input id="brand_title" name="brand_title" value="{{ old('brand_title', $settings['brand_title']) }}" class="{{ $settingField }}" placeholder="PAPAIWAT">
+                                <label class="mb-1.5 block text-sm text-slate-300">ชื่อเว็บไซต์</label>
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-2.5 text-sm text-white">
+                                    {{ $settings['brand_title'] }}
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-slate-500">
+                                    แก้ชื่อที่ Site Settings > General เพื่อให้ตรงกับมุมซ้ายของเว็บไซต์
+                                </p>
                             </div>
                             <div>
                                 <label for="brand_description" class="mb-1.5 block text-sm text-slate-300">คำอธิบาย</label>
@@ -299,7 +304,7 @@
                         </div>
                         <div class="p-5">
                             <div class="@if($previewBackground === 'solid') bg-slate-950 @elseif($previewBackground === 'minimal') bg-transparent @else bg-white/[0.04] @endif rounded-2xl border border-white/10 p-4">
-                                <p class="text-sm font-semibold text-white">{{ old('brand_title', $settings['brand_title']) ?: 'PAPAIWAT' }}</p>
+                                <p class="text-sm font-semibold text-white">{{ $settings['brand_title'] }}</p>
                                 <p class="mt-2 text-xs leading-5 text-slate-400">{{ old('brand_description', $settings['brand_description']) ?: 'Brand description' }}</p>
                                 <div class="mt-4 grid grid-cols-3 gap-3">
                                     @for ($i = 0; $i < 3; $i++)

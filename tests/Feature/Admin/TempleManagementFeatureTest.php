@@ -10,6 +10,7 @@ use App\Models\Admin\Role;
 use App\Models\Content\Category;
 use App\Models\Content\Content;
 use App\Models\Content\ContentVersion;
+use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use Database\Seeders\SystemAccessSeeder;
 use Illuminate\Support\Facades\Hash;
@@ -156,6 +157,7 @@ class TempleManagementFeatureTest extends TestCase
         $this->get(route('admin.temples.edit', $temple))
             ->assertOk()
             ->assertSee('data-async-multi-field="category_ids"', false)
+            ->assertSee('status=active', false)
             ->assertSee('primary_category_id', false)
             ->assertSee((string) $category->id, false)
             ->assertSee("input.type !== 'checkbox' || input.checked", false);
@@ -310,6 +312,49 @@ class TempleManagementFeatureTest extends TestCase
             'opening_hours.0.close_time',
             'opening_hours.1.day_of_week',
         ]);
+    }
+
+    public function test_temple_save_rejects_inactive_relationship_targets(): void
+    {
+        $inactiveCategory = Category::query()->create([
+            'name' => 'หมวดวัดปิดใช้งาน',
+            'slug' => 'inactive-temple-category',
+            'type_key' => 'temple',
+            'status' => 'inactive',
+        ]);
+        $inactiveFacility = Facility::query()->create([
+            'name' => 'สิ่งอำนวยความสะดวกปิดใช้งาน',
+            'slug' => 'inactive-facility',
+            'type_key' => 'temple',
+            'status' => 'inactive',
+        ]);
+        $nearbyContent = Content::query()->create([
+            'content_type' => 'temple',
+            'title' => 'วัดถูกลบ',
+            'slug' => 'deleted-nearby-temple',
+            'status' => 'draft',
+        ]);
+        $nearbyTemple = Temple::query()->create([
+            'content_id' => $nearbyContent->id,
+        ]);
+        $nearbyContent->delete();
+
+        $this->post(route('admin.temples.store'), $this->templePayload([
+            'category_ids' => [$inactiveCategory->id],
+            'primary_category_id' => $inactiveCategory->id,
+            'facility_items' => [
+                ['facility_id' => $inactiveFacility->id],
+            ],
+            'nearby_places' => [
+                ['nearby_temple_id' => $nearbyTemple->id],
+            ],
+        ]))->assertSessionHasErrors([
+            'category_ids',
+            'facility_items',
+            'nearby_places',
+        ]);
+
+        $this->assertSame(0, Temple::query()->whereHas('content', fn ($query) => $query->where('slug', 'test-temple'))->count());
     }
 
     public function test_publish_requires_ready_content(): void

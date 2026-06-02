@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin\Content\Media;
 
 use App\Support\SiteSettings;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMediaRequest extends FormRequest
 {
@@ -21,7 +22,11 @@ class StoreMediaRequest extends FormRequest
             'file' => ['nullable', 'file', 'max:'.$maxKilobytes, 'mimetypes:'.implode(',', $mimeTypes)],
             'files' => ['nullable', 'array'],
             'files.*' => ['file', 'max:'.$maxKilobytes, 'mimetypes:'.implode(',', $mimeTypes)],
-            'media_folder_id' => ['nullable', 'integer', 'exists:media_folders,id'],
+            'media_folder_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('media_folders', 'id')->where(fn ($query) => $query->where('status', 'active')),
+            ],
             'title' => ['nullable', 'string', 'max:255'],
             'alt_text' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string'],

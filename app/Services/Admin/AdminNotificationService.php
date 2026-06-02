@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Mail\AdminNotificationMail;
 use App\Models\Admin\Admin;
 use App\Models\Admin\AdminNotification;
+use App\Support\SiteSettings;
 use Illuminate\Support\Facades\Mail;
 
 class AdminNotificationService
@@ -14,7 +15,9 @@ class AdminNotificationService
         Admin::query()
             ->where('status', 'active')
             ->get()
-            ->each(fn (Admin $admin) => $this->notify($admin, $type, $title, $message));
+            ->each(fn (Admin $admin) => $this->notify($admin, $type, $title, $message, false));
+
+        $this->notifyCentralModerationEmail($type, $title, $message);
     }
 
     public function notifyAdminsWithPermission(string $permission, string $type, string $title, string $message): void
@@ -24,10 +27,12 @@ class AdminNotificationService
             ->with('role.permissions')
             ->get()
             ->filter(fn (Admin $admin) => $admin->hasPermission($permission))
-            ->each(fn (Admin $admin) => $this->notify($admin, $type, $title, $message));
+            ->each(fn (Admin $admin) => $this->notify($admin, $type, $title, $message, false));
+
+        $this->notifyCentralModerationEmail($type, $title, $message);
     }
 
-    public function notify(Admin $admin, string $type, string $title, string $message): void
+    public function notify(Admin $admin, string $type, string $title, string $message, bool $sendCentralModerationEmail = true): void
     {
         $preferences = app(AdminPreferenceService::class)->forAdmin($admin);
 
@@ -48,6 +53,18 @@ class AdminNotificationService
 
         if ((bool) ($preferences['notifications.email'] ?? false) && filled($admin->email)) {
             Mail::to($admin->email)->queue(new AdminNotificationMail($title, $message));
+        }
+
+        if ($sendCentralModerationEmail) {
+            $this->notifyCentralModerationEmail($type, $title, $message, $admin->email);
+        }
+    }
+
+    private function notifyCentralModerationEmail(string $type, string $title, string $message, ?string $exceptEmail = null): void
+    {
+        $moderationEmail = SiteSettings::get('moderation', 'notification_email');
+        if ($type === 'moderation' && filled($moderationEmail) && $moderationEmail !== $exceptEmail) {
+            Mail::to($moderationEmail)->queue(new AdminNotificationMail($title, $message));
         }
     }
 }

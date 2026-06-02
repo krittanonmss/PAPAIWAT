@@ -1,5 +1,22 @@
 <!DOCTYPE html>
-<html lang="th">
+@php
+    $frontendSiteSettings = $frontendSiteSettings ?? \App\Support\SiteSettings::all();
+    $siteName = $frontendSiteSettings['general']['site_name'] ?? 'PAPAIWAT';
+    $siteTagline = $frontendSiteSettings['general']['tagline'] ?? null;
+    $siteLocale = $frontendSiteSettings['general']['locale'] ?? app()->getLocale();
+    $seoDefaultTitle = $frontendSiteSettings['seo']['default_title'] ?? null;
+    $seoDefaultDescription = $frontendSiteSettings['seo']['default_description'] ?? null;
+    $resolvedDefaultTitle = ($seoDefaultTitle && !($seoDefaultTitle === 'PAPAIWAT' && $siteName !== 'PAPAIWAT'))
+        ? $seoDefaultTitle
+        : trim($siteName.($siteTagline ? ' | '.$siteTagline : ''));
+    $resolvedDefaultDescription = ($seoDefaultDescription && !($seoDefaultDescription === 'PAPAIWAT Platform' && $siteTagline))
+        ? $seoDefaultDescription
+        : ($siteTagline ?: ($seoDefaultDescription ?: $siteName));
+    $tagManagerContainerId = $frontendSiteSettings['integrations']['tag_manager_container_id'] ?? null;
+    $mapsEnabled = (bool) ($frontendSiteSettings['integrations']['maps_enabled'] ?? false);
+    $mapsPublicBrowserKey = $frontendSiteSettings['integrations']['maps_public_browser_key'] ?? null;
+@endphp
+<html lang="{{ $siteLocale }}">
 <head>
     @php
         $pageOgImage = ($page ?? null)?->ogImage ?? null;
@@ -16,8 +33,8 @@
     @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', $title ?? ($frontendSiteSettings['seo']['default_title'] ?? 'PAPAIWAT'))</title>
-    <meta name="description" content="@yield('meta_description', $metaDescription ?? ($frontendSiteSettings['seo']['default_description'] ?? 'PAPAIWAT Platform'))">
+    <title>@yield('title', $title ?? $resolvedDefaultTitle)</title>
+    <meta name="description" content="@yield('meta_description', $metaDescription ?? $resolvedDefaultDescription)">
     <meta name="robots" content="{{ ($frontendSiteSettings['seo']['indexing_enabled'] ?? true) ? 'index,follow' : 'noindex,nofollow' }}">
     @if ($resolvedCanonicalUrl)
         <link rel="canonical" href="{{ $resolvedCanonicalUrl }}">
@@ -27,6 +44,16 @@
         <meta name="twitter:image" content="{{ $resolvedOgImageUrl }}">
     @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    @if ($tagManagerContainerId)
+        <script>
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer',@js($tagManagerContainerId));
+        </script>
+    @endif
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -71,6 +98,10 @@
     </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-white">
+    @if ($tagManagerContainerId)
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $tagManagerContainerId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    @endif
+
     @include('frontend.partials.header')
 
     @if (($frontendSiteSettings['maintenance']['announcement_enabled'] ?? false) && ($frontendSiteSettings['maintenance']['announcement_text'] ?? null))
@@ -97,6 +128,16 @@
             gtag('js', new Date());
             gtag('config', @js($frontendSiteSettings['integrations']['analytics_measurement_id']));
         </script>
+    @endif
+    @if ($mapsEnabled && $mapsPublicBrowserKey)
+        <script>
+            window.papaiwatMaps = {
+                enabled: true,
+                publicKey: @js($mapsPublicBrowserKey),
+                locale: @js($siteLocale),
+            };
+        </script>
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ urlencode($mapsPublicBrowserKey) }}&language={{ urlencode($siteLocale) }}"></script>
     @endif
     <script>
         (() => {

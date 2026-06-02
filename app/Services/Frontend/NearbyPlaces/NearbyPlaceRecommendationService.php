@@ -7,12 +7,13 @@ use App\Models\Content\Temple\Temple;
 use App\Models\Content\Temple\TempleNearbyRecommendation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class NearbyPlaceRecommendationService
 {
-    public function __construct(private readonly NearbyPlaceProvider $provider)
-    {
-    }
+    public function __construct(private readonly NearbyPlaceProvider $provider) {}
 
     public function forTemple(Temple $temple): Collection
     {
@@ -96,8 +97,9 @@ class NearbyPlaceRecommendationService
 
         foreach ($rankedPlaces as $place) {
             $seenPlaceIds[] = $place['provider_place_id'];
+            $photoNames = array_slice(array_values(array_filter((array) ($place['photo_names'] ?? []))), 0, 1);
 
-            TempleNearbyRecommendation::query()->updateOrCreate(
+            $recommendation = TempleNearbyRecommendation::query()->updateOrCreate(
                 [
                     'temple_id' => $temple->id,
                     'provider' => $place['provider'],
@@ -113,12 +115,17 @@ class NearbyPlaceRecommendationService
                     'distance_meters' => $place['distance_meters'],
                     'maps_url' => $place['maps_url'],
                     'sort_score' => $place['sort_score'],
+                    'photo_names' => $photoNames,
                     'provider_types' => $place['provider_types'],
                     'fetched_at' => $now,
                     'expires_at' => $expiresAt,
                     'stale_until' => $staleUntil,
                 ]
             );
+
+            if ($photoPath = $this->downloadPhoto($recommendation, $photoNames[0] ?? null)) {
+                $recommendation->forceFill(['photo_path' => $photoPath])->save();
+            }
         }
 
         if ($seenPlaceIds !== []) {
@@ -148,7 +155,68 @@ class NearbyPlaceRecommendationService
             ->where('expires_at', '>', now())
             ->count();
 
-        return $freshCount === 0;
+        if ($freshCount === 0) {
+            return true;
+        }
+
+        return TempleNearbyRecommendation::query()
+            ->where('temple_id', $temple->id)
+            ->where('expires_at', '>', now())
+            ->whereNotNull('photo_path')
+            ->doesntExist();
+    }
+
+    private function downloadPhoto(TempleNearbyRecommendation $recommendation, ?string $photoName): ?string
+    {
+        $apiKey = (string) config('services.google.places_api_key');
+
+        if ($photoName === null || $photoName === '' || $apiKey === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(12)
+                ->retry(2, 250)
+                ->withOptions(['allow_redirects' => true])
+                ->get('https://places.googleapis.com/v1/'.ltrim($photoName, '/').'/media', [
+                    'maxWidthPx' => 640,
+                    'key' => $apiKey,
+                ]);
+
+            if (! $response->successful()) {
+                Log::warning('Google Places photo download failed.', [
+                    'nearby_recommendation_id' => $recommendation->id,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            $contentType = strtolower((string) $response->header('Content-Type', 'image/jpeg'));
+
+            if (! str_starts_with($contentType, 'image/')) {
+                Log::warning('Google Places photo download returned a non-image response.', [
+                    'nearby_recommendation_id' => $recommendation->id,
+                    'content_type' => $contentType,
+                ]);
+
+                return null;
+            }
+
+            $extension = str_contains($contentType, 'png') ? 'png' : 'jpg';
+            $path = 'nearby-place-recommendations/'.$recommendation->id.'/photo.'.$extension;
+
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
+        } catch (\Throwable $exception) {
+            Log::warning('Google Places photo download threw an exception.', [
+                'nearby_recommendation_id' => $recommendation->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     private function queueRefresh(Temple $temple): void

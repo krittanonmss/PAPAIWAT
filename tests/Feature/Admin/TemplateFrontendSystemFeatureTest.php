@@ -6,9 +6,12 @@ use App\Http\Middleware\AdminAuthenticate;
 use App\Models\Admin\Admin;
 use App\Models\Content\Article\Article;
 use App\Models\Content\Content;
+use App\Models\Content\Layout\Menu;
+use App\Models\Content\Layout\MenuItem;
 use App\Models\Content\Layout\Page;
 use App\Models\Content\Layout\PageSection;
 use App\Models\Content\Layout\Template;
+use App\Models\Content\Media\Media;
 use App\Models\Content\Temple\Temple;
 use App\Support\TemplateRegistry;
 use Database\Seeders\SystemAccessSeeder;
@@ -98,6 +101,98 @@ class TemplateFrontendSystemFeatureTest extends TestCase
 
         $this->delete(route('admin.content.templates.destroy', $usedTemplate))
             ->assertSessionHasErrors('template');
+    }
+
+    public function test_page_save_rejects_inactive_template_and_non_image_og_media(): void
+    {
+        $inactiveTemplate = Template::query()->create([
+            'name' => 'Inactive Page Template',
+            'key' => 'inactive-page-template',
+            'view_path' => 'frontend.templates.pages.builder',
+            'template_type' => 'page',
+            'content_type' => 'page',
+            'status' => 'inactive',
+        ]);
+        $document = Media::query()->create([
+            'disk' => 'public',
+            'filename' => 'document.pdf',
+            'path' => 'documents/document.pdf',
+            'original_filename' => 'document.pdf',
+            'mime_type' => 'application/pdf',
+            'media_type' => 'document',
+            'upload_status' => 'completed',
+        ]);
+
+        $this->post(route('admin.content.pages.store'), [
+            'template_id' => $inactiveTemplate->id,
+            'title' => 'Invalid Template Page',
+            'slug' => 'invalid-template-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+        ])->assertSessionHasErrors('template_id');
+
+        $this->post(route('admin.content.pages.store'), [
+            'title' => 'Invalid OG Page',
+            'slug' => 'invalid-og-page',
+            'page_type' => 'custom',
+            'status' => 'draft',
+            'og_image_media_id' => $document->id,
+        ])->assertSessionHasErrors('og_image_media_id');
+    }
+
+    public function test_page_delete_is_blocked_when_menu_uses_it(): void
+    {
+        $page = Page::query()->create([
+            'title' => 'Menu Target Page',
+            'slug' => 'menu-target-page',
+            'page_type' => 'custom',
+            'status' => 'published',
+        ]);
+        $menu = Menu::query()->create([
+            'name' => 'Header Menu',
+            'slug' => 'header-menu',
+            'location_key' => 'header',
+            'status' => 'active',
+        ]);
+        MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'label' => 'Menu Target',
+            'slug' => 'menu-target',
+            'menu_item_type' => 'page',
+            'page_id' => $page->id,
+            'target' => '_self',
+            'is_enabled' => true,
+        ]);
+
+        $this->delete(route('admin.content.pages.destroy', $page))
+            ->assertSessionHasErrors('page');
+    }
+
+    public function test_frontend_pages_respect_publish_windows(): void
+    {
+        $pageTemplate = Template::query()->where('key', 'page-builder')->firstOrFail();
+        $futureHome = Page::query()->create([
+            'template_id' => $pageTemplate->id,
+            'title' => 'Future Home',
+            'slug' => 'future-home',
+            'page_type' => 'home',
+            'status' => 'published',
+            'is_homepage' => true,
+            'published_at' => now()->addDay(),
+        ]);
+        PageSection::query()->create([
+            'page_id' => $futureHome->id,
+            'name' => 'Future Hero',
+            'section_key' => 'future-hero',
+            'component_key' => 'hero',
+            'content' => ['title' => 'Future Hero'],
+            'settings' => [],
+            'status' => 'active',
+            'is_visible' => true,
+        ]);
+
+        $this->get(route('home'))->assertNotFound();
+        $this->get(route('pages.show', 'future-home'))->assertNotFound();
     }
 
     public function test_section_schema_requires_hero_title(): void

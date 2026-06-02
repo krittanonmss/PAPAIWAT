@@ -4,6 +4,7 @@ namespace App\Services\Admin\Content\Temple;
 
 use App\Models\Content\Category;
 use App\Models\Content\Media\Media;
+use App\Models\Content\Temple\Facility;
 use App\Models\Content\Temple\Temple;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +17,7 @@ class TempleValidationService
         $errors += $this->validateStatus($validated, $temple);
         $errors += $this->validateCategories($validated);
         $errors += $this->validateMedia($validated);
+        $errors += $this->validateFacilities($validated['facility_items'] ?? []);
         $errors += $this->validateOpeningHours($validated['opening_hours'] ?? []);
         $errors += $this->validateFees($validated['fees'] ?? []);
         $errors += $this->validateNearbyPlaces($validated['nearby_places'] ?? [], $temple);
@@ -111,13 +113,38 @@ class TempleValidationService
         $validCount = Category::query()
             ->whereIn('id', $categoryIds)
             ->where('type_key', 'temple')
+            ->where('status', 'active')
             ->count();
 
         if ($validCount !== $categoryIds->count()) {
-            return ['category_ids' => 'หมวดหมู่ของวัดต้องเป็น type temple เท่านั้น'];
+            return ['category_ids' => 'หมวดหมู่ของวัดต้องเป็น type temple และ active เท่านั้น'];
         }
 
         return [];
+    }
+
+    private function validateFacilities(array $rows): array
+    {
+        $facilityIds = collect($rows)
+            ->pluck('facility_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($facilityIds->isEmpty()) {
+            return [];
+        }
+
+        $validCount = Facility::query()
+            ->whereIn('id', $facilityIds)
+            ->where('type_key', 'temple')
+            ->where('status', 'active')
+            ->count();
+
+        return $validCount === $facilityIds->count()
+            ? []
+            : ['facility_items' => 'สิ่งอำนวยความสะดวกต้องเป็น type temple และ active เท่านั้น'];
     }
 
     private function validateMedia(array $validated): array
@@ -231,6 +258,17 @@ class TempleValidationService
             }
 
             $templeIds[] = $nearbyTempleId;
+        }
+
+        $validNearbyCount = Temple::query()
+            ->whereIn('id', $templeIds)
+            ->whereHas('content', fn ($query) => $query
+                ->where('content_type', 'temple')
+                ->whereNull('deleted_at'))
+            ->count();
+
+        if ($validNearbyCount !== count(array_unique($templeIds))) {
+            $errors['nearby_places'] = 'วัดใกล้เคียงต้องเป็นวัดที่ยังใช้งานอยู่';
         }
 
         return $errors;

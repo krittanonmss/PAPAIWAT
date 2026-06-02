@@ -19,6 +19,11 @@
         default => 'grid gap-8 md:grid-cols-3 lg:grid-cols-4',
     };
     $footerCopyright = \App\Support\FooterSettings::copyright($frontendFooterSettings);
+    $footerContact = collect([
+        'phone' => $frontendSiteSettings['general']['contact_phone'] ?? null,
+        'email' => $frontendSiteSettings['general']['contact_email'] ?? null,
+        'address' => $frontendSiteSettings['general']['contact_address'] ?? null,
+    ])->filter(fn ($value) => filled($value));
 @endphp
 
 <footer class="{{ $footerShellClass }} {{ $footerBorderClass }}">
@@ -45,6 +50,20 @@
                         <p class="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs leading-5 text-slate-400">
                             {{ $frontendFooterSettings['footer_note'] }}
                         </p>
+                    @endif
+
+                    @if($footerContact->isNotEmpty())
+                        <div class="mt-5 space-y-2 text-sm leading-6 text-slate-400">
+                            @if($footerContact->get('phone'))
+                                <p><span class="text-slate-500">โทร:</span> <a href="tel:{{ $footerContact->get('phone') }}" class="hover:text-white">{{ $footerContact->get('phone') }}</a></p>
+                            @endif
+                            @if($footerContact->get('email'))
+                                <p><span class="text-slate-500">อีเมล:</span> <a href="mailto:{{ $footerContact->get('email') }}" class="hover:text-white">{{ $footerContact->get('email') }}</a></p>
+                            @endif
+                            @if($footerContact->get('address'))
+                                <p class="whitespace-pre-line">{{ $footerContact->get('address') }}</p>
+                            @endif
+                        </div>
                     @endif
                 </div>
             @endif
